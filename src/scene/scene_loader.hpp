@@ -1,0 +1,56 @@
+/*
+* TS Elements
+* Copyright 2015-2016 M. Newhouse
+* Released under the MIT license.
+*/
+
+#ifndef SCENE_LOADER_HPP_2198129815
+#define SCENE_LOADER_HPP_2198129815
+
+#include "utility/generic_loader.hpp"
+
+#include <boost/optional.hpp>
+
+namespace ts
+{
+  namespace stage
+  {
+    class Stage;
+  }
+
+  namespace game
+  {
+    class LoadingThread;
+  }
+
+  namespace scene
+  {
+    struct Scene;
+
+    enum class LoadingState
+    {
+      LoadingTextures,
+      LoadingSounds
+    };
+
+    class SceneLoader
+        : public utility::LoadingInterface<LoadingState>
+    {
+    public:
+      SceneLoader(game::LoadingThread* loading_thread);
+
+      void async_load_scene(const stage::Stage* stage_ptr);
+
+      Scene load(const stage::Stage* stage_ptr);
+
+      Scene get_result();
+      bool is_ready() const;
+
+    private:
+      boost::optional<std::future<scene::Scene>> scene_future_ = boost::none;
+      game::LoadingThread* loading_thread_;
+    };
+  }
+}
+
+#endif

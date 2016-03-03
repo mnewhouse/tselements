@@ -1,0 +1,604 @@
+# Note: Please do not edit these values since doing that will break your
+#       old tracks and their records since hash values change. If you need
+#       to make your own terrains for your own track, create a new ter file
+#       which you include in your own tiles file. Put those files in the
+#       same directory as the trk files.
+
+# Other things should be quite self-explanatory but sub terrains can 
+# seem a bit tricky. Each terrain actually consists of a terrain definition
+# for n different levels (6 is the default number in normal tracks).
+# Normal non-wall terrain defines that level 0 contains the given terrain
+# and levels 1-5 are empty. Normal wall terrains define that 0-1 contain
+# the wall and 2-5 are empty. This is how things work if there is no
+# elevation anywhere. The following command can be used to make more
+# complex terrains:
+#
+# SubTerrain <terrain> <sub id> <start level> <level number>
+#
+# It defines that terrain <terrain> contains a sub terrain <sub id>
+# starting from level <start level> being <level number> levels
+# in height. 
+#
+# If there are two driveable terrains on top of each other, it means
+# that that terrain is an elevation. Cars go between the levels in
+# those terrains.
+#
+# Here are some examples:
+#
+# See Tree3 to see how to make obstacles with more height.
+# See Elevation1 to see how jump platform and starting of a bridge is done.
+# See ElevationJumpEdge for the edge of an elevated jump.
+# See Elevation2 to see how to make another half of a bridge elevation.
+# See BridgeLevel to see how to make bridge level.
+#
+
+Terrain 	Null        
+  id		0
+  isWall	0
+  viscosity	1.0
+  acceleration	1.0
+  braking	1.0
+  grip		1.0
+  steering	1.0
+  red		0
+  green		0
+  blue		0
+End
+
+Terrain 	Grass
+  id		1
+  isWall	0
+  viscosity	2.0
+  acceleration	0.5
+  braking	0.5
+  grip		0.5
+  steering	0.5
+  red		55
+  green		85
+  blue		30
+End
+
+Terrain 	Tarmac
+  id		2
+  isWall	0
+  viscosity	1.0
+  acceleration	1.0
+  braking	1.0
+  grip		1.0
+  steering	1.0
+  skidMark 	1
+  tyreMark      0
+  red		110
+  green		110
+  blue		110
+End
+
+Terrain 	Sand
+  id		3
+  isWall	0
+  viscosity	1.4
+  acceleration	0.7
+  braking	0.5
+  grip		0.5
+  steering	0.8
+  red		170
+  green		130
+  blue		80
+
+#  red		200
+#  green	170
+#  blue		130
+End
+
+Terrain 	Ice
+  id		4
+  isWall	0
+  viscosity	0.5
+  acceleration	0.5
+  braking	0.1
+  grip		0.1
+  steering	1.5
+  skidMark 	0
+  tyreMark      0
+  red		190
+  green		200
+  blue		230
+End
+
+Terrain 	Snow 
+  id		5
+  isWall	0
+  viscosity	1.8
+  acceleration	0.7
+  braking	0.5
+  grip		0.5
+  steering	1.0
+  red		250
+  green		250
+  blue		250
+End
+
+Terrain 	Water
+  id		6
+  isWall	0
+  viscosity	3.0
+  acceleration	0.5
+  braking	0.5
+  grip		0.5
+  steering	0.5
+  skidMark 	0
+  tyreMark      0
+  red           120
+  green         120
+  blue          200
+End
+
+Terrain 	Wet Tarmac #TODO
+  id		7
+  isWall	0
+  viscosity	0.8
+  acceleration	0.8
+  braking	0.7
+  grip		0.7
+  steering	1.0
+  skidMark 	1
+  tyreMark      0
+  red 		30
+  green		30
+  blue		30	
+End
+
+Terrain 	Cement #TODO
+  id		8
+  isWall	0
+  viscosity	0.8
+  acceleration	0.8
+  braking	0.7
+  grip		0.7
+  steering	1.0
+  skidMark 	1
+  tyreMark      0
+End
+
+Terrain 	Gravel #TODO
+  id		9
+  isWall	0
+  viscosity	1.0
+  acceleration	0.5
+  braking	0.5
+  grip		0.5
+  steering	0.8
+  skidMark 	0
+  tyreMark      1
+End
+
+Terrain 	Mud   #TODO
+  id		10
+  isWall	0
+  viscosity	1.2
+  acceleration	0.4
+  braking	0.5
+  grip		0.5
+  steering	1.0
+  skidMark 	0
+  tyreMark      1
+End
+
+Terrain 	Plastic #TODO
+  id		11
+  isWall	0
+  viscosity	0.8
+  acceleration	1.0
+  braking	0.7
+  grip		0.7
+  steering	1.0
+  skidMark 	1
+  tyreMark      0
+End
+
+Terrain 	Rubber
+  id		12
+  isWall	0
+  viscosity	1.0
+  acceleration	1.2
+  braking	1.2
+  grip		1.5
+  steering	1.5
+  skidMark 	1
+  tyreMark      0
+End
+
+Terrain 	Super terrain
+  id		13
+  isWall	0
+  viscosity	1.0
+  acceleration	1.8
+  braking	1.8
+  grip		1.8
+  steering	1.8
+  skidMark 	1
+  tyreMark      0
+End
+
+Terrain 	Oil
+  id		14
+  isWall	0
+  viscosity	0.5
+  acceleration	0.5
+  braking	0.1
+  grip		0.1
+  steering	2.5
+  skidMark 	0
+  tyreMark      0
+End
+
+
+Terrain 	Track edge
+  id		15
+  isWall	0
+  viscosity	0.8
+  acceleration	0.8
+  braking	1.0
+  grip		1.0
+  steering	1.2
+  skidMark 	1
+  tyreMark      0
+End
+
+Terrain 	Rocky
+  id		48
+  isWall	0
+  viscosity	1.2
+  acceleration	0.8
+  braking	0.5
+  grip		0.5
+  steering	0.8
+  red		180
+  green		170
+  blue		160
+End
+
+Terrain 	Sand2
+  id		49
+  isWall	0
+  viscosity	2.0
+  acceleration	0.5
+  braking	0.7
+  grip		0.7
+  steering	0.5
+  red		200
+  green		170
+  blue		130
+End
+
+Terrain		Dirt
+  id		50
+  isWall	0
+  viscosity	1.2
+  acceleration	0.7
+  braking	0.3
+  grip		0.3
+  steering	1.2
+  red		90
+  green		90
+  blue		80
+End
+
+#########################
+# Basic walls
+#########################
+
+Terrain 	Stopping Wall
+  id		16
+  isWall	1
+  bounciness	0.1
+  red           50
+  green         100
+  blue          100
+End
+
+Terrain 	Very Damping Wall
+  id		59
+  isWall	1
+  bounciness	0.3
+  red           50
+  green         125
+  blue          125
+End
+
+Terrain 	Damping Wall
+  id		17
+  isWall	1
+  bounciness	0.5
+  red           50
+  green         125
+  blue          125
+End
+
+Terrain 	Normal wall
+  id		18
+  isWall	1
+  bounciness	0.7
+  red           50
+  green         150
+  blue          150
+End
+
+Terrain 	Quite bouncy wall
+  id		19
+  isWall	1
+  bounciness	0.8
+  red           50
+  green         200
+  blue          200
+End
+
+Terrain 	Super-Bouncy wall
+  id		20
+  isWall	1
+  bounciness	1
+  red           50
+  green         225
+  blue          225
+End
+
+Terrain 	Ultra-hyper-bouncy wall
+  id		21
+  isWall	1
+  bounciness	1.5
+  red           50
+  green         250
+  blue          250
+End
+
+#########################
+# New Walls
+#########################
+
+Terrain		Tree2
+  id		60
+  red           40
+  green         180
+  blue          90
+End
+SubTerrain	60 17 0 2
+
+Terrain		Tree3
+  id		61
+  red           40
+  green         180
+  blue          90
+End
+SubTerrain	61 17 0 3
+
+Terrain		Tree4
+  id		62
+  red           40
+  green         180
+  blue          90
+End
+SubTerrain	62 17 0 4
+
+Terrain		House2
+  id		63
+  red           220
+  green         140
+  blue          0
+End
+SubTerrain	63 17 0 2
+
+Terrain		House4
+  id		64
+  red           220
+  green         140
+  blue          0
+End
+SubTerrain	64 17 0 4
+
+Terrain		House6
+  id		65
+  red           220
+  green         140
+  blue          0
+End
+SubTerrain	65 17 0 6
+
+Terrain		Haystack
+  id		66
+  red           230
+  green         218
+  blue          30
+End
+SubTerrain	66 59 0 1
+
+Terrain		Rock2
+  id		67
+  red           175
+  green         175
+  blue          175
+End
+SubTerrain	67 17 0 2
+
+Terrain		Rock3
+  id		68
+  red           175
+  green         175
+  blue          175
+End
+SubTerrain	68 17 0 3
+
+Terrain		Rock4
+  id		69
+  red           175
+  green         175
+  blue          175
+End
+SubTerrain	69 17 0 4
+
+Terrain		Tire
+  id		70
+  red           120
+  green         120
+  blue          120
+End
+SubTerrain	70 18 0 1
+
+Terrain		Red
+  id		71
+  red           120
+  green         120
+  blue          120
+End
+SubTerrain	71 17 0 1
+
+Terrain		GuardRail
+  id		72
+  red           180
+  green         180
+  blue          180
+End
+SubTerrain	72 17 0 1
+
+
+
+
+#########################
+# Jump and bridge related
+#########################
+
+Terrain		Jump
+  id		22
+  isWall	0
+  viscosity	1.0
+  acceleration	1.0
+  braking	1.0
+  grip		1.0
+  steering	1.0
+  skidMark 	1
+  tyreMark      0
+  jump		0.5
+  red		150
+  green		150
+  blue		110
+End
+
+Terrain		Slower
+  id		23
+  isWall	0
+  viscosity	1.0
+  acceleration	1.0
+  braking	1.0
+  grip		1.0
+  steering	1.0
+  skidMark 	1
+  tyreMark      0
+  slowing	0.3
+  red		90
+  green		100
+  blue		90
+End
+
+Terrain		Bump
+  id		24
+  isWall	0
+  viscosity	1.0
+  acceleration	1.0
+  braking	1.0
+  grip		1.0
+  steering	1.0
+  skidMark 	1
+  tyreMark      0
+  jump		0.3
+  slowing	0.2
+  red		120
+  green		120
+  blue		90
+End
+
+# Elevation part for a bridge or a jump (two tarmacs)
+Terrain 	Elevation1
+  id		25
+  red		140
+  green		140
+  blue		140
+End
+SubTerrain 25 2 0 2
+
+# Jump on elevation (top of a jump platform), wall for level 0
+Terrain 	ElevatedJump
+  id		26
+  red		140
+  green		140
+  blue		140
+End
+SubTerrain 26 17 0 1
+SubTerrain 26 22 1 1
+
+# Edge for elevation, wall for level 0 and tarmac for level 1
+Terrain		Elevation1Edge
+  id		27
+  red		140
+  green		140
+  blue		140
+End
+SubTerrain 27 17 0 1
+SubTerrain 27 2 1 1
+
+# Damping wall and tarmac
+Terrain		ElevationJumpEdge
+  id		29
+  red		140
+  green		140
+  blue		140
+End
+SubTerrain 29 17 0 1
+SubTerrain 29 2 1 1
+
+# Elevation for the second half of the bridge elevation
+# Level 0: damping wall, level 1-2 tarmac
+Terrain 	Elevation2
+  id		30
+  red		140
+  green		140
+  blue		140
+End
+SubTerrain 30 17 0 1
+SubTerrain 30 2 1 2
+
+# Bridge platform, tarmac for level 0 and level 2
+Terrain		BridgeLevel
+  id		31
+  red		160
+  green		160
+  blue		160
+End
+SubTerrain	31 2 0 1
+SubTerrain	31 2 2 1
+
+# Bridge edge, tarmac on level 0, wall on level 2
+Terrain 	BridgeEdge
+  id		32
+  red           180
+  green         180
+  blue          180
+End
+SubTerrain	32 2 0 1
+SubTerrain	32 17 2 1
+
+# Edge for elevation2 (3 x wall) 
+Terrain		Elevation2Edge
+  id		33
+  red           180
+  green         180
+  blue          180
+End
+SubTerrain	33 17 0 3
+
+# Edge for start of elevation (2 x wall) 
+Terrain		Elevation2EdgeStart
+  id		34
+  red           180
+  green         180
+  blue          180
+End
+SubTerrain	34 17 0 2

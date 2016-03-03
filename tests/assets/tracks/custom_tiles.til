@@ -1,0 +1,9 @@
+Include tiles2.til
+
+TileDefinition test-pat.png test-img.png
+  Tile 901 0 0 24 24 0 0 48 48
+End
+
+TextureDefinition test_texture.png
+	Texture 10 0 0 256 256
+End
