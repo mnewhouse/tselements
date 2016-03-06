@@ -4,7 +4,7 @@
 * Released under the MIT license.
 */
 
-#include "local_player_controller.hpp"
+#include "local_player_roster.hpp"
 
 #include "controls/control_center.hpp"
 
@@ -16,25 +16,37 @@ namespace ts
 {
   namespace client
   {
-    LocalPlayerController::LocalPlayerController(const cup::PlayerDefinition* players, 
-                                                 std::size_t player_count)
+    LocalPlayerRoster::LocalPlayerRoster(const cup::PlayerDefinition* players, 
+                                         std::size_t player_count)
     {
       local_players_.assign(players, players + player_count);
     }
 
-    void LocalPlayerController::handle_message(const cup::messages::RegistrationSuccess& success)
+    void LocalPlayerRoster::registration_success(std::uint16_t client_id)
     {
-      client_id_ = success.client_id;
+      client_id_ = client_id;
+    }
+
+    const cup::PlayerDefinition* LocalPlayerRoster::players() const
+    {
+      return local_players_.data();
+    }
+
+    std::size_t LocalPlayerRoster::player_count() const
+    {
+      return local_players_.size();
     }
 
     controls::ControlCenter 
-      LocalPlayerController::create_control_center(const stage::StageDescription& stage_desc) const
+      LocalPlayerRoster::create_control_center(const stage::StageDescription& stage_desc) const
     {
       controls::ControlCenter control_center;
       for (auto& instance : stage_desc.car_instances)
       {
+        // Add every player that has the same client id as we do into the mix.
         if (instance.controller_id != client_id_) continue;
 
+        // Now find the local player that matches the entry's control slot.
         auto it = std::find_if(local_players_.begin(), local_players_.end(),
                                [=](const cup::PlayerDefinition& local_player)
         {

@@ -26,9 +26,12 @@ namespace ts
       Default,
     };
 
+    // The CarDefinition structure defines all properties that make up a car model,
+    // such as name, image, pattern, engine sound, and handling.
     struct CarDefinition
     {
       std::string car_name;
+      CarHash car_hash;
 
       std::shared_ptr<CollisionMask> collision_mask;
       double bounciness = 1.0;
@@ -40,8 +43,6 @@ namespace ts
       double image_scale = 2.0;
 
       std::string engine_sound_path;
-
-      CarHash car_hash;
     };
   }
 }

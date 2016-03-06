@@ -29,6 +29,8 @@ namespace ts
 
         auto half_size = size * 0.5f;
 
+        // Let's generate six vertices which together make up a perfect hexagon.
+
         auto angled_offset = make_vector2(half_size * 0.86602540378f, -half_size * 0.5f); // transformed by 30 degrees
         vertex.position.x = position.x;
         vertex.position.y = position.y - half_size;
@@ -107,10 +109,9 @@ namespace ts
     std::size_t ParticleGenerator::indices_per_particle()
     {
       return 12;
-    }
-      
+    }      
 
-    void ParticleGenerator::update(std::size_t frame_duration)
+    void ParticleGenerator::update(std::uint32_t frame_duration)
     {
       const auto fd = frame_duration * 0.001;
       tick_counter_ += frame_duration;
@@ -132,12 +133,16 @@ namespace ts
                                                         settings_.color_variance * 0.5);
       std::uniform_real_distribution<double> size_dist(settings_.min_size, settings_.max_size);
 
+      // Loop through all cars
       for (const auto& car : world_->cars())
       {
         const auto& terrain = world_->terrain_at(car.position(), car.z_level());
         if (terrain.roughness >= 0.001)
         {
           auto speed = std::min(magnitude(car.velocity()), settings_.max_effect_speed);
+
+          // If we roll a number below the "chance factor", add a new particle.
+          // The probability of success is positively affected by car speed, frame duration and terrain roughness.
 
           using utility::random_number;
           auto roll = random_number(chance_dist) / (speed * fd * terrain.roughness);
@@ -160,7 +165,7 @@ namespace ts
             info.end_ticks = tick_counter_ + settings_.display_time;
             particle_info_.push_back(info);
 
-            // Generate vertices and indices
+            // Generate vertices
             auto vertex_index = vertices_.size();
             vertices_.resize(vertex_index + vertices_per_particle());
             detail::generate_vertices(position, size, color, vertices_.begin() + vertex_index);

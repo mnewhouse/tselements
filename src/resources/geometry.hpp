@@ -12,6 +12,7 @@
 #include "texture.hpp"
 
 #include <cstdint>
+#include <vector>
 
 namespace ts
 {
@@ -19,9 +20,10 @@ namespace ts
   {
     using Vertex = ts::Vertex<float, std::uint8_t>;
 
-    struct VertexArray
+    struct Geometry
     {
       TextureId texture_id;
+      std::uint32_t level;
       std::vector<Vertex> vertices;
     };
   }

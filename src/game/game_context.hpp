@@ -6,6 +6,9 @@
 
 #include "components/generic_state_machine.hpp"
 
+#ifndef GAME_CONTEXT_HPP_129038518923
+#define GAME_CONTEXT_HPP_129038518923
+
 namespace ts
 {
   namespace graphics
@@ -22,13 +25,15 @@ namespace ts
   {
     class LoadingThread;
 
-    template <typename StateType>
+    class GameState;
     struct GameContext
     {
-      components::StateMachine<StateType>* state_machine = nullptr;
+      components::StateMachine<GameState>* state_machine = nullptr;
       graphics::RenderWindow* render_window = nullptr;
       game::LoadingThread* loading_thread = nullptr;
       resources::ResourceStore* resource_store = nullptr;
     };
   }
 }
+
+#endif

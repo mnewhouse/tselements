@@ -19,17 +19,20 @@ namespace ts
 
   namespace race
   {
+    // The LapTracker class keeps track of all cars' laptimes, by processing control point events
+    // and dispatching an event in case of a finished lap.
     class LapTracker
     {
     public:
       explicit LapTracker(std::uint16_t lap_count, std::uint16_t control_point_count);
 
-      void control_point_hit(const world::Entity* entity, std::uint16_t point_id, 
+      void control_point_hit(const world::Entity* entity, std::uint16_t point_id,
                              std::uint32_t frame_offset);
 
       void update_race_time(std::uint32_t frame_duration);
 
     private:
+
       struct TrackedCar
       {
         std::uint16_t laps_done = 0;

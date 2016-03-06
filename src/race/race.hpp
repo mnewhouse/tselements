@@ -9,28 +9,16 @@
 
 #include "lap_tracker.hpp"
 
-#include "world/world_messages.hpp"
-
-#include <boost/optional.hpp>
-
 namespace ts
 {
   namespace race
   {
-    class Race
+    struct Race
     {
-    public:
       explicit Race(std::uint16_t lap_count, std::uint16_t control_point_count);
 
-      void handle_message(const world::messages::ControlPointHit& cp_hit);
-
-      void update_race_time(std::uint32_t frame_duration);
-
-    private:
-      LapTracker lap_tracker_;
+      LapTracker lap_tracker;
     };
-
-    struct RaceHost : boost::optional<Race> {};
   }
 }
 

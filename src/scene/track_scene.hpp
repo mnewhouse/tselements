@@ -12,7 +12,7 @@
 #include "utility/vertex.hpp"
 #include "utility/vertex_interface.hpp"
 
-#include "resources/vertex.hpp"
+#include "resources/geometry.hpp"
 
 #include <boost/iterator/transform_iterator.hpp>
 

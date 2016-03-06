@@ -21,7 +21,7 @@ namespace ts
     struct RenderWindow::Impl
       : public sf::Window
     {
-      Impl(const char* title, int width, int height, WindowMode window_mode)
+      Impl(const char* title, std::uint32_t width, std::uint32_t height, WindowMode window_mode)
       {
         std::uint32_t style = sf::Style::Titlebar;
         if (window_mode == WindowMode::FullScreen) style = sf::Style::Fullscreen;
@@ -35,7 +35,7 @@ namespace ts
       }
     };
 
-    RenderWindow::RenderWindow(const char* title, int width, int height, WindowMode window_mode)
+    RenderWindow::RenderWindow(const char* title, std::uint32_t width, std::uint32_t height, WindowMode window_mode)
       : impl_(std::make_unique<Impl>(title, width, height, window_mode))
     {
     }

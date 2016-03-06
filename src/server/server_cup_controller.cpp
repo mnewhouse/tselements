@@ -12,15 +12,6 @@ namespace ts
 {
   namespace cup
   {
-    template class CupController<server::CupControllerMessageDispatcher>;
-  }
-
-  namespace server
-  {
-    CupControllerMessageDispatcher::CupControllerMessageDispatcher(const MessageDispatcher* message_dispatcher,
-                                                                   const MessageConveyor* message_conveyor)
-      : dispatcher_(message_dispatcher),
-        message_conveyor_(message_conveyor)
-    {}
+    template class CupController<server::MessageDistributor>;
   }
 }

@@ -38,12 +38,16 @@ namespace ts
       Colorb color;
     };
 
+    // The particle generator class generates particles for all cars in the game world,
+    // if certain criteria are met. On rough terrains, particles will be shown, 
+    // otherwise if the car is sliding, smoke will be shown. The particle's properties are
+    // affected by the settings as it was passed to the constructor.
     class ParticleGenerator
     {
     public:
       explicit ParticleGenerator(const world::World* world, const ParticleSettings& particle_settings);
 
-      void update(std::size_t frame_duration);
+      void update(std::uint32_t frame_duration);
 
       const ParticleVertex* vertices() const;
       std::size_t vertex_count() const;

@@ -10,9 +10,9 @@ namespace ts
 {
   namespace server
   {
-    void MessageDispatcher::initiate_local_connection(const client::MessageConveyor* client_message_conveyor)
+    void MessageDispatcher::initiate_local_connection(const LocalConveyor* local_conveyor)
     {
-      local_client_ = client_message_conveyor;
+      local_conveyor_ = local_conveyor;
     }
   }
 }

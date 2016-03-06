@@ -20,9 +20,14 @@ namespace ts
       stage_ = nullptr;
     }
 
-    void StageRegulator::handle_message_(const messages::ControlUpdate& message)
+    void StageRegulator::handle_message(const messages::ControlUpdate& message)
     {
       stage_->set_controllable_state(message.controllable_id, message.controls_mask);
+    }
+
+    StageRegulator::operator bool() const
+    {
+      return active();
     }
 
     bool StageRegulator::active() const

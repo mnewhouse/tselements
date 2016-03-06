@@ -35,7 +35,7 @@ namespace ts
     {
       control_points_.emplace_back();
       auto& back = control_points_.back();
-      back.id = control_points_.size();
+      back.id = static_cast<std::uint32_t>(control_points_.size());
       back.start = point.start;
       back.end = point.end;
       back.type = point.type;

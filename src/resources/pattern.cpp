@@ -214,6 +214,7 @@ namespace ts
     
     static std::array<png_color, 256> create_palette(const TerrainLibrary& terrain_library)
     {
+      // Create a color palette based on terrain_library colors.
       std::array<png_color, 256> palette;
       for (std::uint32_t terrain_id = 0; terrain_id != 256; ++terrain_id)
       {
@@ -277,17 +278,6 @@ namespace ts
       return bytes_.data();
     }
 
-    Pattern::const_iterator ts::resources::Pattern::row_begin(std::uint32_t y) const
-    {
-      return bytes_.data() + y * size_.x;
-    }
-
-    Pattern::const_iterator ts::resources::Pattern::row_end(std::uint32_t y) const
-    {
-      return bytes_.data() + y * size_.x + size_.x;
-    }
-
-
     Pattern::iterator ts::resources::Pattern::begin()
     {
       return bytes_.data();
@@ -296,26 +286,6 @@ namespace ts
     Pattern::iterator ts::resources::Pattern::end()
     {
       return bytes_.data();
-    }
-
-    Pattern::iterator ts::resources::Pattern::row_begin(std::uint32_t y)
-    {
-      return bytes_.data() + y * size_.x;
-    }
-
-    Pattern::iterator ts::resources::Pattern::row_end(std::uint32_t y)
-    {
-      return bytes_.data() + y * size_.x + size_.x;
-    }
-
-    const std::uint8_t& ts::resources::Pattern::operator()(std::uint32_t x, std::uint32_t y) const
-    {
-      return bytes_[x + y * size_.x];
-    }
-
-    std::uint8_t& ts::resources::Pattern::operator()(std::uint32_t x, std::uint32_t y)
-    {
-      return bytes_[x + y * size_.x];
     }
 
     Vector2u Pattern::size() const

@@ -27,6 +27,10 @@ namespace ts
       explicit BrokenTrackException(const std::string& missing_file);
     };
 
+    // The TrackLoader class loads a track from a file.
+    // It keep an internal Track object so that files can be included independently, 
+    // and it remembers which files it has included previously so that 
+    // no file can be included more than once.
     class TrackLoader
     {
     public:
@@ -37,8 +41,7 @@ namespace ts
       
       struct Context;
 
-    private:
-      
+    private:      
       void include(const std::string& path, std::size_t inclusion_depth);
       void load_included_file(Context& context, std::size_t inclusion_depth);
 
@@ -49,6 +52,7 @@ namespace ts
       Track track_;
     };
 
+    // Convenience functions to allow for load_track("foo.trk")-style syntax.
     Track load_track(const std::string& path);
     Track load_track(boost::string_ref path);
   }

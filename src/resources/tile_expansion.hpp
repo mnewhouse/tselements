@@ -29,6 +29,7 @@ namespace ts
       const auto& tile_groups = tile_library.tile_groups();
       const auto& tiles = tile_library.tiles();
 
+      // For every tile...
       for (; tile_it != tile_end; ++tile_it)
       {
         const Tile& tile = *tile_it;
@@ -38,6 +39,7 @@ namespace ts
           auto tile_def_it = tiles.find(tile.id);
           if (tile_def_it != tiles.end())
           {
+            // It's not a tile group but a regular tile, so this will just be a simple copy.
             PlacedTile placed_tile;
             placed_tile.id = tile.id;
             placed_tile.level = level + tile.level;
@@ -45,12 +47,15 @@ namespace ts
             placed_tile.rotation = tile.rotation;
             placed_tile.definition = &*tile_def_it;
 
-            *out = placed_tile; ++out;
+            *out = placed_tile; 
+            ++out;
           }
         }
 
         else
         {
+          // It is a tile group, so we have to loop through all sub-tiles, transform
+          // their positions and write the resulting tile to the output buffer.
           for (const auto& sub_tile : tile_group->sub_tiles)
           {
             auto tile_def_it = tiles.find(sub_tile.id);

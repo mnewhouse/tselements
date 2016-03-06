@@ -40,8 +40,8 @@ namespace ts
           using std::begin;
           using std::endl;
 
-          std::string my_file_name(begin(file_name), end(file_name));
-          it = images_.insert(std::make_pair(std::move(my_file_name), loading_func_(file_name))).first;
+          it = images_.insert(std::make_pair(std::string(begin(file_name), end(file_name)),
+                                             loading_func_(file_name))).first;
         }
 
         return it->second;

@@ -32,7 +32,7 @@ namespace ts
       // useful if move semantics are not desirable.
       const std::vector<CarDefinition>& car_definitions() const;
 
-      // This function can be used to efficiently get the car definitions that we just loaded.
+      // This function is used to efficiently get the car definitions that we just loaded.
       // Our car definitions are transferred to the caller, leaving us with nothing.
       std::vector<CarDefinition> get_result();
 

@@ -35,13 +35,16 @@ namespace ts
     
     struct StateTraits
     {
-      using game_context = GameContext<GameState>;
+      using game_context = GameContext;
       using event_type = Event;
 
       using render_context = RenderContext;
       using update_context = UpdateContext;
     };
 
+    // We can just derive from the generic GameState object based on the traits class
+    // we just defined. We could also use an alias, but deriving allows us to forward
+    // declare this class.
     class GameState
       : public components::GenericState<StateTraits>
     {

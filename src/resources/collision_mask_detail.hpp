@@ -47,12 +47,13 @@ namespace ts
         std::vector<bitmask_type> result(row_words * pattern_size.y * level_count);
         auto data_ptr = result.data();
 
+        // For each pixel for each level, test the "wallness",
+        // and write the result to our destination vector.
         for (std::uint32_t level = 0; level != level_count; ++level)
         {
           for (std::uint32_t y = 0; y != pattern_size.y; ++y)
           {
-            auto pattern_ptr = pattern.row_begin(y + rect.top) + rect.left;
-            
+            auto pattern_ptr = pattern.row_begin(y + rect.top) + rect.left;            
 
             for (std::uint32_t x = 0; x != pattern_size.x; )
             {
@@ -96,6 +97,8 @@ namespace ts
         auto frame_size = row_words * dest_size.y;
         std::vector<bitmask_type> result(frame_size * frame_count);
 
+        // For each destination pixel for each frame, transform the pixel to its corresponding
+        // pixel in the pattern, and set the bits based on the wall_test function.
         for (std::uint32_t frame_id = 0; frame_id != frame_count; ++frame_id)
         {
           auto frame_ptr = result.data() + frame_id * frame_size;

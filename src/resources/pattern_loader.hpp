@@ -19,6 +19,9 @@ namespace ts
   {
     class Pattern;
 
+    // A simple pattern loader class that takes caches pattern files based
+    // on their file names. It uses the load_pattern() function, and as such will throw
+    // an exception on failure.
     class PatternLoader
     {
     public:

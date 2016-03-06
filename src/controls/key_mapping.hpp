@@ -19,7 +19,7 @@ namespace ts
   namespace controls
   {
     // The KeyMapping class maps a key code to zero or more control/slot combinations.
-    // Keys must be lookuppable in an efficient manner.
+    // Keys must be lookuppable (is that a word? I think not) in an efficient manner.
     template <typename KeyCode>
     class KeyMapping
     {

@@ -7,6 +7,8 @@
 #ifndef WORLD_MESSAGES_HPP_66289811981
 #define WORLD_MESSAGES_HPP_66289811981
 
+#include "collisions.hpp"
+
 #include <cstdint>
 
 namespace ts
@@ -22,6 +24,12 @@ namespace ts
         const Entity* entity;
         std::uint16_t point_id;
         std::uint32_t frame_offset;
+      };
+
+      struct SceneryCollision
+      {
+        const Entity* entity;
+        CollisionResult collision;
       };
     }
   }

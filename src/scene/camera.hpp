@@ -22,6 +22,9 @@ namespace ts
 
   namespace scene
   {
+    // The Camera class represents an in-game camera. It can follow an entity around,
+    // but it also has an interface to set position, rotation or zoom level manually,
+    // which will cause the entity to stop being followed.
     class Camera
     {
     public:
@@ -45,6 +48,10 @@ namespace ts
       double zoom_level_ = 2.0;
     };
 
+    // This function computes the center position of the camera. If the view area stretches out into
+    // the great void outside the game world, the view will be clamped to the edge.
+    // Additionally, if the view area is larger than the game world in any dimension, the view will
+    // be centered.
     Vector2<double> compute_camera_center(const Camera& camera, Vector2<double> world_size, 
                                           Vector2<double> screen_size, double frame_progress);
   }

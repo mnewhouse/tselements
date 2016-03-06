@@ -39,6 +39,7 @@ namespace ts
 
     namespace io = boost::iostreams;
 
+    // Loading context keeps track of where it's at
     struct TrackLoader::Context
     {
       boost::string_ref file_name;
@@ -51,6 +52,7 @@ namespace ts
 
     boost::filesystem::path resolve_asset_path(boost::string_ref file_name, boost::string_ref working_directory)
     {
+      // Working directory takes precedence over data directory.
       return find_include_path(file_name, { working_directory, config::data_directory });
     }
 
@@ -105,12 +107,14 @@ namespace ts
       return false;
     }
 
-    static void load_geometry(TrackLayer& layer, LoadingContext& context, TextureId texture_id, std::size_t vertex_count)
+    static void load_geometry(TrackLayer& layer, LoadingContext& context, TextureId texture_id, 
+                              std::uint32_t level, std::size_t vertex_count)
     {
       std::size_t start_line = context.line_index;
 
-      VertexArray geometry;
+      Geometry geometry;
       geometry.texture_id = texture_id;
+      geometry.level = level;
 
       auto& vertices = geometry.vertices;
       vertices.reserve(vertex_count);
@@ -178,11 +182,13 @@ namespace ts
 
     static void load_track_components(Track& track, LoadingContext& context)
     {
-
       const auto& lines = *context.lines;
       auto& line_index = context.line_index;
 
       TrackLayer* current_layer = nullptr;
+
+      // Helper lambda to ensure that a layer with the specified level exists,
+      // by creating a new layer if it doesn't.
       auto ensure_layer_exists = [&](std::uint32_t level)
       {
         if (!current_layer || current_layer->level != level)
@@ -218,12 +224,13 @@ namespace ts
         else if (directive == "geometry")
         {
           std::size_t vertex_count = 0;
+          std::uint32_t level = 0;
           TextureId texture_id;
-          if (ArrayStream(remainder) >> texture_id >> vertex_count)
+          if (ArrayStream(remainder) >> texture_id >> level >> vertex_count)
           {
             ++line_index;
-            ensure_layer_exists(0); // TODO
-            load_geometry(*current_layer, context, texture_id, vertex_count);
+            ensure_layer_exists(level); // TODO
+            load_geometry(*current_layer, context, texture_id, level, vertex_count);
           }
 
           else
@@ -288,8 +295,6 @@ namespace ts
 
           if (directive == "tile" || directive == "norottile")
           {
-            // Make an in-buffer istream. Fancy.
-
             TileId tile_id;
             IntRect pat_rect, img_rect;
 
@@ -484,6 +489,8 @@ namespace ts
             ControlPoint point;
             point.start = { x, y };
             point.end = point.start;
+
+            // 0 = horizontal, 1 = vertical.
             if (direction == 0)
             {
               point.end.y += length;
@@ -504,6 +511,7 @@ namespace ts
 
         if (directive == "finish")
         {
+          // Special kind of control point, which runs from one point to another.
           std::int32_t x1, y1, x2, y2;
           if (ArrayStream(remainder) >> x1 >> y1 >> x2 >> y2)
           {
@@ -538,9 +546,8 @@ namespace ts
 
         if (point_count != 0 && directive == "point")
         {
-          std::int32_t x, y, rotation; std::uint32_t level;
-          ArrayStream stream(remainder);
-          if (stream >> x >> y >> rotation >> level)
+          std::int32_t x, y, rotation; std::uint32_t level;          
+          if (ArrayStream(remainder) >> x >> y >> rotation >> level)
           {
             StartPoint point;
             point.position = { x, y };
@@ -586,6 +593,7 @@ namespace ts
 
     void TrackLoader::include(const std::string& file_name, std::size_t inclusion_depth)
     {
+      // If we inserted, the file didn't exist in the include file set.
       if (included_files_.insert(file_name).second)
       {
         auto stream = make_ifstream(file_name, std::ios::in);
@@ -735,7 +743,7 @@ namespace ts
 
           if (inclusion_depth == 0)
           {
-            // Once it reaches the track's tile components
+            // These properties only work for the "main" file.
 
             if (directive == "size")
             {

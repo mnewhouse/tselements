@@ -12,9 +12,8 @@
 #include <SFML/Window/Event.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
-
-
 
 namespace ts
 {
@@ -27,10 +26,12 @@ namespace ts
       FullScreenDesktop
     };
 
+    // The RenderWindow models the game's window. 
+    // It exposes a very minimalistic interface.
     class RenderWindow
     {
     public:
-      RenderWindow(const char* title, int width, int height, WindowMode window_mode);
+      RenderWindow(const char* title, std::uint32_t width, std::uint32_t height, WindowMode window_mode);
       ~RenderWindow();
 
       void display();

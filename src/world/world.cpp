@@ -53,7 +53,7 @@ namespace ts
         }
       };
 
-      void resolve_collision(Entity* entity, Vector2<double> old_position, 
+      auto resolve_collision(Entity* entity, Vector2<double> old_position, 
                              Rotation<double> old_rotation, Rotation<double> new_rotation,
                              const CollisionInfo& collision, const resources::CollisionMaskFrame& scenery,
                              const resources::TerrainDefinition& wall_terrain)
@@ -64,11 +64,12 @@ namespace ts
 
         position_offset += local_point + transform_point(local_point, rotation_delta);
 
-        auto collision_info = examine_scenery_collision(scenery, collision.point,
-                                                        position_offset);
+        auto collision_info = examine_scenery_collision(scenery, collision.point, entity->velocity(), position_offset);
 
         resolve_scenery_collision(collision_info, *entity, rotation_delta,
                                   wall_terrain.bounciness * entity->bounciness());
+
+        return collision_info;
       }
 
       auto find_collision(Vector2<double> old_position, Vector2<double> target_position,
@@ -284,11 +285,13 @@ namespace ts
 
         if (collision /* && scenery collision */)
         {
-          detail::resolve_collision(car, old_position, old_rotation, new_rotation, collision, scenery_frame,
-                                    terrain_at(collision.point, z_level));
+          auto collision_result = detail::resolve_collision(car, old_position, old_rotation, new_rotation, collision, scenery_frame,
+                                                            terrain_at(collision.point, z_level));
 
           new_position = collision.valid_position;
           if (!collision.rotate) new_rotation = old_rotation;
+
+          event_interface.on_collision(car, collision_result);
         }
 
         car->set_position(new_position);

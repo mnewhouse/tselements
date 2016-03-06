@@ -25,6 +25,8 @@ namespace ts
 
     namespace detail
     {
+      // These comparator objects allow for tile definitions can be compared to their
+      // associated tile ids, allowing for convenient lookup in the exposed tile library interfaces.
       struct TileDefinitionComparator
       {
         using is_transparent = std::true_type;
@@ -42,6 +44,9 @@ namespace ts
       };
     }
 
+    // The TileLibrary class exposes two types of resources. First we have tile definitions, which 
+    // define how a tile should be drawn and how it interacts with the game world. Additionally,
+    // we have tile groups, which contain a set of placed sub-tiles.
     class TileLibrary
     {
     private:
@@ -56,6 +61,9 @@ namespace ts
       using tile_group_iterator = tile_group_interface_type::iterator;
 
       struct TileDefinitionInterface;
+
+      // This function allows for efficiently defining larger sets of tiles, without making multiple copies
+      // of the file name strings or other kinds of inefficiencies.
       TileDefinitionInterface define_tile_set(boost::string_ref pattern_file, boost::string_ref image_file);
 
       tile_group_iterator define_tile_group(const TileGroupDefinition& tile_group_def);

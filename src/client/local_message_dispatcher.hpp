@@ -7,8 +7,6 @@
 #ifndef LOCAL_MESSAGE_DISPATCHER_HPP_821398123
 #define LOCAL_MESSAGE_DISPATCHER_HPP_821398123
 
-#include "client.hpp"
-
 #include "server/server_message_conveyor.hpp"
 #include "server/client_message.hpp"
 
@@ -34,8 +32,7 @@ namespace ts
       template <typename MessageType>
       void operator()(const MessageType& message) const
       {
-        (*message_conveyor_)(server::make_client_message(message, 
-                                                         server::local_client));
+        (*message_conveyor_)(server::make_client_message(message, server::local_client));
       }
 
     private:

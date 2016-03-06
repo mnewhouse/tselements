@@ -59,6 +59,8 @@ namespace ts
         return PlaybackHandle(&sound);
       }
 
+      // No idle sounds, we need to replace the sound with the lowest priority with the new one,
+      // granted that the new priority is higher.
       auto lowest_priority = std::min_element(active_sounds_.begin(), active_sounds_.end(), SoundInfo::PriorityCmp());
       if (lowest_priority != active_sounds_.end() && lowest_priority->priority < priority)
       {

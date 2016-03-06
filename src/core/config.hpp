@@ -12,6 +12,7 @@ namespace ts
   namespace config
   {
     extern const char* const data_directory;
+    extern const char* const audio_directory;
   }
 }
 

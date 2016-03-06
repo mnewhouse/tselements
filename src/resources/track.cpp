@@ -151,6 +151,12 @@ namespace ts
 
     void Track::add_control_point(const ControlPoint& point)
     {
+      if (control_points_.empty())
+      {
+        // If we are adding a finish line, make sure the start point cache gets invalidated.
+        start_points_.clear();
+      }
+
       control_points_.push_back(point);
     }
 
@@ -166,14 +172,18 @@ namespace ts
     }
 
     const std::vector<StartPoint>& Track::start_points() const
-    {
+    {      
       if (!custom_start_points_.empty())
-      {
+      {  
+        // If we have any custom start points, return those
         return custom_start_points_;
       }
 
       else if (start_points_.empty() && !control_points_.empty())
       {
+        // We have a finish line and no custom start points, 
+        // so we can generate the default start points.
+
         generate_default_start_points(control_points_.front(), 20, 12, 
                                       std::back_inserter(start_points_));
       }

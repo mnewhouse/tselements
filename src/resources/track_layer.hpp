@@ -8,7 +8,7 @@
 #define TRACK_LAYER_HPP_544189
 
 #include "tiles.hpp"
-#include "vertex.hpp"
+#include "geometry.hpp"
 
 #include <vector>
 
@@ -23,7 +23,7 @@ namespace ts
       Id id;
       std::uint32_t level;
       std::string name;
-      std::vector<VertexArray> geometry;
+      std::vector<Geometry> geometry;
       std::vector<Tile> tiles;
     };
   }

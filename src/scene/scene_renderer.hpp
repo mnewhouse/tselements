@@ -35,7 +35,7 @@ namespace ts
       SceneRenderer(SceneRenderer&&);
       SceneRenderer& operator=(SceneRenderer&&);
 
-      void render(const Viewport& viewport, Vector2u screen_size, double frame_progress);
+      void render(const Viewport& viewport, Vector2u screen_size, double frame_progress) const;
       void update(std::uint32_t frame_duration);
 
 

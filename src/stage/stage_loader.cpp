@@ -9,24 +9,25 @@
 #include "stage_creation.hpp"
 
 #include "resources/track_loader.hpp"
+#include "resources/pattern_loader.hpp"
 #include "resources/pattern_builder.hpp"
 
 namespace ts
 {
   namespace stage
   {
-    void StageLoader::async_load(stage::StageDescription stage_desc)
+    void StageLoader::async_load_stage(stage::StageDescription stage_desc)
     {
       auto loader = [this](stage::StageDescription stage_desc)
       {
-        return load(std::move(stage_desc));
+        return load_stage(std::move(stage_desc));
       };
 
       set_loading_state(LoadingState::Initiating);
       GenericLoader::async_load(loader, std::move(stage_desc));
     }
 
-    std::unique_ptr<Stage> StageLoader::load(StageDescription stage_desc)
+    std::unique_ptr<Stage> StageLoader::load_stage(StageDescription stage_desc)
     {
       set_progress(0.0);
       set_loading_state(LoadingState::LoadingTrack);
@@ -38,18 +39,13 @@ namespace ts
 
       auto track = track_loader.get_result();
 
-      resources::PatternLoader pattern_loader;
-      resources::preload_pattern_files(pattern_loader, track);
-
-      resources::PatternBuilder pattern_builder(track, std::move(pattern_loader));
-      auto pattern = pattern_builder.build();
+      auto pattern_loader = preload_pattern_files(track);
+      auto pattern = build_track_pattern(track, pattern_loader);
 
       world::World world_obj(std::move(track), std::move(pattern));
 
       auto stage_ptr = std::make_unique<stage::Stage>(std::move(world_obj), std::move(stage_desc));
-      stage_ptr->create_stage_entities();
-
-      
+      stage_ptr->create_stage_entities();      
 
       return stage_ptr;
     }

@@ -23,13 +23,14 @@ namespace ts
 
       Vector2i point;
       Vector2<double> normal;
+      double impact;
     };
 
     using resources::CollisionMask;
     using resources::CollisionMaskFrame;
 
     CollisionResult examine_scenery_collision(const CollisionMaskFrame& scenery, Vector2i global_point,
-                                              Vector2<double> entry_vector);
+                                              Vector2<double> subject_velocity, Vector2<double> entry_vector);
 
     void resolve_scenery_collision(const CollisionResult& collision, Entity& entity,
                                    Rotation<double> rotation_delta, double bounciness_factor);

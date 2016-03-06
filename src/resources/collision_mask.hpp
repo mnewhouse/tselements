@@ -27,9 +27,16 @@ namespace ts
     // The CollisionMask class turns a pattern map into a collision bitmap. It stores
     // the pixels in a space-efficient manner, using only one bit for each one.
     // Thanks to bitwise operations, this also makes it a time-efficient solution.
+    // It has 1 or more levels or frames, which can be accessed individually.
     class CollisionMask
     {
     public:
+      // There are two types of constructors: those for static collision masks and those for
+      // dynamic ones. 
+      // Static masks generate a frame for every level, testing each pixel for "wallness" on
+      // the particular level, setting the pixels for which wall_test(pattern(x, y), level) returns
+      // true.
+
       template <typename WallTest>
       CollisionMask(const resources::Pattern& pattern, std::uint32_t level_count, WallTest&& wall_test);
 
@@ -37,6 +44,8 @@ namespace ts
       CollisionMask(const resources::Pattern& pattern, IntRect rect, 
                     std::uint32_t level_count, WallTest&& wall_test);
 
+      // Dynamic masks incrementally rotate the pattern for each frame, setting the pixels for which
+      // wall_test(pattern(source_x, source_y)) returns true.
       template <typename WallTest>
       CollisionMask(dynamic_mask_t, const resources::Pattern& pattern,
                     std::uint32_t frame_count, WallTest&& wall_test);
@@ -47,6 +56,8 @@ namespace ts
 
       using bitmask_type = std::uint32_t;
 
+      // The FrameInterface provides an interface to access one of the collision mask's
+      // individual frames.
       struct FrameInterface
       {
       public:

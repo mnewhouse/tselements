@@ -25,6 +25,9 @@ namespace ts
 
   namespace client
   {
+    // The ControlEventTranslator takes game events, translates these events according to the
+    // key mapping and the locally controlled entities, and sends them away through the given
+    // message dispatcher.
     class ControlEventTranslator
     {
     public:

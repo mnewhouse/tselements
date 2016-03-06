@@ -5,6 +5,7 @@
 */
 
 #include "pattern_builder.hpp"
+#include "pattern_loader.hpp"
 #include "pattern.hpp"
 #include "track.hpp"
 #include "track_layer.hpp"
@@ -26,44 +27,43 @@ namespace ts
     void apply_pattern(Pattern& dest, const Pattern& source, IntRect rect, 
                        Vector2i position, std::int32_t rotation_degrees);
 
-    PatternBuilder::PatternBuilder(const Track& track, PatternLoader pattern_loader)
-      : track_(track),
-        pattern_loader_(std::move(pattern_loader))
+    Pattern build_track_pattern(const Track& track)
     {
+      PatternLoader pattern_loader;
+      return build_track_pattern(track, pattern_loader);
     }
 
-    Pattern PatternBuilder::build()
+    Pattern build_track_pattern(const Track& track, PatternLoader& pattern_loader)
     {
-      Pattern pattern(track_.size());
+      Pattern pattern(track.size());      
 
+      // Expand all tile groups into plain tiles...
       std::vector<PlacedTile> tile_expansion;
 
-      const auto& layers = track_.layers();
+      const auto& layers = track.layers();
       for (const auto& layer : layers)
       {
-        expand_tiles(layer.tiles.begin(), layer.tiles.end(), layer.level, track_.tile_library(),
+        expand_tiles(layer.tiles.begin(), layer.tiles.end(), layer.level, track.tile_library(),
                      std::back_inserter(tile_expansion));
       }
 
+      // Then for each one, apply it to the resulting pattern.
       for (const auto& placed_tile : tile_expansion)
       {
         const auto* tile_def = placed_tile.definition;
         const auto& tile = placed_tile;
 
-        const auto& source = pattern_loader_.load_from_file(tile_def->pattern_file);
+        const auto& source = pattern_loader.load_from_file(tile_def->pattern_file);
         apply_pattern(pattern, source, tile_def->pattern_rect, tile.position, tile.rotation);
       }
 
       return pattern;
     }
 
-    void PatternBuilder::preload_pattern(const std::string& path)
+    PatternLoader preload_pattern_files(const resources::Track& track)
     {
-      pattern_loader_.load_from_file(path);
-    }
-
-    void preload_pattern_files(PatternLoader& pattern_loader, const resources::Track& track)
-    {
+      // Look through the track's used tiles and simply load them all.
+      PatternLoader pattern_loader;
       const auto& tile_library = track.tile_library();
       const auto& tiles = tile_library.tiles();
       const auto& tile_groups = tile_library.tile_groups();
@@ -93,6 +93,8 @@ namespace ts
           }
         }
       }
+
+      return pattern_loader;
     }
 
     void apply_pattern(Pattern& dest, const Pattern& source,
@@ -154,6 +156,7 @@ namespace ts
             if (source_point.x >= 0.0 && source_point.y >= 0.0 && 
                 point.x < rect.width && point.y < rect.height)
             {
+              // For source terrain id = 0, don't overwrite the destination pattern.
               if (auto terrain = source(point.x + rect.left, point.y + rect.top))
               {
                 dest(absolute_x, absolute_y) = terrain;

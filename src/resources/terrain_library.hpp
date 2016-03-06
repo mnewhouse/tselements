@@ -16,6 +16,10 @@ namespace ts
 {
   namespace resources
   {
+    // The TerrainLibrary represents, well, a library of terrains.
+    // It exposes a fixed-size array of regular terrains, which define various properties 
+    // that affect the handling. Sub-terrains can be defined for every terrain at every height level,
+    // which are basically just references to regular terrains.
     class TerrainLibrary
     {
     public:

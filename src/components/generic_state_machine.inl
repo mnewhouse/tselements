@@ -43,6 +43,17 @@ namespace ts
         state_stack_.pop_back();
       }
 
+      // Maybe states destructors will invoke the destruction of other states -
+      // This loop moves the pointers out, so that the state map is not being accessed
+      // while the pointee objects are destroyed.
+      while (!state_map_.empty())
+      {
+        if (auto state_ptr = std::move(state_map_.begin()->second))
+        {
+          state_map_.erase(state_map_.begin());
+        }
+      }
+
       // Then, just let it clean up after itself
     }
 
@@ -183,6 +194,10 @@ namespace ts
             {
               call_deactivation_function(previous_state);
               previous_state = nullptr;              
+            }
+
+            {
+              auto state_ptr = std::move(it->second);
             }
 
             state_map_.erase(it);

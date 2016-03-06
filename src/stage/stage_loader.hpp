@@ -30,9 +30,9 @@ namespace ts
       : public utility::GenericLoader<LoadingState, std::unique_ptr<Stage>>
     {
     public:
-      std::unique_ptr<Stage> load(StageDescription stage_desc);
+      std::unique_ptr<Stage> load_stage(StageDescription stage_desc);
 
-      void async_load(StageDescription stage_desc);
+      void async_load_stage(StageDescription stage_desc);
     };
   }
 }

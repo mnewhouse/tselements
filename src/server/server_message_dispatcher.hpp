@@ -8,6 +8,7 @@
 #define SERVER_MESSAGE_DISPATCHER_HPP_138912892135
 
 #include "remote_client.hpp"
+#include "local_message_conveyor.hpp"
 
 #include "client/client_message_conveyor.hpp"
 
@@ -23,18 +24,18 @@ namespace ts
       template <typename MessageType>
       void operator()(MessageType&& message, const RemoteClient& remote_client = all_clients) const;
 
-      void initiate_local_connection(const client::MessageConveyor* client_message_conveyor);
+      void initiate_local_connection(const LocalConveyor* local_message_conveyor);
 
     private:
-      const client::MessageConveyor* local_client_ = nullptr;
+      const LocalConveyor* local_conveyor_ = nullptr;
     };
 
     template <typename MessageType>
     void MessageDispatcher::operator()(MessageType&& message, const RemoteClient& remote_client) const
     {
-      if (local_client_ && remote_client.type() == ClientType::Local || remote_client.type() == ClientType::All)
+      if (local_conveyor_ && (remote_client.type() == ClientType::Local || remote_client.type() == ClientType::All))
       {
-        (*local_client_)(std::forward<MessageType>(message));
+        (*local_conveyor_)(std::forward<MessageType>(message));
       }
     }
   }

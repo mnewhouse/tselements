@@ -51,13 +51,16 @@ namespace ts
       sf::Sound* sound_ = nullptr;
     };
 
+    // The playback controller class can play looped sounds and sound effects.
+    // Sounds can be controlled with regard to various properties, and there's also a priority
+    // system which makes higher-priority sounds more likely to be heard.
     class PlaybackController
     {
     public:
       explicit PlaybackController(std::size_t num_channels);
 
       void play_sound_effect(const SoundSample& sample, const PlaybackProperties& properties,
-                                std::size_t priority);
+                             std::size_t priority);
 
       PlaybackHandle play_looped_sound_effect(const SoundSample& sample, const PlaybackProperties& properties,
                                               std::size_t priority);

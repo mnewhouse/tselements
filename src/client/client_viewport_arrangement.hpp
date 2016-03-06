@@ -25,15 +25,12 @@ namespace ts
 
   namespace client
   {
-    class ViewportArrangement
-      : public scene::ViewportArrangement
-    {
-    public:
-      explicit ViewportArrangement(std::size_t max_viewports, DoubleRect screen_rect,
-                                   const controls::ControlCenter& control_center, const stage::Stage& stage_obj);
-
-    private:
-    };
+    // Make a viewport arrangement according to the entities that are controlled by the client.
+    // In case of more than one controlled entity, split screen mode is used for now.
+    // TODO: make a shrink-to-fit threshold.
+    scene::ViewportArrangement make_viewport_arrangement(DoubleRect screen_rect, 
+                                                         const controls::ControlCenter& control_center,
+                                                         const stage::Stage& stage_obj);
   }
 }
 

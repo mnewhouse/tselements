@@ -130,8 +130,7 @@ TEST_CASE("Track loading is a complex process, which is required to work perfect
     banaring_loader.load_from_file("assets/tracks/banaring.trk");
 
     auto banaring = banaring_loader.get_result();
-    resources::PatternBuilder banaring_builder(banaring);
-    auto banaring_pattern = banaring_builder.build();
+    auto banaring_pattern = build_track_pattern(banaring);
 
     resources::save_pattern(banaring_pattern, "assets/output/banaring-pat.generated.png",
                             banaring.terrain_library());

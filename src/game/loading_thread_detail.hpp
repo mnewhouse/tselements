@@ -26,6 +26,7 @@ namespace ts
         try {
           auto result = func_();
 
+          // Maybe this should be done differently.
           glFinish();
 
           promise_.set_value(std::move(result));

@@ -7,8 +7,7 @@
 #include "graphics/render_window.hpp"
 #include "graphics/gl_context.hpp"
 
-#include "core/subsystem_initialization.hpp"
-
+#include "game/game_context.hpp"
 #include "game/loading_thread.hpp"
 
 #include "resources/resource_store.hpp"
@@ -17,26 +16,16 @@
 
 #include "cup/cup_settings.hpp"
 
+#include "client/player_settings.hpp"
 #include "client/states/local_cup_state.hpp"
 
 #include "controls/control_center.hpp"
 
-#include "user_interface/ui_context.hpp"
-#include "user_interface/ui_fonts.hpp"
-
 #include "utility/debug_log.hpp"
 #include "utility/stream_utilities.hpp"
 
-#include <renderers/tb_renderer_gl.h>
-#include <tb_widgets.h>
-#include <tb_node_tree.h>
-#include <tb_widgets_reader.h>
-#include <tb_font_renderer.h>
-#include <tb_color.h>
-
 #include <GL/glew.h>
 
-#include <Windows.h>
 #include <iostream>
 #include <algorithm>
 #include <iterator>
@@ -61,13 +50,8 @@ int main(int argc, char** argv)
 
     DEBUG_ESSENTIAL << "Launching program..." << debug::endl;
 
-    core::initialize_subsystems();
-
     int screen_width = 1280, screen_height = 800;
     graphics::RenderWindow window("TS Elements", screen_width, screen_height, graphics::WindowMode::Windowed);
-
-    //auto gl_loading_context = graphics::create_shared_gl_context();
-    //window.activate();
 
     {
       glewExperimental = GL_TRUE;
@@ -81,18 +65,20 @@ int main(int argc, char** argv)
 
     game::LoadingThread loading_thread;
 
-    //tb::TBRendererGL tb_renderer;
-    //ui::Context ui_context(&tb_renderer);
-
-    //ui::register_font_renderer();
-    //ui::load_supplied_fonts("data/fonts.dat");
-
     resources::ResourceStore resource_store;
     resource_store.car_store().load_car_directory("cars");
 
     resources::TrackReference track_ref;
     track_ref.path = "tracks/pu_Tilulei.trk";
     track_ref.name = "banaring";
+
+    auto& player_settings = resource_store.settings().player_settings();
+
+    cup::PlayerDefinition player;
+    player.control_slot = 0;
+    player.id = 0;
+    player.name = "test";
+    player_settings.selected_players.push_back(std::move(player));
 
     auto& cup_settings = resource_store.settings().cup_settings();
     cup_settings.tracks.push_back(track_ref);
@@ -103,17 +89,11 @@ int main(int argc, char** argv)
     using StateMachine = game::StateMachine;
     StateMachine state_machine;
 
-    using GameContext = game::GameContext<game::GameState>;
-    GameContext context;
+    game::GameContext context;
     context.state_machine = &state_machine;
     context.render_window = &window;
     context.resource_store = &resource_store;
     context.loading_thread = &loading_thread;
-
-    //tb::TBWidget root_widget;
-    //root_widget.SetRect({ 0, 0, screen_width, screen_height });
-
-    //tb::g_widgets_reader->LoadFile(&root_widget, "interface/test.ui");
 
     state_machine.create_state<client::LocalCupState>(context);
 

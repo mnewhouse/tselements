@@ -16,30 +16,18 @@ namespace ts
     CupController<MessageDispatcher>::CupController(const CupSettings& cup_settings,
                                                     MessageDispatcher dispatcher)
       : cup_(cup_settings),
-      cup_synchronizer_(&cup_),
-      message_dispatcher_(std::move(dispatcher)),
-      client_ready_states_(cup::max_client_count)
+        cup_synchronizer_(&cup_),
+        message_dispatcher_(std::move(dispatcher)),
+        client_ready_states_(cup::max_client_count)
     {
     }
 
     namespace detail
     {
       template <typename MessageType>
-      void forward_to(CupSynchronizer& synchronizer, const MessageType& message, short)
-      {
-      }
-
-      template <typename MessageType>
-      auto forward_to(CupSynchronizer& synchronizer, const MessageType& message, int)
-        -> decltype(synchronizer.handle_message(message), void())
-      {
-        synchronizer.handle_message(message);
-      }
-
-      template <typename MessageType>
       void forward_to(CupSynchronizer& synchronizer, const MessageType& message)
       {
-        forward_to(synchronizer, message, 0);
+        synchronizer.handle_message(message);
       }
     }
 
@@ -47,17 +35,17 @@ namespace ts
     template <typename MessageType>
     void CupController<MessageDispatcherType>::dispatch_message(MessageType&& message)
     {
-      message_dispatcher_(std::forward<MessageType>(message));
-      
+      // First, synchronize our own cup according to the message
       detail::forward_to(cup_synchronizer_, std::forward<MessageType>(message));
+
+      // Then, tell the outside world about it.
+      message_dispatcher_(std::forward<MessageType>(message));     
     }
 
     template <typename MessageDispatcher>
     void CupController<MessageDispatcher>::advance()
     {
       const auto state = cup_.cup_state();
-      auto stage_id = cup_.current_stage();
-      const auto& tracks = cup_.tracks();
 
       if (state == CupState::Registration)
       {
@@ -88,9 +76,10 @@ namespace ts
     template <typename MessageDispatcher>
     void CupController<MessageDispatcher>::initialize_stage(const stage::StageDescription& stage_desc)
     {
-      this->dispatch_message(cup::messages::make_initialization_message(stage_desc));
-
+      // Send an initialization message, and wait for all clients to send a ready message back.
       std::fill(client_ready_states_.begin(), client_ready_states_.end(), 0);
+
+      dispatch_message(cup::messages::make_initialization_message(stage_desc));      
     }
 
     template <typename MessageDispatcher>
@@ -100,12 +89,13 @@ namespace ts
 
       if (tracks.empty())
       {
+        // Oops, the cup is over before it even began.
         end_cup();
       }
 
       else
       {
-        cup_.set_current_stage(0);
+        // Otherwise, dispatch an intermission event.
         intermission();
       }
     }
@@ -116,6 +106,7 @@ namespace ts
       auto stage_id = cup_.current_stage();
       const auto& tracks = cup_.tracks();
 
+      // Gather information about the next track, then just dispatch a message based on it.
       messages::Intermission intermission;
       intermission.stage_id = stage_id;
       intermission.track_desc.name = tracks[stage_id].name;
@@ -129,8 +120,6 @@ namespace ts
       auto stage_id = cup_.current_stage();
       const auto& tracks = cup_.tracks();
 
-      cup_.set_cup_state(CupState::PreInitialization);
-
       // This one is a bit tricky. We have to pass around a local initialization message
       // to initiate the loading process, but we have to wait until the loading is finished
       // before we can dispatch the actual initialization message to the clients.
@@ -141,6 +130,7 @@ namespace ts
       stage_description.track = tracks[stage_id];
       stage_description.car_models = cup_.cars();
 
+      // Give everyone a car. We're being particularly generous today.
       std::uint8_t instance_id = 0;
       for (const auto& client : cup_.clients())
       {
@@ -174,6 +164,7 @@ namespace ts
       stage_end.stage_id = cup_.current_stage();
       dispatch_message(stage_end);
 
+      // Dispatch an event based on whether there are any stages left.
       if (cup_.current_stage() >= cup_.tracks().size())
       {
         end_cup();
@@ -237,6 +228,7 @@ namespace ts
     {
       if (cup_.cup_state() == cup::CupState::Initialization)
       {
+        // Once we have received a ready message from everyone, begin the stage.
         client_ready_states_[client_id] = 1;
 
         if (is_everyone_ready())

@@ -14,6 +14,7 @@ namespace ts
 {
   namespace resources
   {
+    // The Pattern class represents a 2D bitmap containing byte pixels.
     class Pattern
     {
     public:
@@ -45,10 +46,42 @@ namespace ts
 
     class TerrainLibrary;
 
+    // Load a pattern from a file. "file_name" must be a paletted PNG file, or a std::runtime_error
+    // will be thrown.
     Pattern load_pattern(const std::string& file_name, IntRect rect = {});
     void save_pattern(const Pattern& pattern, const std::string& file_name, const TerrainLibrary& terrain_library);
 
     Pattern copy_pattern(const Pattern& pattern, IntRect source_rect);
+
+    inline Pattern::const_iterator ts::resources::Pattern::row_begin(std::uint32_t y) const
+    {
+      return bytes_.data() + y * size_.x;
+    }
+
+    inline Pattern::const_iterator ts::resources::Pattern::row_end(std::uint32_t y) const
+    {
+      return bytes_.data() + y * size_.x + size_.x;
+    }
+
+    inline Pattern::iterator ts::resources::Pattern::row_begin(std::uint32_t y)
+    {
+      return bytes_.data() + y * size_.x;
+    }
+
+    inline Pattern::iterator ts::resources::Pattern::row_end(std::uint32_t y)
+    {
+      return bytes_.data() + y * size_.x + size_.x;
+    }
+
+    inline const std::uint8_t& ts::resources::Pattern::operator()(std::uint32_t x, std::uint32_t y) const
+    {
+      return bytes_[x + y * size_.x];
+    }
+
+    inline std::uint8_t& ts::resources::Pattern::operator()(std::uint32_t x, std::uint32_t y)
+    {
+      return bytes_[x + y * size_.x];
+    }
   }
 }
 

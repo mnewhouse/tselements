@@ -17,6 +17,7 @@ namespace ts
   {
     namespace detail
     {
+      // Various GL deleters
       struct ShaderDeleter
       {
         using pointer = GLuint;

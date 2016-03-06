@@ -35,6 +35,10 @@ namespace ts
     {
       static IntRect compute_frame_bounds(const sf::Image& image, Vector2i frame_size)
       {
+        // Get the bounds of the opaque area in the first frame in image.
+        // That is, the area defined by the minimum and maximum values that
+        // are not fully transparent.
+
         std::int32_t min_x = frame_size.x, min_y = frame_size.y, max_x = 0, max_y = 0;
 
         for (std::int32_t y = 0; y != frame_size.y; ++y)
@@ -72,24 +76,30 @@ namespace ts
       static std::vector<AtlasEntry> generate_car_model_atlas(const stage::StageDescription& stage_desc,
                                                               utility::AtlasList& atlas_list, ImageLoader& image_loader)
       {
+        // This function attempts to put as many car images as it can
+        // into as few textures texture as it can by using a texture atlas.
+
         std::size_t current_atlas = atlas_list.current_atlas();
-
         auto atlas_size = atlas_list.atlas_size();
-
         std::vector<AtlasEntry> image_mapping;
+
+        // For every car model...
         for (const auto& model : stage_desc.car_models)
         {
           const auto& image = image_loader.load_image(model.image_path);
           auto image_size = image.getSize();
 
+          // See if there are any mapping entries that match the image part of the current model.
           auto it = std::find_if(image_mapping.begin(), image_mapping.end(),
                                  [&](const AtlasEntry& entry)
           {
             return entry.image_path == model.image_path;
           });
 
+          // If there is one, do nothing. Else...
           if (it == image_mapping.end())
           {
+            // Create a new entry in the atlas.
             Vector2i frame_size(model.image_rect.width / model.num_rotations, model.image_rect.height);
 
             auto column_count = std::min<std::uint32_t>(atlas_size.x / frame_size.x, model.num_rotations);
@@ -98,22 +108,21 @@ namespace ts
             IntRect source_rect(0, 0, column_count * frame_size.x, row_count * frame_size.y);
 
             auto entry = atlas_list.allocate_rect(source_rect);
-            if (entry)
+            if (!entry)
             {
-              image_mapping.emplace_back(*entry, model.image_path, frame_size);
-
-              image_mapping.back().source_rect.width = image_size.x;
-              image_mapping.back().source_rect.height = image_size.y;
-            }
-
-            else
-            {
+              // Atlas entry could not be allocated, create a new atlas and try again.
+              // This has to succeed, or we have to bail out with an exception.
               current_atlas = atlas_list.create_atlas();
               entry = atlas_list.allocate_rect(source_rect);
-              if (!entry) throw std::runtime_error("could not load car texture: file too large");
 
-              image_mapping.emplace_back(*entry, model.image_path, frame_size);
+              if (!entry) throw std::runtime_error("could not load car texture: file too large");              
             }
+
+            // Store the result in the image mapping.
+            image_mapping.emplace_back(*entry, model.image_path, frame_size);
+
+            image_mapping.back().source_rect.width = image_size.x;
+            image_mapping.back().source_rect.height = image_size.y;
           }
         }
 
@@ -133,9 +142,11 @@ namespace ts
 
       auto texture_atlas = detail::generate_car_model_atlas(stage_desc, atlas_list, image_loader);
 
+      // Use a vector to map atlas entries to dynamic scene models.
       std::vector<std::size_t> model_ids;
       const std::size_t car_model_index = 0;
 
+      // Create the atlas images that we just generated the blueprints for.
       std::vector<sf::Image> atlas_images;
       atlas_images.resize(atlas_list.atlas_count());
       for (auto& image : atlas_images)
@@ -143,6 +154,7 @@ namespace ts
         image.create(atlas_size, atlas_size, sf::Color::Transparent);
       }
 
+      // Now, loop through the entries, look up the corresponding images and copy the image data over.
       for (const auto& entry : texture_atlas)
       {
         const auto& source_image = image_loader.load_image(entry.image_path);
@@ -154,6 +166,8 @@ namespace ts
         sf::IntRect source_rect(entry.source_rect.left, entry.source_rect.top,
                                 entry.atlas_rect.width, entry.frame_size.y);
 
+        // This is not a 1:1 copy, if the source image is too wide for the 
+        // texture image, it will be divided into portions which will be placed below each other.
         while (source_rect.left < entry.source_rect.right())
         {
           if (source_rect.left + source_rect.width > image_width)
@@ -168,6 +182,8 @@ namespace ts
         }
       }
       
+      // Now, use the image to create all the required car textures and register them to the 
+      // dynamic scene object.
       std::vector<std::size_t> texture_ids;
       for (const auto& image : atlas_images)
       {
@@ -179,14 +195,17 @@ namespace ts
         texture_ids.push_back(texture_id);
       }      
 
+      // Now, register the car models with the dynamic scene object, 
       for (const auto& model : stage_desc.car_models)
       {
+        // Find the matching entry in the texture atlas.
         auto entry = std::find_if(texture_atlas.begin(), texture_atlas.end(),
                                   [&](const auto& entry)
         {
           return entry.image_path == model.image_path;
         });
 
+        // All models should have an entry in the texture atlas by now, if we don't it's a logic error.
         if (entry == texture_atlas.end()) throw std::logic_error("logic error while generating car textures");          
 
         auto& image = image_loader.load_image(model.image_path);
@@ -199,7 +218,7 @@ namespace ts
         texture_info.scale = model.image_scale;
 
         auto texture_id = texture_ids[entry->atlas_id];
-        std::size_t model_id = dynamic_scene->add_model(world::EntityType::Car, texture_id, texture_info);
+        auto model_id = dynamic_scene->add_model(world::EntityType::Car, texture_id, texture_info);
 
         model_ids.push_back(model_id);
       }
@@ -217,14 +236,15 @@ namespace ts
         {
           const auto& car_def = stage_desc.car_models[car_instance.model_id];
 
-          std::size_t model_id = model_ids[car_model_index + car_instance.model_id];
+          // We stored the model id away, retrieve it.
+          auto model_id = model_ids[car_model_index + car_instance.model_id];
 
           resources::ColorScheme color_scheme;
           color_scheme.scheme_id = 0;
           color_scheme.colors[0] = { 255, 180, 0, 255 };
           color_scheme.colors[2] = { 255, 255, 255, 255 };
           color_scheme.colors[1] = { 180, 0, 0, 255 };
-          dynamic_scene->add_entity(car, car_instance.model_id, color_scheme);
+          dynamic_scene->add_entity(car, model_id, color_scheme);
         }
       }
 

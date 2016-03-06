@@ -258,8 +258,7 @@ namespace ts
       case right_to_left | bottom_to_top | steep:
       default:
       {
-        const auto pixel_mask = create_pixel_mask(pixels, 
-                                                  flip_orientation(flip_horizontally(flip_vertically(pixel_order))));
+        const auto pixel_mask = create_pixel_mask(pixels, flip_orientation(flip_horizontally(flip_vertically(pixel_order))));
 
         auto normal = detail::normal_lookup_table[pixel_mask];
         return{ -normal.y, -normal.x };
@@ -268,11 +267,13 @@ namespace ts
     }
 
     CollisionResult examine_scenery_collision(const CollisionMaskFrame& scenery, Vector2i global_point,
-                                              Vector2<double> entry_vector)
+                                              Vector2<double> subject_velocity, Vector2<double> entry_vector)
     {
       CollisionResult result;
       result.point = global_point;
       result.normal = compute_collision_normal(scenery, global_point, entry_vector);
+      result.impact = std::abs(dot_product(subject_velocity, result.normal));
+
       return result;
     }
 

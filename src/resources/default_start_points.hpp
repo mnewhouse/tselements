@@ -19,6 +19,7 @@ namespace ts
 {
   namespace resources
   {
+    // This function can be used to generate a default starting grid based on a given finish line.
     template <typename OutIt>
     void generate_default_start_points(const ControlPoint& finish_line, std::size_t num_points, 
                                        std::uint32_t grid_spacing, OutIt out)
@@ -26,8 +27,10 @@ namespace ts
       auto start = vector2_cast<double>(finish_line.start);
       auto end = vector2_cast<double>(finish_line.end);
       auto center = start + (end - start) * 0.5;
-
+      
       auto grid_direction = flip_orientation(normalize(end - start));
+
+      // The dominant direction should be either to the left or to the bottom.
       if (std::abs(grid_direction.x) < std::abs(grid_direction.y))
       {
         if (grid_direction.y > 0.0) grid_direction = -grid_direction;
@@ -49,6 +52,8 @@ namespace ts
       auto increment = grid_direction * spacing * 2.0;
       auto offset = make_vector2(0.0, 0.0);
 
+      // Now, add as many points as are needed, alternating between 
+      // the left and right column.
       for (std::size_t i = 0; i != num_points; ++i, ++out)
       {
         if ((i & 1) == 0)

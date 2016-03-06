@@ -19,9 +19,22 @@ namespace ts
       {
         return it->second;
       }
-      
+
       auto result = lookup_map_.insert(std::make_pair(file_name, load_sound_from_file(file_name)));
       return result.first->second;
+    }
+
+    const SoundSample* SoundSampleLoader::load_sound_effect(const std::string& file_name, std::nothrow_t)    
+    {
+      try
+      {
+        return &load_sound_effect(file_name);
+      }
+      
+      catch (...)
+      {
+        return nullptr;
+      }
     }
   }
 }

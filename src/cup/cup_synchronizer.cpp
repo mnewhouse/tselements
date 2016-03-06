@@ -19,11 +19,17 @@ namespace ts
     void CupSynchronizer::handle_message(const messages::Intermission& intermission)
     {
       cup_->set_cup_state(CupState::Intermission);
+      cup_->set_current_stage(intermission.stage_id);
     }
 
     void CupSynchronizer::handle_message(const messages::Initialization& initialization)
     {
       cup_->set_cup_state(CupState::Initialization);
+    }
+
+    void CupSynchronizer::handle_message(const messages::PreInitialization& pre_initialization)
+    {
+      cup_->set_cup_state(CupState::PreInitialization);
     }
 
     void CupSynchronizer::handle_message(const messages::StageBegin& stage_begin)

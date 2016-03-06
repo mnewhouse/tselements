@@ -35,6 +35,7 @@ namespace ts
       auto deg = normalize(rotation).degrees();
       if (deg < 0.0) deg += 360.0;
 
+      // Calculate the frame id that matches the given rotation.
       auto frame_id = static_cast<std::uint32_t>(deg * rotation_multiplier_ + 0.5);
       if (frame_id >= frame_count_)
       {
@@ -48,6 +49,7 @@ namespace ts
     {
       static CollisionPoint compute_collision_point(CollisionMask::bitmask_type word, Vector2i word_position)
       {
+        // Get the first bit that is set, and add the bit index to the x position.
         for (std::int32_t bit = 0; bit != 32; ++bit)        
         {
           if (word & 1)
@@ -67,14 +69,14 @@ namespace ts
                                                 Vector2i subject_center, Vector2i object_center,
                                                 IntRect intersect_area)
       {
+        // This function assumes that subject_position.left is aligned to the same
+        // bit index as the intersection area. We can use this knowledge to write a reasonably efficient algorithm.
         constexpr auto word_bits = collision_mask::word_bits();
 
         auto subject_row = intersect_area.top - subject_position.y + subject_center.y;
         auto object_row = intersect_area.top - object_position.y + object_center.y;
 
         auto object_bit_index = intersect_area.left - object_position.x + object_center.x;
-        if (object_bit_index < 0) throw std::logic_error("invalid mask index in test_collision()");
-
         auto object_word_index = static_cast<std::uint32_t>(object_bit_index) / word_bits;        
 
         auto object_mask_offset = object_bit_index & (word_bits - 1);
@@ -96,11 +98,13 @@ namespace ts
 
               if (auto collision = *subject_ptr & object_mask)
               {
+                // We collided, calculate the point of collision and return it.
                 auto word_position = make_vector2(intersect_area.left, intersect_area.top + row);
 
                 return compute_collision_point(collision, word_position);
               }
 
+              // The object bits that we couldn't use in this iteration must be set for the next one.
               object_mask = object_word >> object_mask_offset;
             }
           }
@@ -108,6 +112,8 @@ namespace ts
 
         else
         {
+          // When the subject and object alignments match, we can use a simpler and more efficient algorithm
+          // than when they don't.
           for (std::int32_t row = 0; row != intersect_area.height; ++row, ++subject_row, ++object_row)
           {
             auto subject_ptr = subject.row_begin(subject_row);
@@ -125,6 +131,7 @@ namespace ts
           }
         }
 
+        // No collision.
         return CollisionPoint();
       }
 
@@ -133,12 +140,17 @@ namespace ts
                                            Vector2i subject_position, Vector2i object_position,
                                            Vector2i subject_center, Vector2i object_center)
       {
+        // Find the intersection of subject and object areas, then
+        // test for collision in that area.
         IntRect subject_area(subject_position - subject_center, subject_size);
         IntRect object_area(object_position - object_center, object_size);
 
         auto intersect_area = intersection(subject_area, object_area);
         if (intersect_area.width >= 0 && intersect_area.height >= 0)
         {
+          // We know that either the subject or object's alignment is 0.
+          // If it's the object, have it switch places with the object to make
+          // sure we meet the requirements of the algorithm.
           if (intersect_area.left == object_area.left)
           {
             return test_collision_impl(object, subject, object_position, subject_position, 
@@ -147,11 +159,6 @@ namespace ts
 
           else
           {
-            if (intersect_area.left != subject_area.left)
-            {
-              throw std::logic_error("invalid intersection area for collision test");
-            }
-
             return test_collision_impl(subject, object, subject_position, object_position, 
                                        subject_center, object_center, intersect_area);
           }

@@ -9,59 +9,40 @@
 
 #include "messages/message_conveyor.hpp"
 
-#include "cup/cup_message_fwd.hpp"
+#include "client_message_forwarder.hpp"
 
 namespace ts
 {
-  namespace cup
-  {
-    class CupSynchronizer;
-  }
-
-  namespace stage
-  {
-    namespace messages
-    {
-      struct StageLoaded;
-    }
-  }
-
   namespace client
   {
-    struct SceneLoaderInterface;
-    struct CupStateInterface;
+    template <typename MessageDispatcher>
+    class CupEssentials;
 
-    class LocalPlayerController;
-    
-
+    template <typename MessageDispatcher>
     struct MessageContext
     {
-      CupStateInterface* cup_state_interface = nullptr;
-      cup::CupSynchronizer* cup_synchronizer = nullptr;
-      SceneLoaderInterface* scene_loader = nullptr;
-      LocalPlayerController* local_player_controller = nullptr;
+      CupEssentials<MessageDispatcher>* cup_essentials;
     };
 
+    // The MessageConveyor class is responsible for forwarding messages to the
+    // client's logical components. It does this by calling forward_message defined below,
+    // which uses the MessageForwarder class template.
+    template <typename MessageDispatcher>
     class MessageConveyor
-      : public messages::MessageConveyor<MessageContext>
+      : public ts::messages::MessageConveyor<MessageContext<MessageDispatcher>>
     {
-      using messages::MessageConveyor<MessageContext>::MessageConveyor;
+      using ts::messages::MessageConveyor<MessageContext<MessageDispatcher>>::MessageConveyor;
     };
   }
 
   namespace client
   {
-    void forward_message(const MessageContext& context, const cup::messages::RegistrationSuccess&);
-
-    void forward_message(const MessageContext& context, const cup::messages::Intermission& intermission);
-    void forward_message(const MessageContext& context, const cup::messages::Initialization& initialization);
-    void forward_message(const MessageContext& context, const cup::messages::StageBegin& stage_begin);
-    void forward_message(const MessageContext& context, const cup::messages::StageEnd& stage_end);
-    void forward_message(const MessageContext& context, const cup::messages::CupEnd& cup_end);
-    void forward_message(const MessageContext& context, const cup::messages::Restart& restart);
-
-    // Not technically a server->client message.
-    void forward_message(const MessageContext& context, const stage::messages::StageLoaded& stage_loaded);
+    template <typename MessageDispatcher, typename MessageType>
+    void forward_message(const MessageContext<MessageDispatcher>& context, const MessageType& message)
+    {
+      MessageForwarder<MessageDispatcher> forwarder;
+      forwarder.forward(*context.cup_essentials, message);
+    }
   }
 }
 

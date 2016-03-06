@@ -26,45 +26,15 @@ namespace ts
       void destroy_stage();
 
       const Stage* stage() const;
+      explicit operator bool() const;
 
       void update(world::EventInterface& event_interface, std::uint32_t frame_duration);
       bool active() const;
 
-      template <typename MessageType>
-      void handle_message(const MessageType& message);
-
-    private:
-      template <typename MessageType>
-      void handle_message(const MessageType& message, void*);
-
-      template <typename MessageType>
-      auto handle_message(const MessageType& message, int) -> decltype(handle_message_(message), void());
-
-      void handle_message_(const messages::ControlUpdate& control_message);
+      void handle_message(const messages::ControlUpdate& control_message);
 
       std::unique_ptr<Stage> stage_;
     };
-
-    template <typename MessageType>
-    void StageRegulator::handle_message(const MessageType& message)
-    {
-      handle_message(message, 0);
-    }
-
-    template <typename MessageType>
-    void StageRegulator::handle_message(const MessageType& message, void*)
-    {
-    }
-
-    template <typename MessageType>
-    auto StageRegulator::handle_message(const MessageType& message, int) 
-      -> decltype(handle_message_(message), void())
-    {
-      if (stage_)
-      {
-        handle_message_(message);
-      }
-    }
   }
 }
 

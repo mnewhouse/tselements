@@ -15,6 +15,9 @@ namespace ts
   {
     class Cup;
 
+    // The CupSynchronizer takes various cup messages, and updates a cup object based on
+    // these events. This way, this same mechanism can be used for both incoming and outgoing messages,
+    // i.e. both client and server.
     class CupSynchronizer
     {
     public:
@@ -26,6 +29,7 @@ namespace ts
       void handle_message(const messages::StageEnd& stage_end);
       void handle_message(const messages::CupEnd& cup_end);
       void handle_message(const messages::Restart& restart);
+      void handle_message(const messages::PreInitialization& pre_initialization);
 
     private:
       Cup* cup_;

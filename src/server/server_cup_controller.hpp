@@ -7,9 +7,7 @@
 #ifndef SERVER_CUP_CONTROLLER_HPP_2289128359
 #define SERVER_CUP_CONTROLLER_HPP_2289128359
 
-#include "server_message_dispatcher.hpp"
-#include "server_message_conveyor.hpp"
-#include "remote_client_map.hpp"
+#include "server_message_distributor.hpp"
 
 #include "cup/cup_controller.hpp"
 
@@ -21,31 +19,11 @@ namespace ts
   {
     class MessageConveyor;
 
-    class CupControllerMessageDispatcher
-      : private MessageDispatcher
-    {
-    public:
-      explicit CupControllerMessageDispatcher(const MessageDispatcher* message_dispatcher,
-                                              const MessageConveyor* message_conveyor);
-
-      template <typename MessageType>
-      void operator()(MessageType&& message) const
-      {
-        (*message_conveyor_)(std::forward<MessageType>(message));
-
-        (*dispatcher_)(std::forward<MessageType>(message), all_clients);
-      }
-
-    private:
-      const MessageDispatcher* dispatcher_;
-      const MessageConveyor* message_conveyor_;
-    };
-
     class CupController
-      : public cup::CupController<CupControllerMessageDispatcher>
+      : public cup::CupController<MessageDistributor>
     {
     public:
-      using cup::CupController<CupControllerMessageDispatcher>::CupController;
+      using cup::CupController<MessageDistributor>::CupController;
     };
   }
 }

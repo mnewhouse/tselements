@@ -20,10 +20,12 @@ namespace ts
       : public EventInterface
     {
     public:
-      explicit EventTranslator(MessageDispatcher&& message_dispatcher);
+      explicit EventTranslator(MessageDispatcher message_dispatcher);
 
       virtual void on_control_point_hit(const Entity* entity, const ControlPoint& point,
                                         std::uint32_t frame_offset) override;
+
+      virtual void on_collision(const Entity* entity, const CollisionResult& collision) override;
 
     private:
       template <typename MessageType>

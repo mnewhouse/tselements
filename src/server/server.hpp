@@ -10,17 +10,13 @@
 #include <memory>
 #include <cstdint>
 
+#include "local_message_conveyor.hpp"
+
 namespace ts
 {
   namespace stage
   {
     class Stage;
-    struct StageDescription;
-  }
-
-  namespace client
-  {
-    class MessageConveyor;
   }
 
   namespace resources
@@ -37,6 +33,9 @@ namespace ts
   namespace server
   {
     class MessageConveyor;
+    struct MessageForwarder;
+
+    class CupEssentials;
 
     // The Server class encapsulates all state and functionality that is required for a server-side cup.
     class Server
@@ -45,19 +44,14 @@ namespace ts
       explicit Server(resources::ResourceStore* resource_store);
       ~Server();
 
-      const stage::Stage* stage() const;
       const MessageConveyor& message_conveyor() const;
-
-      void initiate_local_connection(const client::MessageConveyor* message_conveyor,
-                                     const cup::PlayerDefinition* players, std::size_t player_count);
+      void register_local_client(const LocalConveyor* message_conveyor,
+                                 const cup::PlayerDefinition* players, std::size_t player_count);
 
       void update(std::uint32_t frame_duration);
 
-      const cup::Cup& cup() const;
-
     private:
-      struct Impl;
-      std::unique_ptr<Impl> impl_;
+      std::unique_ptr<CupEssentials> cup_essentials_;
     };
   }
 }

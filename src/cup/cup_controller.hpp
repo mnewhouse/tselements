@@ -19,22 +19,19 @@ namespace ts
     class Cup;
     struct CupSettings;
 
+    // The Cup controller class controls the cup, what else.
+    // It owns a cup object, and provides a brief interface to act upon it.
+    // Cup events are sent through the message dispatcher, which are also internally
+    // passed through a cup synchronizer in order to keep things in a consistent state.
     template <typename MessageDispatcher>
     class CupController
     {
     public:
-      explicit CupController(const CupSettings& cup_settings, MessageDispatcher dispatcher);
-
-      void begin_cup();
-      void intermission();
-      void preinitialize_stage();
-      void begin_stage();
-      void end_stage();
-      void end_cup();
-      void restart_cup();
+      explicit CupController(const CupSettings& cup_settings, MessageDispatcher dispatcher);      
 
       void initialize_stage(const stage::StageDescription& stage_desc);
       void advance();
+      void restart_cup();
 
       std::pair<std::uint16_t, RegistrationStatus>
         register_client(const PlayerDefinition* players, std::size_t player_count);
@@ -49,6 +46,13 @@ namespace ts
       void dispatch_message(MessageType&& message);
 
       bool is_everyone_ready() const;
+
+      void begin_cup();
+      void intermission();
+      void preinitialize_stage();
+      void begin_stage();
+      void end_stage();
+      void end_cup();
 
       std::vector<std::uint8_t> client_ready_states_;
       

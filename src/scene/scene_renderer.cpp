@@ -5,7 +5,9 @@
 */
 
 #include "scene_renderer.hpp"
-#include "scene.hpp"
+#include "track_scene.hpp"
+#include "dynamic_scene.hpp"
+#include "particle_generator.hpp"
 #include "shader_code.hpp"
 #include "viewport.hpp"
 
@@ -489,7 +491,7 @@ namespace ts
       }
     }
 
-    void SceneRenderer::render(const Viewport& viewport, Vector2u screen_size, double frame_progress)
+    void SceneRenderer::render(const Viewport& viewport, Vector2u screen_size, double frame_progress) const
     {
       if (!impl_->rendering_initialized_)
       {

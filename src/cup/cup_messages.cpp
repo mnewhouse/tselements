@@ -22,6 +22,7 @@ namespace ts
         initialization.track.name = stage_desc.track.name;
         initialization.track.hash = stage_desc.track.hash;
 
+        // Mostly this just copies the stuff over.
         initialization.car_models.resize(stage_desc.car_models.size());
         std::transform(stage_desc.car_models.begin(), stage_desc.car_models.end(), initialization.car_models.begin(),
                        [](const auto& model)

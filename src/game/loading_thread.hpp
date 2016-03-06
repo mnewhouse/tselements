@@ -42,6 +42,9 @@ namespace ts
       };
     }
 
+    // The LoadingThread wraps a single thread that can be used to execute various tasks
+    // asynchronously. This worker thread has an internal OpenGL context that can be
+    // shared with other threads' GL contexts.
     class LoadingThread
     {
     public:
@@ -51,6 +54,7 @@ namespace ts
       LoadingThread(LoadingThread&&) = default;
       LoadingThread& operator=(LoadingThread&&) = default;
 
+      // Execute a task asynchronously. Returns a std::future object.
       template <typename FuncType>
       auto async_task(FuncType&& func);
 

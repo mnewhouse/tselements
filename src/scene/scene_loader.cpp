@@ -6,9 +6,12 @@
 
 #include "scene_loader.hpp"
 #include "scene.hpp"
+#include "dynamic_scene.hpp"
 #include "track_scene_generator.hpp"
 #include "dynamic_scene_generator.hpp"
 #include "particle_generator.hpp"
+#include "sound_effect_controller.hpp"
+#include "car_sound_controller.hpp"
 
 #include "stage/stage.hpp"
 
@@ -18,6 +21,35 @@ namespace ts
 {
   namespace scene
   {
+    static auto make_sound_effect_controller()
+    {
+      auto sound_effect_controller = std::make_unique<SoundEffectController>(12);
+      return sound_effect_controller;
+    }
+
+    static auto make_car_sound_controller(const stage::Stage& stage)
+    {
+      const auto& stage_desc = stage.stage_description();
+      auto car_sound_controller = std::make_unique<CarSoundController>();
+
+      for (const auto& model : stage_desc.car_models)
+      {
+        // Register all the models
+        car_sound_controller->register_car_model(model);
+      }
+
+      for (const auto& instance : stage_desc.car_instances)
+      {
+        // And all the instances.
+        if (auto car = stage.world().find_car(instance.instance_id))
+        {
+          car_sound_controller->register_car(instance.model_id, car);
+        }        
+      }
+
+      return car_sound_controller;
+    }
+
     SceneLoader::SceneLoader(game::LoadingThread* loading_thread)
       : loading_thread_(loading_thread)
     {}
@@ -44,17 +76,8 @@ namespace ts
       scene_obj.scene_renderer = SceneRenderer(scene_obj.track_scene.get(), scene_obj.dynamic_scene.get(),
                                                scene_obj.particle_generator.get());
 
-      const auto& stage_desc = stage_ptr->stage_description();
-      for (const auto& model : stage_desc.car_models)
-      {
-        scene_obj.car_sound_controller.register_car_model(model);
-      }
-
-      for (const auto& instance : stage_desc.car_instances)
-      {
-        auto car = stage_ptr->world().find_car(instance.instance_id);
-        scene_obj.car_sound_controller.register_car(instance.model_id, car);
-      }
+      scene_obj.car_sound_controller = make_car_sound_controller(*stage_ptr);
+      scene_obj.sound_effect_controller = make_sound_effect_controller();
       
       return scene_obj;
     }

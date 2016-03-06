@@ -17,7 +17,7 @@ namespace ts
   namespace world
   {
     template <typename MessageDispatcher>
-    EventTranslator<MessageDispatcher>::EventTranslator(MessageDispatcher&& message_dispatcher)
+    EventTranslator<MessageDispatcher>::EventTranslator(MessageDispatcher message_dispatcher)
       : message_dispatcher_(std::move(message_dispatcher))
     {}
 
@@ -37,6 +37,15 @@ namespace ts
       message.point_id = point.id;
       message.frame_offset = frame_offset;
       dispatch_message(message);      
+    }
+    
+    template <typename MessageDispatcher>
+    void EventTranslator<MessageDispatcher>::on_collision(const Entity* entity, const CollisionResult& collision)
+    {
+      messages::SceneryCollision message;
+      message.entity = entity;
+      message.collision = collision;
+      dispatch_message(message);
     }
   }
 }

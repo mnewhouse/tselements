@@ -17,6 +17,7 @@ namespace ts
   {
     using SoundSample = sf::SoundBuffer;
 
+    // Load a sound file. This function will throw a std::runtime_error if the file is not found.
     SoundSample load_sound_from_file(const std::string& file_name);
   }
 }

@@ -33,6 +33,8 @@ namespace ts
       LoadingSounds
     };
 
+    // The SceneLoader class takes a Stage, which is basically just hard data, and transforms it into a
+    // Scene, which makes up the visual and audial game experience.
     class SceneLoader
         : public utility::LoadingInterface<LoadingState>
     {
