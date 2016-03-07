@@ -20,6 +20,8 @@ namespace ts
 
   namespace scene
   {
+    // The SoundEffectController is responsible for playing collision sounds and other types
+    // of effects.
     class SoundEffectController
     {
     public:

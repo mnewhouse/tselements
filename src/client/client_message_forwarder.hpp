@@ -9,6 +9,7 @@
 
 #include "cup/cup_message_fwd.hpp"
 #include "stage/stage_message_fwd.hpp"
+#include "world/world_message_fwd.hpp"
 
 namespace ts
 {
@@ -23,16 +24,24 @@ namespace ts
     class MessageForwarder
     {
     public:
-      using cup_essentials = CupEssentials<MessageDispatcher>;
+      explicit MessageForwarder(CupEssentials<MessageDispatcher>* cup_essentials_)
+        : cup_essentials(cup_essentials_)
+      {
+      }
 
-      void forward(cup_essentials&, const cup::messages::RegistrationSuccess&);
-      void forward(cup_essentials&, const stage::messages::StageLoaded&);
-      void forward(cup_essentials&, const cup::messages::StageBegin&);
-      void forward(cup_essentials&, const cup::messages::StageEnd&);
+      void forward(const cup::messages::RegistrationSuccess&);
+      void forward(const stage::messages::StageLoaded&);
+      void forward(const cup::messages::StageBegin&);
+      void forward(const cup::messages::StageEnd&);
+
+      void forward(const world::messages::SceneryCollision&);
 
       // Have a fallback implementation for unlisted messages that simply does nothing.
       template <typename MessageType>
-      void forward(cup_essentials&, const MessageType&) {}
+      void forward(const MessageType&) {}
+
+    private:
+      CupEssentials<MessageDispatcher>* cup_essentials;
     };
   }
 }

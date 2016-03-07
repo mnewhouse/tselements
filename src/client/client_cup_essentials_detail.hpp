@@ -150,6 +150,18 @@ namespace ts
     {
       local_player_roster_.registration_success(client_id);
     }
+
+    template <typename MessageDispatcher>
+    ActionEssentials<MessageDispatcher>* CupEssentials<MessageDispatcher>::action_essentials()
+    {
+      return action_essentials_.get();
+    }
+
+    template <typename MessageDispatcher>
+    const ActionEssentials<MessageDispatcher>* CupEssentials<MessageDispatcher>::action_essentials() const
+    {
+      return action_essentials_.get();
+    }
   }
 }
 

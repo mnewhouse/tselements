@@ -40,8 +40,8 @@ namespace ts
     template <typename MessageDispatcher, typename MessageType>
     void forward_message(const MessageContext<MessageDispatcher>& context, const MessageType& message)
     {
-      MessageForwarder<MessageDispatcher> forwarder;
-      forwarder.forward(*context.cup_essentials, message);
+      MessageForwarder<MessageDispatcher> forwarder(context.cup_essentials);
+      forwarder.forward(message);
     }
   }
 }

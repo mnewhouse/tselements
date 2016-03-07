@@ -64,10 +64,10 @@ namespace ts
 
         position_offset += local_point + transform_point(local_point, rotation_delta);
 
-        auto collision_info = examine_scenery_collision(scenery, collision.point, entity->velocity(), position_offset);
+        auto bounce_factor = entity->bounciness() * wall_terrain.bounciness;
+        auto collision_info = examine_scenery_collision(scenery, collision.point, entity->velocity(), position_offset, bounce_factor);
 
-        resolve_scenery_collision(collision_info, *entity, rotation_delta,
-                                  wall_terrain.bounciness * entity->bounciness());
+        resolve_scenery_collision(collision_info, *entity, rotation_delta);
 
         return collision_info;
       }

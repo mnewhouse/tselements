@@ -12,6 +12,8 @@
 #include "car_sound_controller.hpp"
 #include "sound_effect_controller.hpp"
 
+#include "world/world_messages.hpp"
+
 namespace ts
 {
   namespace scene
@@ -32,6 +34,11 @@ namespace ts
       scene.scene_renderer.update(frame_duration);
       scene.car_sound_controller->update(frame_duration);
       scene.particle_generator->update(frame_duration);
+    }
+
+    void handle_collision(Scene& scene, const world::messages::SceneryCollision& collision)
+    {
+      scene.sound_effect_controller->play_collision_sound(*collision.entity, collision.collision);
     }
   }
 }

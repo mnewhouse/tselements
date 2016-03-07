@@ -22,6 +22,9 @@ namespace ts
 {
   namespace client
   {
+    template <typename MessageDispatcher>
+    class MessageForwarder;
+
     // The CupEssentials class template ties all the essential client cup logic together.
     template <typename MessageDispatcher>
     class CupEssentials
@@ -46,6 +49,9 @@ namespace ts
       void end_action();
 
       void registration_success(std::uint16_t client_id, std::uint64_t client_key);
+
+      ActionEssentials<MessageDispatcher>* action_essentials();
+      const ActionEssentials<MessageDispatcher>* action_essentials() const;
 
     private:
       game::GameContext game_context_;

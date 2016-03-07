@@ -15,6 +15,8 @@ namespace ts
 {
   namespace scene
   {
+    // The Viewport class simply maps a portion of the screen to
+    // a camera region, quite straightforward here.
     class Viewport
     {
     public:

@@ -114,7 +114,8 @@ namespace ts
 
         const auto& tile_interface = track.tile_library().tiles();
         const auto& texture_interface = track.texture_library().textures();
-
+        
+        // Store all the tile and texture rectangles present in the track...
         for (auto tile_def : tile_interface)
         {
           image_mapping[tile_def.image_file].push_back(tile_def.image_rect);
@@ -125,6 +126,7 @@ namespace ts
           image_mapping[texture_def.file_name].push_back(texture_def.rect);
         }
 
+        // Then combine the overlapping ones.
         for (auto& image_info : image_mapping)
         {
           auto& rects = image_info.second;
@@ -217,6 +219,7 @@ namespace ts
         AtlasSurface surface;
         surface.create(atlas.size.x, atlas.size.y, sf::Color(0, 0, 0, 0));
 
+        // Copy the loaded images into the newly created atlas image.
         for (const auto& image_data : atlas.image_data)
         {
           const auto& image_file = image_data.first;
@@ -254,6 +257,9 @@ namespace ts
               auto image_it = atlas.image_data.find(image_file);
               if (image_it == atlas.image_data.end()) continue;
 
+              // Find all the existing atlas rects that already contain the image,
+              // and store information for each one.
+
               placement_buffer.clear();
               std::copy_if(image_it->second.begin(), image_it->second.end(), std::back_inserter(placement_buffer),
                            [=](const AtlasPlacement& placement)
@@ -263,7 +269,7 @@ namespace ts
 
               for (const auto& placement : placement_buffer)
               {
-                // The rect we need may be only a sub-rect of the atlas rect we found. Account for that.
+                // The rect we need may be only a sub-rect of the atlas rect we found. Take that into account.
                 IntRect partial_rect;
                 partial_rect.left = placement.atlas_rect.left + image_rect.left - placement.source_rect.left;
                 partial_rect.top = placement.atlas_rect.top + image_rect.top - placement.source_rect.top;
@@ -352,6 +358,7 @@ namespace ts
           store_entries(entry, file_name, full_source_rect);
         };
 
+        // Little helper lambda that only allocates space if the rect does not exist in the placement map yet.
         auto allocate_rect_if_required = [&](boost::string_ref file_name, const IntRect& source_rect,
                                              auto& asset_cache, std::size_t asset_id)
         {
@@ -453,7 +460,7 @@ namespace ts
         }
 
         // Set the atlas size - ideally we would do this when we create the atlases, but
-        // I'm not sure how to pull that off with the code I have.
+        // I'm not sure how to pull that off with the code we have.
         for (std::size_t id = 0; id != atlas_list.atlas_count(); ++id)
         {
           placement_map.atlases[id].size = atlas_list.atlas_size(id);
@@ -465,10 +472,6 @@ namespace ts
 
       std::unique_ptr<TrackScene> generate_track_scene(const resources::Track& track, const PlacementMap& placement_map)
       {
-        const auto& tile_library = track.tile_library();
-        const auto& tile_interface = tile_library.tiles();
-        const auto& tile_group_interface = tile_library.tile_groups();
-
         ImageLoader image_loader;
         auto track_scene = std::make_unique<TrackScene>(track.size());
         for (const auto& atlas : placement_map.atlases)
@@ -479,12 +482,12 @@ namespace ts
           track_scene->register_texture(std::move(texture));
         }
 
-        auto texture_conv = [&](std::size_t texture_index) 
+        auto texture_conversion = [&](std::size_t texture_index) 
         { 
           return track_scene->texture(texture_index);
         };
 
-        auto vertex_conv = [&](resources::Vertex vertex, std::size_t texture_index)
+        auto vertex_conversion = [&](resources::Vertex vertex, std::size_t texture_index)
         {
           auto atlas_size = placement_map.atlases[texture_index].size;
 
@@ -493,7 +496,8 @@ namespace ts
         };
 
         auto texture_mapping = generate_resource_texture_map(track, placement_map);
-        scene::build_track_vertices(*track_scene, track, texture_mapping, texture_conv, vertex_conv);
+        scene::build_track_vertices(*track_scene, track, texture_mapping, 
+                                    texture_conversion, vertex_conversion);
 
         return track_scene;
       }

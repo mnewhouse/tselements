@@ -57,6 +57,7 @@ namespace ts
 
     void ViewportArrangement::update_viewports()
     {
+      // If we don't have any viewports, update the default one.
       if (viewports_.empty())
       {
         default_viewport_.update_camera();

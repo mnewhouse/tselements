@@ -12,11 +12,11 @@
 
 #include "server_cup_controller.hpp"
 #include "server_interaction_host.hpp"
+#include "server_stage_essentials.hpp"
 
-#include "stage/stage_regulator.hpp"
 #include "stage/stage_loader.hpp"
 
-#include "race/race.hpp"
+#include <boost/optional.hpp>
 
 namespace ts
 {
@@ -53,6 +53,8 @@ namespace ts
       void forward_stage_message(const ClientMessage<MessageType>& client_message);
 
     private:
+      void initialize_loaded_stage();
+
       friend MessageForwarder;
       resources::ResourceStore* resource_store_;
 
@@ -62,18 +64,16 @@ namespace ts
       CupController cup_controller_;
       InteractionHost interaction_host_;
 
-      stage::StageLoader stage_loader_;
-      stage::StageRegulator stage_regulator_;      
-
-      std::unique_ptr<race::Race> race_;
+      stage::StageLoader stage_loader_;  
+      boost::optional<StageEssentials> stage_essentials_;
     };
 
     template <typename MessageType>
     void CupEssentials::forward_stage_message(const ClientMessage<MessageType>& client_message)
     {
-      if (stage_regulator_)
+      if (stage_essentials_)
       {
-        stage_regulator_.handle_message(client_message.message);
+        stage_essentials_->handle_message(client_message);
       }
     }
   }

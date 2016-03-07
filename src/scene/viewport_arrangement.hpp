@@ -15,6 +15,8 @@ namespace ts
 {
   namespace scene
   {
+    // The ViewportArrangement class holds a number of viewports, and allows these to be
+    // uniformly distributed across the screen.
     class ViewportArrangement
     {
     public:

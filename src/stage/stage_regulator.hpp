@@ -22,15 +22,11 @@ namespace ts
     class StageRegulator
     {
     public:
-      void adopt_stage(std::unique_ptr<Stage> stage_ptr);
-      void destroy_stage();
+      explicit StageRegulator(std::unique_ptr<Stage> stage_ptr);
 
       const Stage* stage() const;
-      explicit operator bool() const;
 
       void update(world::EventInterface& event_interface, std::uint32_t frame_duration);
-      bool active() const;
-
       void handle_message(const messages::ControlUpdate& control_message);
 
       std::unique_ptr<Stage> stage_;

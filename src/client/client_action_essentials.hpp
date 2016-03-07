@@ -16,6 +16,8 @@
 
 #include "scene/scene.hpp"
 
+#include "world/world_message_fwd.hpp"
+
 #include <memory>
 
 namespace ts
@@ -65,6 +67,8 @@ namespace ts
       void process_event(const game::Event& event);
 
       void launch_action();
+
+      void collision_event(const world::messages::SceneryCollision& collision);
 
     private:
       CupEssentials<MessageDispatcher>* cup_essentials_;

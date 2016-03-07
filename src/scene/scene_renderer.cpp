@@ -495,6 +495,7 @@ namespace ts
     {
       if (!impl_->rendering_initialized_)
       {
+        // If this is the first time calling this function, we have to initialize the various vertex arrays.
         impl_->initialize_track_buffers();
         impl_->initialize_entity_buffers();
         impl_->initialize_particle_buffers();
@@ -509,7 +510,6 @@ namespace ts
       //   Apply the view
       //   Draw the track scene
       //   Draw the dynamic scene
-
 
       glDisable(GL_CULL_FACE);      
       glEnable(GL_BLEND);
@@ -540,6 +540,7 @@ namespace ts
 
       const float shadow_color[4] = { 0.2f, 0.2f, 0.2f, 0.5f };
 
+      // Set up the uniform variables for all shaders
       glUseProgram(impl_->shadow_shader_program.get());
       glUniform4fv(impl_->shadow_color_location, 1, shadow_color);
       glUniformMatrix4fv(impl_->shadow_view_matrix_location, 1, GL_FALSE, glm::value_ptr(view_mat));
@@ -671,6 +672,7 @@ namespace ts
 
       if (!drawable_cache.empty())
       {
+        // Sort the drawable entities by Z level, then by shader type.
         std::sort(drawable_cache.begin(), drawable_cache.end(),
                   [](const DrawableEntity& a, const DrawableEntity& b)
         {
@@ -863,6 +865,8 @@ namespace ts
 
         for (std::size_t n = 0; n != 4; ++n)
         {
+          // Now, copy the "static" parts of the vertices over, where static means
+          // that they are the same for all 4 vertices.
           auto& vertex = vertices[n];
 
           vertex.frame_offset = frame_offset;

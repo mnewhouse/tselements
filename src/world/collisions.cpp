@@ -267,18 +267,20 @@ namespace ts
     }
 
     CollisionResult examine_scenery_collision(const CollisionMaskFrame& scenery, Vector2i global_point,
-                                              Vector2<double> subject_velocity, Vector2<double> entry_vector)
+                                              Vector2<double> subject_velocity, Vector2<double> entry_vector,
+                                              double bounce_factor)
     {
       CollisionResult result;
       result.point = global_point;
       result.normal = compute_collision_normal(scenery, global_point, entry_vector);
       result.impact = std::abs(dot_product(subject_velocity, result.normal));
+      result.bounce_factor = bounce_factor;
 
       return result;
     }
 
-    void resolve_scenery_collision(const CollisionResult& collision, Entity& entity, 
-                                   Rotation<double> rotation_delta, double bounciness_factor)
+    void resolve_scenery_collision(const CollisionResult& collision, Entity& entity,
+                                   Rotation<double> rotation_delta)
     {
       // Set velocity and rotational velocity according to the parameters.
 
@@ -287,7 +289,7 @@ namespace ts
       auto new_velocity = velocity - 2.0 * collision.normal *
         dot_product(collision.normal, velocity);
 
-      new_velocity *= bounciness_factor;
+      new_velocity *= collision.bounce_factor;
       entity.set_velocity(new_velocity);
     }
   }

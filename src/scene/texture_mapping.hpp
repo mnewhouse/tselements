@@ -169,11 +169,13 @@ namespace ts
           return m.texture == texture_hint;
         });
 
+        // If we found a texture that matches the texture hint, return it.
         if (it != range.end())
         {
           range = { it, std::next(it) };
         }
 
+        // Otherwise, return the first element in the range, as a range.
         else if (!range.empty())
         {
           range = { range.begin(), std::next(range.begin()) };
@@ -212,6 +214,7 @@ namespace ts
 
       if (range.first == range.second)
       {
+        // If there are no textures with the given id, switch over to looking for texture fragments.
         range = std::equal_range(texture_fragments_.data(), texture_fragments_.data() + texture_fragments_.size(),
                                  resource_id, detail::MappedTextureComparator());
         if (range.first != range.second)

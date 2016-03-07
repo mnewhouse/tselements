@@ -5,6 +5,7 @@
 */
 
 #include "server_cup_essentials.hpp"
+#include "server_stage_essentials.hpp"
 #include "server_message_distributor.hpp"
 
 #include "resources/resource_store.hpp"
@@ -20,8 +21,12 @@ namespace ts
     {
       auto make_message_distributor(const MessageDispatcher* dispatcher, const MessageConveyor* conveyor)
       {
-        MessageDistributor distributor(dispatcher, conveyor);
-        return world::EventTranslator<MessageDistributor>(std::move(distributor));
+        return MessageDistributor(dispatcher, conveyor);
+      }
+
+      auto make_world_event_translator(const MessageDispatcher* dispatcher, const MessageConveyor* conveyor)
+      {
+        return world::EventTranslator<MessageDistributor>(make_message_distributor(dispatcher, conveyor));
       }
     }
 
@@ -32,38 +37,45 @@ namespace ts
       cup_controller_(resource_store->settings().cup_settings(),
                       MessageDistributor(&message_dispatcher_, &message_conveyor_)),
       interaction_host_(&cup_controller_, &message_dispatcher_),
-      stage_regulator_(),
       stage_loader_(),
-      race_()
+      stage_essentials_()
     {}
 
     void CupEssentials::update(std::uint32_t frame_duration)
     {
-      if (stage_regulator_.active())
+      if (stage_essentials_)
       {        
-        stage_regulator_.update(detail::make_message_distributor(&message_dispatcher_, &message_conveyor_), 
-                                frame_duration);
+        stage_essentials_->update(detail::make_world_event_translator(&message_dispatcher_, &message_conveyor_), 
+                                  frame_duration);
       }
 
       if (stage_loader_.is_ready())
       {
-        try
-        {
-          stage_regulator_.adopt_stage(stage_loader_.get_result());
+        initialize_loaded_stage();
+      }
+    }
 
-          const auto& stage_desc = stage_regulator_.stage()->stage_description();
-          cup_controller_.initialize_stage(stage_desc);
+    void CupEssentials::initialize_loaded_stage()
+    {
+      try
+      {
+        // Get the stage from the stage loader, and initialize the stage essentials object with it.
+        stage_essentials_.emplace(stage_loader_.get_result());
+        const auto& stage_desc = stage_essentials_->stage_description();
 
-          stage::messages::StageLoaded stage_loaded;
-          stage_loaded.stage_ptr = stage_regulator_.stage();
-          message_conveyor_(stage_loaded);
-          message_dispatcher_(stage_loaded, local_client);
-        }
+        cup_controller_.initialize_stage(stage_desc);
 
-        catch (const std::exception&)
-        {
-          // TODO: handle error gracefully
-        }
+        // Now inform ourselves and possibly the local client that we loaded the stage.
+        stage::messages::StageLoaded stage_loaded;
+        stage_loaded.stage_ptr = stage_essentials_->stage();
+
+        message_conveyor_(stage_loaded);
+        message_dispatcher_(stage_loaded, local_client);        
+      }
+
+      catch (const std::exception&)
+      {
+        // TODO: handle error gracefully
       }
     }
 

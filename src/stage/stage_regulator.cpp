@@ -10,29 +10,14 @@ namespace ts
 {
   namespace stage
   {
-    void StageRegulator::adopt_stage(std::unique_ptr<Stage> stage)
+    StageRegulator::StageRegulator(std::unique_ptr<Stage> stage_ptr)
+      : stage_(std::move(stage_ptr))
     {
-      stage_ = std::move(stage);
-    }
-
-    void StageRegulator::destroy_stage()
-    {
-      stage_ = nullptr;
     }
 
     void StageRegulator::handle_message(const messages::ControlUpdate& message)
     {
       stage_->set_controllable_state(message.controllable_id, message.controls_mask);
-    }
-
-    StageRegulator::operator bool() const
-    {
-      return active();
-    }
-
-    bool StageRegulator::active() const
-    {
-      return stage_ != nullptr;
     }
 
     const Stage* StageRegulator::stage() const

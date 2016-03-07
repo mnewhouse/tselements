@@ -11,6 +11,8 @@
 
 #include "scene_renderer.hpp"
 
+#include "world/world_message_fwd.hpp"
+
 namespace ts
 {
   namespace stage
@@ -50,6 +52,8 @@ namespace ts
 
     void update_stored_state(Scene& scene_obj);
     void update_scene(Scene& scene_obj, std::uint32_t frame_duration);
+
+    void handle_collision(Scene& scene_obj, const world::messages::SceneryCollision& collision);
   }
 }
 

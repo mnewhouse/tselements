@@ -111,6 +111,7 @@ set(LIB_SOURCES
 	src/server/server_interaction_host.cpp
 	src/server/server_message_dispatcher.cpp
 	src/server/server_message_forwarder.cpp
+	src/server/server_stage_essentials.cpp
 	src/server/remote_client.cpp
 	src/server/remote_client_map.cpp	
 

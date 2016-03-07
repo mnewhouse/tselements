@@ -11,39 +11,41 @@
 #include "client_cup_essentials.hpp"
 
 #include "cup/cup_messages.hpp"
-
 #include "stage/stage_messages.hpp"
+#include "world/world_messages.hpp"
 
 namespace ts
 {
   namespace client
   {
     template <typename MessageDispatcher>
-    void MessageForwarder<MessageDispatcher>::forward(cup_essentials& essentials,
-                                                      const cup::messages::RegistrationSuccess& message)
+    void MessageForwarder<MessageDispatcher>::forward(const cup::messages::RegistrationSuccess& message)
     {
-      essentials.registration_success(message.client_id, message.client_key);
+      cup_essentials->registration_success(message.client_id, message.client_key);
     }
 
     template <typename MessageDispatcher>
-    void MessageForwarder<MessageDispatcher>::forward(cup_essentials& essentials,
-                                                      const stage::messages::StageLoaded& message)
+    void MessageForwarder<MessageDispatcher>::forward(const stage::messages::StageLoaded& message)
     {
-      essentials.async_load_scene(message.stage_ptr);
+      cup_essentials->async_load_scene(message.stage_ptr);
     }
 
     template <typename MessageDispatcher>
-    void MessageForwarder<MessageDispatcher>::forward(cup_essentials& essentials, 
-                                                      const cup::messages::StageBegin&)
+    void MessageForwarder<MessageDispatcher>::forward(const cup::messages::StageBegin&)
     {
-      essentials.launch_action();
+      cup_essentials->launch_action();
     }
 
     template <typename MessageDispatcher>
-    void MessageForwarder<MessageDispatcher>::forward(cup_essentials& essentials, 
-                                                      const cup::messages::StageEnd&)
+    void MessageForwarder<MessageDispatcher>::forward(const cup::messages::StageEnd&)
     {
-      essentials.end_action();
+      cup_essentials->end_action();
+    }
+
+    template <typename MessageDispatcher>
+    void MessageForwarder<MessageDispatcher>::forward(const world::messages::SceneryCollision& collision)
+    {
+      cup_essentials->action_essentials()->collision_event(collision);
     }
   }
 }

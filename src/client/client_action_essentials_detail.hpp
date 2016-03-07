@@ -18,6 +18,8 @@
 #include "resources/resource_store.hpp"
 #include "resources/settings.hpp"
 
+#include "world/world_messages.hpp"
+
 namespace ts
 {
   namespace client
@@ -117,6 +119,12 @@ namespace ts
       // Activate the action state by its type.
       auto state_machine = cup_essentials_->game_context().state_machine;
       state_machine->activate_state<ActionState<MessageDispatcher>>();
+    }
+
+    template <typename MessageDispatcher>
+    void ActionEssentials<MessageDispatcher>::collision_event(const world::messages::SceneryCollision& event)
+    {
+      scene::handle_collision(scene_, event);
     }
   }
 }
