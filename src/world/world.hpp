@@ -19,6 +19,7 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/iterator_adaptors.hpp>
+#include <boost/container/flat_set.hpp>
 
 #include <cstdint>
 #include <vector>
@@ -48,6 +49,39 @@ namespace ts
 
     struct EventInterface;
 
+    namespace detail
+    {
+      struct EntityCollisionFrame
+      {
+        Entity* entity;
+        Vector2i position;
+        resources::CollisionMaskFrame collision_frame;
+      };
+
+      struct EntityUpdateState;
+
+      struct EntityUpdateBoundingBox
+      {
+        EntityUpdateState* update_state;
+        IntRect bounding_box;
+      };
+
+      struct EntityUpdateState
+      {
+        Entity* entity;
+        Rotation<double> old_rotation;
+        Rotation<double> new_rotation;
+        Vector2<double> old_position;
+        Vector2<double> new_position;
+
+        std::uint32_t z_level;
+        Vector2i current_position;
+
+        resources::CollisionMaskFrame old_frame;
+        resources::CollisionMaskFrame new_frame;
+      };
+    }
+
     // The World class manages all objects related to the physical state of the game.
     // Track terrains, cars, projectiles, dynamic scenery objects, and maybe more?
     // Updating the world state also happens through this class.
@@ -60,7 +94,7 @@ namespace ts
 
       void update(world::EventInterface& event_interface, std::uint32_t frame_duration);
 
-      Car* create_car(const CarDefinition& car_definition, std::uint8_t car_id);
+      Car* create_car(const CarDefinition& car_definition, std::uint8_t car_id, std::uint16_t start_pos);
 
       const Car* find_car(std::uint8_t car_id) const;
       Car* find_car(std::uint8_t car_id);
@@ -86,6 +120,8 @@ namespace ts
       ControlPointManager control_point_manager_;
 
       std::vector<bool> previously_collided_;
+      std::vector<detail::EntityUpdateState> entity_update_state_;
+      std::vector<detail::EntityUpdateBoundingBox> bounding_box_cache_;
     };
   }
 }

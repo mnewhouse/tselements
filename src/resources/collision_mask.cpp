@@ -45,6 +45,11 @@ namespace ts
       return frame(frame_id);
     }
 
+    IntRect CollisionMask::bounding_box() const
+    {
+      return bounding_box_;
+    }
+
     namespace detail
     {
       static CollisionPoint compute_collision_point(CollisionMask::bitmask_type word, Vector2i word_position)
@@ -85,17 +90,14 @@ namespace ts
         auto word_count = intersect_area.width / word_bits;
         if (object_mask_offset != 0)
         {
-          for (std::int32_t row = 0; row != intersect_area.height; ++row, ++subject_row, ++object_row)
+          if (word_count == 0)
           {
-            auto subject_ptr = subject.row_begin(subject_row);
-            auto object_ptr = object.row_begin(object_row) + object_word_index;
-
-            auto object_mask = *object_ptr++ >> object_mask_offset;
-            for (std::int32_t word_index = 0; word_index != word_count; ++word_index, ++object_ptr, ++subject_ptr)
+            for (std::int32_t row = 0; row != intersect_area.height; ++row, ++subject_row, ++object_row)
             {
-              auto object_word = *object_ptr;
-              object_mask |= object_word << object_inverse_mask_offset;
+              auto subject_ptr = subject.row_begin(subject_row);
+              auto object_ptr = object.row_begin(object_row) + object_word_index;
 
+              auto object_mask = *object_ptr++ >> object_mask_offset;
               if (auto collision = *subject_ptr & object_mask)
               {
                 // We collided, calculate the point of collision and return it.
@@ -103,9 +105,33 @@ namespace ts
 
                 return compute_collision_point(collision, word_position);
               }
+            }
+          }
 
-              // The object bits that we couldn't use in this iteration must be set for the next one.
-              object_mask = object_word >> object_mask_offset;
+          else
+          {
+            for (std::int32_t row = 0; row != intersect_area.height; ++row, ++subject_row, ++object_row)
+            {
+              auto subject_ptr = subject.row_begin(subject_row);
+              auto object_ptr = object.row_begin(object_row) + object_word_index;
+
+              auto object_mask = *object_ptr++ >> object_mask_offset;
+              for (std::int32_t word_index = 0; word_index != word_count; ++word_index, ++object_ptr, ++subject_ptr)
+              {
+                auto object_word = *object_ptr;
+                object_mask |= object_word << object_inverse_mask_offset;
+
+                if (auto collision = *subject_ptr & object_mask)
+                {
+                  // We collided, calculate the point of collision and return it.
+                  auto word_position = make_vector2(intersect_area.left, intersect_area.top + row);
+
+                  return compute_collision_point(collision, word_position);
+                }
+
+                // The object bits that we couldn't use in this iteration must be set for the next one.
+                object_mask = object_word >> object_mask_offset;
+              }
             }
           }
         }
@@ -148,6 +174,8 @@ namespace ts
         auto intersect_area = intersection(subject_area, object_area);
         if (intersect_area.width >= 0 && intersect_area.height >= 0)
         {
+
+
           // We know that either the subject or object's alignment is 0.
           // If it's the object, have it switch places with the object to make
           // sure we meet the requirements of the algorithm.
@@ -174,7 +202,6 @@ namespace ts
     {
       auto subject_size = make_vector2(subject.row_width(), subject.row_count());
       auto subject_center = vector2_cast<std::int32_t>(subject_size / std::size_t(2));
-
       auto scenery_size = make_vector2(scenery.row_width(), scenery.row_count());
 
       return detail::test_collision(subject, scenery, 
@@ -182,6 +209,21 @@ namespace ts
                                     vector2_cast<std::int32_t>(scenery_size),
                                     subject_position, Vector2i(0, 0),
                                     subject_center, Vector2i(0, 0));
+    }
+
+    CollisionPoint test_collision(const CollisionMaskFrame& subject, const CollisionMaskFrame& object,
+                                  Vector2i subject_position, Vector2i object_position)
+    {
+      auto subject_size = make_vector2(subject.row_width(), subject.row_count());
+      auto subject_center = vector2_cast<std::int32_t>(subject_size / std::size_t(2));
+      auto object_size = make_vector2(object.row_width(), object.row_count());
+      auto object_center = vector2_cast<std::int32_t>(object_size / std::size_t(2));
+
+      return detail::test_collision(subject, object,
+                                    vector2_cast<std::int32_t>(subject_size),
+                                    vector2_cast<std::int32_t>(object_size),
+                                    subject_position, object_position,
+                                    subject_center, object_center);
     }
   }
 }

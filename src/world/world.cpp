@@ -21,7 +21,12 @@
 #include "utility/line_plotter.hpp"
 #include "utility/debug_log.hpp"
 
+#include <boost/function_output_iterator.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/optional.hpp>
+
 #include <vector>
+#include <iostream>
 #include <cmath>
 
 namespace ts
@@ -38,14 +43,35 @@ namespace ts
         };
       }
 
+      struct CollisionTimePoint
+      {
+        std::int32_t step;
+        std::int32_t total_steps;
+      };
+
+      inline bool operator<(const CollisionTimePoint& a, const CollisionTimePoint& b)
+      {
+        return a.step * b.total_steps < b.step * a.total_steps;
+      }
+
+      inline bool operator>(const CollisionTimePoint& a, const CollisionTimePoint& b)
+      {
+        return b < a;
+      }
+
       struct CollisionInfo
       {
+        const EntityUpdateState* subject_state = nullptr;
+        const EntityUpdateState* object_state = nullptr;
+
         bool collided = false;
         bool stuck = false;
         bool rotate = true;
         Vector2i point;
-        Vector2<double> valid_position;
-        Vector2<double> collision_position;
+        Vector2i collision_position;
+        Vector2i valid_position;
+
+        CollisionTimePoint time_point;
 
         explicit operator bool() const
         {
@@ -53,47 +79,88 @@ namespace ts
         }
       };
 
-      auto resolve_collision(Entity* entity, Vector2<double> old_position, 
-                             Rotation<double> old_rotation, Rotation<double> new_rotation,
-                             const CollisionInfo& collision, const resources::CollisionMaskFrame& scenery,
-                             const resources::TerrainDefinition& wall_terrain)
+      auto resolve_collision(const CollisionInfo& collision)
       {
-        auto position_offset = collision.collision_position - old_position;
-        auto local_point = vector2_cast<double>(collision.point) - collision.collision_position;
-        auto rotation_delta = new_rotation - old_rotation;
+        auto subject = collision.subject_state->entity;
+        auto object = collision.object_state->entity;
 
-        position_offset += local_point + transform_point(local_point, rotation_delta);
+        auto collision_info = examine_entity_collision(collision.point, collision.collision_position,
+                                                       collision.object_state->current_position, 
+                                                       subject->velocity(), object->velocity(),
+                                                       subject->bounciness() * object->bounciness());
 
-        auto bounce_factor = entity->bounciness() * wall_terrain.bounciness;
-        auto collision_info = examine_scenery_collision(scenery, collision.point, entity->velocity(), position_offset, bounce_factor);
-
-        resolve_scenery_collision(collision_info, *entity, rotation_delta);
+        resolve_entity_collision(collision_info, *subject, *object);
 
         return collision_info;
       }
 
-      auto find_collision(Vector2<double> old_position, Vector2<double> target_position,
-                          const resources::CollisionMaskFrame& collision_frame,
-                          const resources::CollisionMaskFrame& scenery_frame)
+      auto resolve_collision(const CollisionInfo& collision, 
+                             const resources::CollisionMaskFrame& scenery,
+                             const resources::TerrainDefinition& wall_terrain)
       {
-        CollisionInfo result;
-        result.valid_position = old_position;
+        const auto& update_state = *collision.subject_state;
+        auto entity = update_state.entity;
+        auto rotation_delta = update_state.new_rotation - update_state.old_rotation;
+        auto bounce_factor = entity->bounciness() * wall_terrain.bounciness;
 
-        utility::LinePlottingRange position_range(old_position, target_position);
+        auto collision_info = examine_scenery_collision(scenery, collision.point, entity->velocity(), 
+                                                        entity->velocity(), bounce_factor);
+
+        resolve_scenery_collision(collision_info, *entity, rotation_delta);
+        return collision_info;
+      }
+
+      template <typename ObjectStateRange>
+      CollisionInfo find_collision(const EntityUpdateState& update_state,
+                                   const resources::CollisionMaskFrame& scenery_frame,
+                                   const ObjectStateRange& object_states,
+                                   Vector2i position_offset, bool rotate_subject)
+      {
+        auto old_position = vector2_cast<std::int32_t>(update_state.old_position) + position_offset;
+        auto new_position = vector2_cast<std::int32_t>(update_state.new_position) + position_offset;
+
+        const auto& collision_frame = rotate_subject ? update_state.new_frame : update_state.old_frame;
+
+        CollisionInfo result;
+        result.valid_position = old_position;        
+
+        utility::LinePlottingRange position_range(old_position, new_position);
+        result.time_point.step = 0;
+        result.time_point.total_steps = position_range.step_count();
+
         for (auto position : position_range)
         {
-          if (auto collision = test_scenery_collision(collision_frame, scenery_frame,
-                                                      vector2_cast<std::int32_t>(position)))
+          if (auto collision = test_scenery_collision(collision_frame, scenery_frame, position))
           {
+            result.subject_state = &update_state;
             result.collided = true;
-            result.stuck = (vector2_cast<std::int32_t>(old_position) == vector2_cast<std::int32_t>(position));
+            result.stuck = old_position == position;
             result.rotate = !result.stuck;
             result.point = collision.point;
-            result.collision_position = position;            
+            result.collision_position = position;
             return result;
           }
 
+          for (const auto& object_state : object_states)
+          {
+            if (auto collision = test_collision(collision_frame, object_state.old_frame,
+                                                position, object_state.current_position))
+            {
+              result.collided = true;
+              result.stuck = position == old_position;
+              result.rotate = result.stuck && rotate_subject;
+
+              result.collision_position = position;
+
+              result.point = collision.point;
+              result.subject_state = &update_state;
+              result.object_state = &object_state;
+              return result;
+            }
+          }
+
           result.valid_position = position;
+          ++result.time_point.step;
         }
 
         return result;
@@ -103,38 +170,41 @@ namespace ts
       {
         CollisionInfo collision;
         Vector2<double> offset;
+        bool rotate_subject;
       };
 
-      CollisionAvoidance find_collision_avoidance(Vector2<double> old_position, Vector2<double> target_position,
-                                                  const resources::CollisionMaskFrame& collision_frame,
-                                                  const resources::CollisionMaskFrame& scenery_frame)
-                                        
+      template <typename ObjectStateRange>
+      CollisionAvoidance find_collision_avoidance(const EntityUpdateState& update_state,
+                                                  const resources::CollisionMaskFrame& scenery_frame,
+                                                  const ObjectStateRange& object_states,
+                                                  bool rotate_subject, const CollisionInfo& default_collision)                                    
       {
         // If moving the entity by one pixel in the new direction results in a collision, then do something about it.
-        auto position_offset = target_position - old_position;
+        auto new_position = vector2_cast<std::int32_t>(update_state.new_position);
+        auto old_position = vector2_cast<std::int32_t>(update_state.old_position);
 
-        auto dx = position_offset.x >= 0.0 ? 1.0 : -1.0;
-        auto dy = position_offset.y >= 0.0 ? 1.0 : -1.0;
+        auto frame_offset = update_state.new_position - update_state.old_position;
 
-        CollisionAvoidance avoidance_attempts[4];
+        auto dx = frame_offset.x >= 0.0 ? 1.0 : -1.0;
+        auto dy = frame_offset.y >= 0.0 ? 1.0 : -1.0;
+
+        CollisionAvoidance avoidance_attempts[4] = {};
         avoidance_attempts[0].offset = { dx, 0.0 };
         avoidance_attempts[1].offset = { 0.0, dy };
         avoidance_attempts[2].offset = { -dx, 0.0 };
         avoidance_attempts[3].offset = { 0.0, -dy };
 
-        if (std::abs(position_offset.x) < std::abs(position_offset.y))
+        if (std::abs(frame_offset.x) < std::abs(frame_offset.y))
         {
           // y axis will take priority over x axis.
           std::swap(avoidance_attempts[0], avoidance_attempts[1]);
           std::swap(avoidance_attempts[2], avoidance_attempts[3]);
         }
 
-        CollisionInfo collision_info[4] = {};
         for (auto& attempt : avoidance_attempts)
         {
-          auto offset = attempt.offset;
-          attempt.collision = find_collision(old_position + offset, target_position + offset,
-                                             collision_frame, scenery_frame);
+          attempt.collision = find_collision(update_state, scenery_frame, object_states, attempt.offset, rotate_subject);
+          attempt.rotate_subject = rotate_subject;
 
           if (!attempt.collision)
           {
@@ -142,58 +212,46 @@ namespace ts
           }
         }
 
-        auto distance = [&](const auto& attempt)
-        {
-          auto collision_pos = attempt.collision.collision_position;
-          auto offset = collision_pos - (old_position + attempt.offset);
-          return std::max(std::abs(offset.x), std::abs(offset.y));
-        };
-
-        auto stuck = [&](const auto& attempt)
+        auto range_end = std::remove_if(std::begin(avoidance_attempts), std::end(avoidance_attempts),
+                                        [](const CollisionAvoidance& attempt)
         {
           return attempt.collision.stuck;
-        };
-
-        auto end = std::remove_if(std::begin(avoidance_attempts), std::end(avoidance_attempts), stuck);
-        if (end != std::begin(avoidance_attempts))
+        });
+        
+        if (range_end == std::begin(avoidance_attempts))
         {
-          auto attempt_it = std::begin(avoidance_attempts);
-          auto best_attempt = attempt_it;
-          auto max_distance = distance(*attempt_it);
-
-          for (; attempt_it != end; ++attempt_it)
-          {
-            auto d = distance(*attempt_it);
-            if (d < max_distance)
-            {
-              best_attempt = attempt_it;
-              max_distance = d;
-            }
-          }
-
-          return *best_attempt;
+          CollisionAvoidance result;
+          result.offset = {};
+          result.collision = default_collision;
+          result.rotate_subject = default_collision.rotate;
+          return result;
         }
 
-        return CollisionAvoidance();
+        else
+        {
+          return *std::min_element(avoidance_attempts, range_end,
+                                   [](const CollisionAvoidance& a, const CollisionAvoidance& b)
+          {
+            return a.collision.time_point < b.collision.time_point;
+          });
+        }
       }
 
-      CollisionAvoidance find_collision_avoidance(Vector2<double> old_position, Vector2<double> target_position,
-                                                  const resources::CollisionMaskFrame& old_collision_frame,
-                                                  const resources::CollisionMaskFrame& new_collision_frame,
-                                                  const resources::CollisionMaskFrame& scenery_frame)
+      template <typename ObjectStateRange>
+      CollisionAvoidance find_collision_avoidance(const EntityUpdateState& update_state,
+                                                  const resources::CollisionMaskFrame& scenery_frame,
+                                                  const ObjectStateRange& object_states,
+                                                  const CollisionInfo& default_collision)
       {
-        auto avoidance = detail::find_collision_avoidance(old_position, target_position,
-                                                          new_collision_frame, scenery_frame);
+        auto avoidance = find_collision_avoidance(update_state, scenery_frame, object_states, true, default_collision);
 
-        if (avoidance.collision && old_collision_frame.row_begin(0) != new_collision_frame.row_begin(0))
+        if (avoidance.collision && update_state.old_frame.row_begin(0) != update_state.new_frame.row_begin(0))
         {
-          avoidance.collision.rotate = true;
-          auto unrotated = detail::find_collision_avoidance(old_position, target_position,
-                                                            old_collision_frame, scenery_frame);
-          if (!unrotated.collision)
+          auto unrotated = find_collision_avoidance(update_state, scenery_frame, object_states, false, default_collision);
+
+          if (!unrotated.collision || unrotated.collision.time_point < avoidance.collision.time_point)
           {
             avoidance = unrotated;
-            avoidance.collision.rotate = false;            
           }
         }
 
@@ -207,17 +265,29 @@ namespace ts
         collision_mask_(pattern_, track_.height_level_count(), detail::wall_test(track_.terrain_library())),
         control_point_manager_(track_.control_points().data(), track_.control_points().size())
     {
-      cars_.reserve(limits::max_car_count);
       entity_map_.resize(limits::max_car_count);
-      previously_collided_.resize(limits::max_car_count, false);
+      cars_.reserve(limits::max_car_count);      
+      previously_collided_.resize(limits::max_car_count);
+      entity_update_state_.reserve(limits::max_car_count);
+      bounding_box_cache_.reserve(limits::max_car_count * 2);
     }
 
-    Car* World::create_car(const CarDefinition& car_definition, std::uint8_t car_id)
+    Car* World::create_car(const CarDefinition& car_definition, std::uint8_t car_id, std::uint16_t start_pos)
     {
       auto entity_id = car_id_to_entity_id(car_id);
 
-      if (cars_.size() >= limits::max_car_count || entity_map_[entity_id] != nullptr) 
+      const auto& start_points = track_.start_points();
+      if (cars_.size() >= limits::max_car_count || entity_map_[entity_id] != nullptr || start_pos >= start_points.size())
         return nullptr;
+
+      auto position = make_vector2(0.0, 0.0);
+      auto rotation = degrees(0.0);
+      auto z_position = 0.0;
+
+      auto point = start_points[start_pos];
+      position = vector2_cast<double>(point.position);
+      rotation = degrees(static_cast<double>(point.rotation));
+      z_position = static_cast<double>(point.level);
 
       auto car = std::make_unique<Car>(car_definition, entity_id);
       auto car_ptr = car.get();
@@ -226,19 +296,6 @@ namespace ts
       entity_map_[entity_id] = std::move(car);
 
       auto track_size = track().size();
-
-      auto position = make_vector2(0.0, 0.0);
-      auto rotation = degrees(0.0);
-      auto z_position = 0.0;
-
-      const auto& start_points = track_.start_points();
-      if (!start_points.empty())
-      {
-        auto point = start_points.front();
-        position = vector2_cast<double>(point.position);
-        rotation = degrees(static_cast<double>(point.rotation));
-        z_position = static_cast<double>(point.level);
-      }
 
       car_ptr->set_position(position);
       car_ptr->set_rotation(rotation);
@@ -250,63 +307,152 @@ namespace ts
     void World::update(world::EventInterface& event_interface, std::uint32_t frame_duration)
     {
       double fd = frame_duration * 0.001;
-
-      for (Car* car : cars_)
+      entity_update_state_.clear();
+      for (auto* car : cars_)
       {
-        auto entity_id = car->entity_id();
-        auto z_level = car->z_level();
-
         auto old_position = car->position();
         auto old_rotation = car->rotation();
-        car->update(terrain_at(old_position, z_level), fd);
+
+        car->update(terrain_at(old_position, car->z_level()), fd);
 
         auto new_position = accomodate_position(car->position() + fd * car->velocity());
         auto new_rotation = radians(car->rotation().radians() + fd * car->rotating_speed());
 
-        auto scenery_frame = collision_mask_.frame(z_level);
-        auto collision_frame = car->collision_mask()->rotation_frame(new_rotation);
-        auto old_collision_frame = car->collision_mask()->rotation_frame(old_rotation);
+        entity_update_state_.push_back({
+          car, old_rotation, new_rotation, old_position, new_position, car->z_level(),
+          vector2_cast<std::int32_t>(old_position),
+          car->collision_mask()->rotation_frame(old_rotation),
+          car->collision_mask()->rotation_frame(new_rotation),
+        });               
+      }     
 
-        // Move the car through all pixels in a linear fashion from old to new position.
-        // Test for collisions with the scenery at every step of the way.
-        auto collision = detail::find_collision(old_position, new_position, collision_frame, scenery_frame);
+      bounding_box_cache_.clear();
+      for (auto& update_state : entity_update_state_)
+      {
+        auto entity = update_state.entity;
+        auto mask = entity->collision_mask();
+        auto bb = mask->bounding_box();
+
+        auto old_box = translate(bb, vector2_cast<std::int32_t>(update_state.old_position));
+        auto new_box = translate(bb, vector2_cast<std::int32_t>(update_state.new_position));
+
+        auto total_bb = combine(old_box, new_box);
+        --total_bb.left;
+        --total_bb.top;
+        total_bb.width += 2;
+        total_bb.height += 2;
+
+        bounding_box_cache_.push_back({ &update_state, total_bb });
+      }
+
+      auto bb_it = bounding_box_cache_.begin();
+      for (auto& update_state : entity_update_state_)
+      {
+        auto entity = update_state.entity;
+        auto entity_id = entity->entity_id();
+        auto z_level = update_state.z_level;
+
+        auto old_position = entity->position();
+        auto new_position = update_state.new_position;
+
+        auto scenery_frame = collision_mask_.frame(z_level);
+        const auto& new_collision_frame = update_state.new_frame;
+
+        auto bounding_box = bb_it->bounding_box;
+
+        auto bb_predicate = [=](const auto& entry)
+        {
+          return entry.update_state->z_level == z_level && intersects(entry.bounding_box, bounding_box);
+        };
+
+        std::size_t bb_cache_size = bounding_box_cache_.size();
+
+        std::copy_if(bounding_box_cache_.begin(), bb_it, 
+                     std::back_inserter(bounding_box_cache_), bb_predicate);
+        ++bb_it;
+        // TODO: Improve complexity, O(n^2) is not quite acceptable.
+        std::copy_if(bb_it, bounding_box_cache_.begin() + bb_cache_size, 
+                     std::back_inserter(bounding_box_cache_), bb_predicate);
+
+        auto bb_transform = [](const auto& bb) -> detail::EntityUpdateState&
+        {
+          return *bb.update_state;
+        };
+
+        auto object_range = boost::make_iterator_range(
+          boost::make_transform_iterator(bounding_box_cache_.begin() + bb_cache_size, bb_transform),
+          boost::make_transform_iterator(bounding_box_cache_.end(), bb_transform)
+          );
+
+        auto collision = detail::find_collision(update_state, scenery_frame, object_range, {}, true);
         if (collision)
         {
           if (previously_collided_[entity_id])
           {
-            // First, attempt to avoid a collision after applying the new rotation
-            auto avoidance = detail::find_collision_avoidance(old_position, new_position, 
-                                                              old_collision_frame, collision_frame, scenery_frame);
+            auto avoidance = detail::find_collision_avoidance(update_state, scenery_frame, object_range, collision);
+            update_state.old_position += avoidance.offset;
+            update_state.new_position += avoidance.offset;
 
             collision = avoidance.collision;
-            new_position += avoidance.offset;
+            if (!collision && !avoidance.rotate_subject)
+            {
+              update_state.new_rotation = update_state.old_rotation;
+              update_state.new_frame = update_state.old_frame;
+            }
           }
         }
 
-        if (collision /* && scenery collision */)
+        if (collision)
         {
-          auto collision_result = detail::resolve_collision(car, old_position, old_rotation, new_rotation, collision, scenery_frame,
-                                                            terrain_at(collision.point, z_level));
+          auto position = vector2_cast<double>(collision.valid_position) + 0.5;
 
-          new_position = collision.valid_position;
-          if (!collision.rotate) new_rotation = old_rotation;
+          {
+            auto x_limits = std::minmax(old_position.x, new_position.x);
+            auto y_limits = std::minmax(old_position.y, new_position.y);
+            
+            position.x = std::min(std::max(position.x, x_limits.first), x_limits.second);
+            position.y = std::min(std::max(position.y, y_limits.first), y_limits.second);
+          }
 
-          event_interface.on_collision(car, collision_result);
+          entity->set_position(position);
+          entity->set_rotation(collision.rotate ? update_state.new_rotation : update_state.old_rotation);
+          update_state.current_position = collision.valid_position;
+
+          if (collision.object_state)
+          {
+            auto collision_result = detail::resolve_collision(collision);
+
+            event_interface.on_collision(entity, collision.object_state->entity, collision_result);            
+          }
+
+          else
+          {
+            auto scenery_frame = collision_mask_.frame(z_level);
+            auto terrain = terrain_at(collision.point, z_level);
+            auto collision_result = detail::resolve_collision(collision, scenery_frame, terrain);
+
+            event_interface.on_collision(entity, collision_result);
+          }
         }
 
-        car->set_position(new_position);
-        car->set_rotation(new_rotation);
+        else
+        {
+          entity->set_position(update_state.new_position);
+          entity->set_rotation(update_state.new_rotation);          
+        }
 
         previously_collided_[entity_id] = collision.collided;
+        bounding_box_cache_.resize(bb_cache_size);           
 
         auto cp_hit_callback = [&](const ControlPoint& point, double time_point)
         {
           auto frame_offset = static_cast<std::uint32_t>(frame_duration * time_point);
 
-          event_interface.on_control_point_hit(car, point, frame_offset);
+          event_interface.on_control_point_hit(entity, point, frame_offset);
         };
 
-        control_point_manager_.test_control_point_intersections(old_position, car->position(), cp_hit_callback);
+        update_state.current_position = vector2_cast<std::int32_t>(entity->position());
+        control_point_manager_.test_control_point_intersections(old_position, entity->position(), cp_hit_callback);
       }
     }
 

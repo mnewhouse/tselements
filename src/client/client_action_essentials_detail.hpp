@@ -126,6 +126,12 @@ namespace ts
     {
       scene::handle_collision(scene_, event);
     }
+
+    template <typename MessageDispatcher>
+    void ActionEssentials<MessageDispatcher>::collision_event(const world::messages::EntityCollision& event)
+    {
+      scene::handle_collision(scene_, event);
+    }
   }
 }
 

@@ -47,6 +47,12 @@ namespace ts
     {
       cup_essentials->action_essentials()->collision_event(collision);
     }
+
+    template <typename MessageDispatcher>
+    void MessageForwarder<MessageDispatcher>::forward(const world::messages::EntityCollision& collision)
+    {
+      cup_essentials->action_essentials()->collision_event(collision);
+    }
   }
 }
 

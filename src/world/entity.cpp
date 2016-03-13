@@ -96,5 +96,15 @@ namespace ts
     {
       bounciness_ = bounciness;
     }
+
+    double Entity::mass() const
+    {
+      return mass_;
+    }
+
+    void Entity::set_mass(double mass)
+    {
+      mass_ = mass;
+    }
   }
 }

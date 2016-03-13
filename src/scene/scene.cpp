@@ -40,5 +40,11 @@ namespace ts
     {
       scene.sound_effect_controller->play_collision_sound(*collision.entity, collision.collision);
     }
+
+    void handle_collision(Scene& scene, const world::messages::EntityCollision& collision)
+    {
+      scene.sound_effect_controller->play_collision_sound(*collision.subject, *collision.object,
+                                                          collision.collision);
+    }
   }
 }

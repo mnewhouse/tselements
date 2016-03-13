@@ -79,8 +79,9 @@ namespace ts
       }
 
       template <typename WallTest>
-      auto create_dynamic_collision_mask(const resources::Pattern& pattern, IntRect rect, 
-                                         std::uint32_t row_words, std::uint32_t frame_count, WallTest&& wall_test)
+      auto create_dynamic_collision_mask(const resources::Pattern& pattern, IntRect rect,
+                                         std::uint32_t row_words, std::uint32_t frame_count, 
+                                         IntRect& bounding_box, WallTest&& wall_test)
       {
         auto pattern_size = make_vector2<std::uint32_t>(rect.width, rect.height);
         constexpr auto word_bits = collision_mask::word_bits();
@@ -93,6 +94,8 @@ namespace ts
         auto dest_center = make_vector2(dest_size.x * 0.5, dest_size.y * 0.5);
 
         auto source_center = vector2_cast<double>(pattern_size) * 0.5;
+
+        std::uint32_t left_bound = pattern_size.x, top_bound = pattern_size.y, right_bound = 0, bottom_bound = 0;
 
         auto frame_size = row_words * dest_size.y;
         std::vector<bitmask_type> result(frame_size * frame_count);
@@ -125,6 +128,11 @@ namespace ts
                   if (point.x < pattern_size.x && point.y < pattern_size.y &&
                       wall_test(pattern(point.x, point.y)))
                   {
+                    if (dest_x < left_bound) left_bound = dest_x;
+                    if (dest_x > right_bound) right_bound = dest_x;
+                    if (dest_y < top_bound) top_bound = dest_y;
+                    if (dest_y > bottom_bound) bottom_bound = dest_y;
+
                     word |= bit;
                   }
                 }
@@ -135,6 +143,15 @@ namespace ts
             }
           }
         }
+        
+        if (right_bound < left_bound) right_bound = left_bound;
+        if (bottom_bound < top_bound) bottom_bound = top_bound;
+
+        bounding_box.left = static_cast<std::int32_t>(left_bound) - static_cast<std::int32_t>(row_words * word_bits / 2);
+        bounding_box.top = static_cast<std::int32_t>(top_bound) - (pattern_size.y / 2);
+
+        bounding_box.width = right_bound - left_bound;
+        bounding_box.height = bottom_bound - top_bound;
 
         return result;
       }
@@ -146,6 +163,7 @@ namespace ts
       : row_width_(collision_mask::compute_word_count(pattern.size().x)),
         frame_count_(level_count),
         bitmap_size_(row_width_ * collision_mask::word_bits(), pattern.size().y),
+        bounding_box_(0, 0, pattern.size().x, pattern.size().y),
         pixel_data_(collision_mask::create_static_collision_mask(pattern, rect, row_width_, level_count, 
                                                                  std::forward<WallTest>(wall_test))),
         rotation_multiplier_(collision_mask::compute_rotation_multiplier(level_count))
@@ -164,10 +182,10 @@ namespace ts
       : row_width_(collision_mask::compute_word_count(std::max(pattern.size().x, pattern.size().y))),
         frame_count_(frame_count),
         bitmap_size_(row_width_ * collision_mask::word_bits(), std::max(pattern.size().x, pattern.size().y)),
-        pixel_data_(collision_mask::create_dynamic_collision_mask(pattern, rect, row_width_, frame_count, 
-                                                                  std::forward<WallTest>(wall_test))),
         rotation_multiplier_(collision_mask::compute_rotation_multiplier(frame_count))
     {
+      pixel_data_ = collision_mask::create_dynamic_collision_mask(pattern, rect, row_width_, frame_count, bounding_box_,
+                                                                  std::forward<WallTest>(wall_test));
     }
 
     template <typename WallTest>

@@ -79,12 +79,15 @@ namespace ts
       FrameInterface frame(std::uint32_t frame_id) const;
       FrameInterface rotation_frame(Rotation<double> rotation) const;
 
+      IntRect bounding_box() const;
+
     private:     
       std::uint32_t row_width_;
       std::uint32_t frame_count_;
       Vector2u bitmap_size_;
+      IntRect bounding_box_;
       std::vector<bitmask_type> pixel_data_;
-      double rotation_multiplier_;
+      double rotation_multiplier_;      
     };
 
     using CollisionMaskFrame = CollisionMask::FrameInterface;

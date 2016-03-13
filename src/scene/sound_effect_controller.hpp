@@ -29,6 +29,9 @@ namespace ts
 
       void play_collision_sound(const world::Entity& entity, const world::CollisionResult& collision_result);
 
+      void play_collision_sound(const world::Entity& subject, const world::Entity& object,
+                                const world::CollisionResult& collision_result);
+
     private:
       audio::PlaybackController playback_controller_;
       audio::SoundSampleLoader sound_sample_bank_;

@@ -39,6 +39,20 @@ namespace ts
         playback_controller_.play_sound_effect(*scenery_collision_sample_, properties, 1);
       }
     }
+
+    void SoundEffectController::play_collision_sound(const world::Entity& subject, const world::Entity& object,
+                                                     const world::CollisionResult& collision_result)
+    {
+      if (entity_collision_sample_)
+      {
+        audio::PlaybackProperties properties;
+
+        auto impact = static_cast<float>(collision_result.impact * collision_result.bounce_factor * 0.005);
+        properties.volume = std::min(impact, 1.0f);
+
+        playback_controller_.play_sound_effect(*entity_collision_sample_, properties, 1);
+      }
+    }
   }
 }
 

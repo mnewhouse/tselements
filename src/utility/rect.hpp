@@ -42,6 +42,14 @@ namespace ts
   };
 
   template <typename T, typename U>
+  auto translate(Rect<T> a, Vector2<U> b)
+  {
+    a.left += b.x;
+    a.top += b.y;
+    return a;
+  }
+
+  template <typename T, typename U>
   auto combine(Rect<T> a, Rect<U> b)
   {
     using result_type = typename std::common_type<T, U>::type;

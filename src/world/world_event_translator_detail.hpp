@@ -47,6 +47,17 @@ namespace ts
       message.collision = collision;
       dispatch_message(message);
     }
+
+    template <typename MessageDispatcher>
+    void EventTranslator<MessageDispatcher>::on_collision(const Entity* subject, const Entity* object,
+                                                          const CollisionResult& collision)
+    {
+      messages::EntityCollision message;
+      message.subject = subject;
+      message.object = object;
+      message.collision = collision;
+      dispatch_message(message);
+    }
   }
 }
 

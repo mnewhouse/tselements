@@ -48,6 +48,8 @@ namespace ts
       void set_rotating_speed(double rotation_speed);
       double rotating_speed() const;
 
+      void set_bounding_box(DoubleRect bounding_box);
+
       void set_z_position(double z_position);
       double z_position() const;
       std::uint32_t z_level() const;
@@ -60,6 +62,9 @@ namespace ts
       double bounciness() const;
       void set_bounciness(double bounciness);
 
+      double mass() const;
+      void set_mass(double mass);
+
     private:
       Vector2<double> position_;
       Vector2<double> velocity_;
@@ -70,6 +75,7 @@ namespace ts
       EntityType entity_type_;
 
       double bounciness_ = 0.0;
+      double mass_ = 100.0;
 
       std::shared_ptr<resources::CollisionMask> collision_mask_;
     };

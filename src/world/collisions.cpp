@@ -10,6 +10,7 @@
 #include "resources/collision_mask_detail.hpp"
 
 #include <array>
+#include <algorithm>
 
 namespace ts
 {
@@ -273,7 +274,7 @@ namespace ts
       CollisionResult result;
       result.point = global_point;
       result.normal = compute_collision_normal(scenery, global_point, entry_vector);
-      result.impact = std::abs(dot_product(subject_velocity, result.normal));
+      result.impact = (magnitude(subject_velocity) + std::max(dot_product(subject_velocity, result.normal), 0.0)) * 0.5;
       result.bounce_factor = bounce_factor;
 
       return result;
@@ -291,6 +292,53 @@ namespace ts
 
       new_velocity *= collision.bounce_factor;
       entity.set_velocity(new_velocity);
+    }
+
+    CollisionResult examine_entity_collision(Vector2i collision_point, 
+                                             Vector2i subject_position, Vector2i object_position, 
+                                             Vector2<double> subject_velocity, Vector2<double> object_velocity,
+                                             double bounce_factor)
+    {
+      CollisionResult result;
+      result.point = collision_point;
+      result.normal = normalize(vector2_cast<double>(subject_position - object_position));
+
+      auto relative_velocity = subject_velocity - object_velocity;
+      result.impact = (magnitude(relative_velocity) + std::max(dot_product(relative_velocity, result.normal), 0.0)) * 0.5;
+      result.bounce_factor = bounce_factor;
+
+      return result;
+    }
+
+    void resolve_entity_collision(const CollisionResult& collision, Entity& subject, Entity& object)
+    {
+
+      auto subject_velocity = subject.velocity();
+      auto object_velocity = object.velocity();
+
+      auto relative_velocity = subject_velocity - object_velocity;
+
+      double subject_mass = std::max(subject.mass(), 1.0);
+      double object_mass = std::max(object.mass(), 1.0);
+      double total_mass = subject_mass + object_mass;
+
+      auto relative_offset = subject.position() - object.position();
+      auto deflection_boost = normalize(relative_offset) * 10.0;
+
+      auto subject_speed_1d = dot_product(subject_velocity, collision.normal);
+      auto object_speed_1d = dot_product(object_velocity, collision.normal);
+      auto relative_speed_1d = subject_speed_1d - object_speed_1d;
+
+      auto new_relative_speed_1d = -relative_speed_1d * collision.bounce_factor;
+
+      auto transferred_force = (collision.normal * (new_relative_speed_1d - relative_speed_1d) * 
+                                subject_mass * object_mass) / total_mass;
+
+      subject_velocity += transferred_force / subject_mass + deflection_boost;
+      object_velocity += -transferred_force / object_mass - deflection_boost;
+
+      subject.set_velocity(subject_velocity);
+      object.set_velocity(object_velocity);
     }
   }
 }

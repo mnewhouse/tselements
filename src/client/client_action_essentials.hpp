@@ -69,6 +69,7 @@ namespace ts
       void launch_action();
 
       void collision_event(const world::messages::SceneryCollision& collision);
+      void collision_event(const world::messages::EntityCollision& collision);
 
     private:
       CupEssentials<MessageDispatcher>* cup_essentials_;

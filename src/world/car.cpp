@@ -18,6 +18,7 @@ namespace ts
         Controllable(entity_id)
     {
       set_bounciness(car_definition.bounciness);
+      set_mass(400.0);
     }
 
     void Car::update(const resources::TerrainDefinition& terrain_def, double frame_duration)

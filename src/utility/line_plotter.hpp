@@ -9,48 +9,57 @@
 
 #include "vector2.hpp"
 
+#include <iterator>
 #include <cmath>
-#include <algorithm>
 
 namespace ts
 {
   namespace utility
   {
+    class LinePlottingRange;
+
     struct LinePlottingIterator
-      : std::iterator<std::forward_iterator_tag, Vector2<double>>
+      : std::iterator<std::forward_iterator_tag, Vector2i>
     {
-      explicit LinePlottingIterator(Vector2<double> begin, Vector2<double> end)
-        : start_value_(begin),
-          offset_(end - begin),
-          index_(0),          
-          step_count_(std::max(static_cast<std::int32_t>(std::abs(offset_.x)),
-                               static_cast<std::int32_t>(std::abs(offset_.y))) + 1),      
-          step_(1.0 / step_count_)
+    public:
+      LinePlottingIterator(Vector2i start, Vector2i end)
+        : vx_(start.x),
+          vy_(start.y),
+          ix_(start.x < end.x ? 1 : -1),
+          iy_(start.y < end.y ? 1 : -1),
+          dx_(std::abs(start.x - end.x)), 
+          dy_(std::abs(start.y - end.y)),
+          err_(dx_ - dy_),
+          index_(0)
       {
       }
 
-      struct end_t {};
-      explicit LinePlottingIterator(const LinePlottingIterator& other, end_t)
-        : start_value_(other.start_value_),
-          offset_(other.offset_),
-          index_(other.step_count_ + 1),
-          step_count_(other.step_count_),
-          step_(other.step_)
+      struct end_tag {};
+      LinePlottingIterator(end_tag, std::uint32_t index)
+        : index_(index)
       {
       }
 
-      std::uint32_t index() const
+      Vector2i operator*() const
       {
-        return index_;
+        return{ vx_, vy_ };
       }
-
-      Vector2<double> operator*() const
-      {
-        return start_value_ + offset_ * step_ * static_cast<double>(index_);
-      }
-
+      
       LinePlottingIterator& operator++()
       {
+        auto e2 = err_ * 2;
+        if (e2 >= -dy_)
+        {
+          err_ -= dy_;
+          vx_ += ix_;
+        }
+
+        if (e2 < dx_)
+        {
+          err_ += dx_;
+          vy_ += iy_;
+        }
+
         ++index_;
         return *this;
       }
@@ -61,50 +70,53 @@ namespace ts
         ++*this;
         return temp;
       }
-      
+
     private:
-      Vector2<double> start_value_;
-      Vector2<double> offset_;
-      std::uint32_t index_ = 0;
-      std::uint32_t step_count_;
-      double step_;
+      friend LinePlottingRange;
+      friend inline bool operator==(const LinePlottingIterator& a, const LinePlottingIterator& b)
+      {
+        return a.index_ == b.index_;
+      }
+
+      friend inline bool operator!=(const LinePlottingIterator& a, const LinePlottingIterator& b)
+      {
+        return !(a == b);
+      }
+
+      std::int32_t vx_, vy_, ix_, iy_, dx_, dy_, err_;
+      std::uint32_t index_;
     };
 
-    struct LinePlottingRange
+    class LinePlottingRange
     {
     public:
       using iterator = LinePlottingIterator;
       using const_iterator = iterator;
 
-      LinePlottingRange(Vector2<double> begin, Vector2<double> end)
+      LinePlottingRange(Vector2i begin, Vector2i end)
         : begin_(begin, end),
-          end_(begin_, iterator::end_t())
+          end_(iterator::end_tag(), std::max(begin_.dx_, begin_.dy_) + 1)
       {
       }
 
-      const_iterator begin() const
+      auto begin() const
       {
         return begin_;
       }
 
-      const_iterator end() const
+      auto end() const
       {
         return end_;
+      }
+
+      auto step_count() const
+      {
+        return end_.index_;
       }
 
     private:
       iterator begin_, end_;
     };
-
-    inline bool operator==(const LinePlottingIterator& a, const LinePlottingIterator& b)
-    {
-      return a.index() == b.index();
-    }
-    
-    inline bool operator!=(const LinePlottingIterator& a, const LinePlottingIterator& b)
-    {
-      return !(a == b);
-    }
   }
 }
 

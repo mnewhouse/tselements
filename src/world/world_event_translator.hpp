@@ -26,6 +26,8 @@ namespace ts
                                         std::uint32_t frame_offset) override;
 
       virtual void on_collision(const Entity* entity, const CollisionResult& collision) override;
+      virtual void on_collision(const Entity* subject, const Entity* object,
+                                const CollisionResult& collision) override;
 
     private:
       template <typename MessageType>

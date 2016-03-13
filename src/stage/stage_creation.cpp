@@ -17,7 +17,7 @@ namespace ts
     {
       for (const auto& car : stage_desc.car_instances)
       {
-        world.create_car(stage_desc.car_models[car.model_id], car.instance_id);
+        world.create_car(stage_desc.car_models[car.model_id], car.instance_id, car.start_pos);
       }
     }
   }

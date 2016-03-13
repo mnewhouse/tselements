@@ -31,6 +31,13 @@ namespace ts
         const Entity* entity;
         CollisionResult collision;
       };
+
+      struct EntityCollision
+      {
+        const Entity* subject;
+        const Entity* object;
+        CollisionResult collision;
+      };
     }
   }
 }

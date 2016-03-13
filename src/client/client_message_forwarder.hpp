@@ -35,6 +35,7 @@ namespace ts
       void forward(const cup::messages::StageEnd&);
 
       void forward(const world::messages::SceneryCollision&);
+      void forward(const world::messages::EntityCollision&);
 
       // Have a fallback implementation for unlisted messages that simply does nothing.
       template <typename MessageType>

@@ -24,7 +24,8 @@ namespace ts
         std::uint8_t instance_id;
         std::uint8_t model_id;
         std::uint16_t controller_id;
-        std::uint16_t slot_id;  
+        std::uint16_t slot_id;
+        std::uint16_t start_pos;
 
         resources::ColorScheme color_scheme;
       };
