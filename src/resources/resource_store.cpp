@@ -8,6 +8,8 @@
 #include "settings.hpp"
 #include "car_store.hpp"
 
+#include "fonts/font_library.hpp"
+
 namespace ts
 {
   namespace resources
@@ -15,6 +17,7 @@ namespace ts
     struct ResourceStore::Impl
     {
       CarStore car_store;
+      fonts::FontLibrary font_library;
 
       Settings settings;
     };
@@ -46,6 +49,16 @@ namespace ts
     const Settings& ResourceStore::settings() const
     {
       return impl_->settings;
+    }
+
+    fonts::FontLibrary& ResourceStore::font_library()
+    {
+      return impl_->font_library;
+    }
+
+    const fonts::FontLibrary& ResourceStore::font_library() const
+    {
+      return impl_->font_library;
     }
   }
 }

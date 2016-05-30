@@ -1,0 +1,64 @@
+/*
+* TS Elements
+* Copyright 2015-2016 M. Newhouse
+* Released under the MIT license.
+*/
+
+#include "font_renderer.hpp"
+#include "text_shaders.hpp"
+#include "text_vertex_buffer.hpp"
+
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/transform.hpp>
+
+namespace ts
+{
+  namespace fonts
+  {
+    FontRenderer::FontRenderer()
+    {
+      shader_program_.reset(glCreateProgram());
+
+      graphics::Shader vertex_shader(glCreateShader(GL_VERTEX_SHADER));
+      graphics::Shader fragment_shader(glCreateShader(GL_FRAGMENT_SHADER));
+
+      graphics::compile_shader(vertex_shader, text_vertex_shader);
+      graphics::compile_shader(fragment_shader, text_fragment_shader);
+
+      graphics::attach_shader(shader_program_, vertex_shader);
+      graphics::attach_shader(shader_program_, fragment_shader);
+
+      graphics::link_shader_program(shader_program_);
+
+      GLuint sampler;
+      glCreateSamplers(1, &sampler);
+      sampler_.reset(sampler);
+
+      glSamplerParameterf(sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glSamplerParameterf(sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    }
+
+    void FontRenderer::draw(const TextVertexBuffer& text_buffer) const
+    {
+      auto mat = glm::translate(glm::mat4(), glm::vec3(-1.0, 1.0, 0.0));
+      mat = glm::scale(mat, glm::vec3(1.0 / 840, -1.0 / 525.0, 1.0));
+
+      glUseProgram(shader_program_.get());
+      glBindSampler(0, sampler_.get());
+
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+      auto view_loc = glGetUniformLocation(shader_program_.get(), "u_viewMat");
+      auto sampler_loc = glGetUniformLocation(shader_program_.get(), "u_textureSampler");
+
+      glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(mat));
+      glUniform1ui(sampler_loc, 0);
+
+      text_buffer.draw();
+      glUseProgram(0);
+      glBindSampler(0, 0);
+    }
+  }
+}

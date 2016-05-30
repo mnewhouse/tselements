@@ -139,12 +139,13 @@ namespace ts
         layout(location = 0) in vec2 in_position;
         layout(location = 1) in vec2 in_texCoord;
         layout(location = 2) in vec2 in_frameOffset;
+        layout(location = 8) in float in_hoverDistance;
         out vec2 frag_worldPosition;
-        out vec2 frag_texCoord;
-        
+        out vec2 frag_texCoord;        
         void main()
         {
-          vec2 position = in_position.xy + 1.0 + in_frameOffset * frameProgress;
+          vec2 distance = vec2(in_hoverDistance, in_hoverDistance) + 1.5;
+          vec2 position = in_position.xy + distance + in_frameOffset * frameProgress;
           frag_worldPosition = position;
         
           gl_Position = viewMat * vec4(position, 0.0, 1.0);
@@ -179,22 +180,36 @@ namespace ts
         #version 330
         uniform mat4 viewMat;
         layout(location = 0) in vec2 in_position;
-        layout(location = 1) in vec4 in_color;
-        out vec4 frag_color;
+        layout(location = 1) in vec2 in_center;
+        layout(location = 2) in vec4 in_color;
+        layout(location = 3) in float in_radius;
+        out vec2 frag_position;
+        out vec2 frag_center;
+        out vec4 frag_color;        
+        out float frag_radius;
         void main()
         {
           gl_Position = viewMat * vec4(in_position.xy, 0.0, 1.0);
+          frag_position = in_position.xy;
+          frag_center = in_center.xy;
           frag_color = in_color;
+          frag_radius = in_radius;          
         }
       )";
 
       static const char particle_fragment_shader[] = R"(
         #version 330
+        in vec2 frag_position;
+        in vec2 frag_center;
         in vec4 frag_color;
+        in float frag_radius;
         out vec4 out_fragColor;
         void main()
         {
+          float dist = distance(frag_position, frag_center);
+          float alpha = smoothstep(frag_radius - 0.05, frag_radius, dist);
           out_fragColor = frag_color;
+          out_fragColor.a = 1.0 - alpha;
         }
       )";
 

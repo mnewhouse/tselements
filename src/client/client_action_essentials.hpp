@@ -18,6 +18,8 @@
 
 #include "world/world_message_fwd.hpp"
 
+#include "race/race_messages.hpp"
+
 #include <memory>
 
 namespace ts

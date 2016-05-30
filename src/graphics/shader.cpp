@@ -7,7 +7,6 @@
 #include "shader.hpp"
 
 #include <stdexcept>
-#include <vector>
 
 namespace ts
 {
@@ -15,21 +14,13 @@ namespace ts
   {
     void compile_shader(const Shader& shader, const char* data)
     {
-      glShaderSource(shader.get(), 1, &data, nullptr);
-      glCompileShader(shader.get());
+      const char* const dummy_array[1] = { data };
+      compile_shader(shader, dummy_array);
+    }
 
-      GLint success = GL_FALSE;
-      glGetShaderiv(shader.get(), GL_COMPILE_STATUS, &success);
-      if (!success)
-      {
-        // In the case of failure, we're going to throw an exception.
-        GLint max_length = 0;
-        glGetShaderiv(shader.get(), GL_INFO_LOG_LENGTH, &max_length);
-
-        std::string error(max_length, 0);
-        glGetShaderInfoLog(shader.get(), max_length, &max_length, &error[0]);
-        throw std::runtime_error(error);
-      }
+    void attach_shader(const ShaderProgram& shader_program, const Shader& shader)
+    {
+      glAttachShader(shader_program.get(), shader.get());
     }
 
     void link_shader_program(const ShaderProgram& shader_program)

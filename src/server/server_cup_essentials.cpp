@@ -11,25 +11,12 @@
 #include "resources/resource_store.hpp"
 #include "resources/settings.hpp"
 
-#include "world/world_event_translator_detail.hpp"
+#include <iostream>
 
 namespace ts
 {
   namespace server
   {
-    namespace detail
-    {
-      auto make_message_distributor(const MessageDispatcher* dispatcher, const MessageConveyor* conveyor)
-      {
-        return MessageDistributor(dispatcher, conveyor);
-      }
-
-      auto make_world_event_translator(const MessageDispatcher* dispatcher, const MessageConveyor* conveyor)
-      {
-        return world::EventTranslator<MessageDistributor>(make_message_distributor(dispatcher, conveyor));
-      }
-    }
-
     CupEssentials::CupEssentials(resources::ResourceStore* resource_store)
       : resource_store_(resource_store),
       message_conveyor_(MessageContext{ this }),
@@ -45,8 +32,7 @@ namespace ts
     {
       if (stage_essentials_)
       {        
-        stage_essentials_->update(detail::make_world_event_translator(&message_dispatcher_, &message_conveyor_), 
-                                  frame_duration);
+        stage_essentials_->update(frame_duration);
       }
 
       if (stage_loader_.is_ready())
@@ -60,7 +46,7 @@ namespace ts
       try
       {
         // Get the stage from the stage loader, and initialize the stage essentials object with it.
-        stage_essentials_.emplace(stage_loader_.get_result());
+        stage_essentials_.emplace(stage_loader_.get_result(), &message_dispatcher_, &message_conveyor_);
         const auto& stage_desc = stage_essentials_->stage_description();
 
         cup_controller_.initialize_stage(stage_desc);
@@ -73,9 +59,10 @@ namespace ts
         message_dispatcher_(stage_loaded, local_client);        
       }
 
-      catch (const std::exception&)
+      catch (const std::exception& e)
       {
         // TODO: handle error gracefully
+        std::cout << e.what() << std::endl;
       }
     }
 

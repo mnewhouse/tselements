@@ -10,6 +10,7 @@
 #include "cup/cup_message_fwd.hpp"
 #include "stage/stage_message_fwd.hpp"
 #include "world/world_message_fwd.hpp"
+#include "race/race_messages.hpp"
 
 namespace ts
 {

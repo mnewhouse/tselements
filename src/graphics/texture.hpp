@@ -33,12 +33,24 @@ namespace ts
       };
     }
     
-    using Texture = std::unique_ptr<GLuint, detail::TextureDeleter>;
-    class Surface;
+    class Texture
+    {
+    public:
+      Texture() = default;
+      explicit Texture(const sf::Image& image);
+      explicit Texture(Vector2u texture_size);
+      explicit Texture(GLuint texture, Vector2u texture_size);
 
-    void allocate_texture_storage(const Texture& texture, Vector2i size);
-    void update_texture_image(const Texture& texture, Vector2i pos,
-                              const sf::Image& image, IntRect source_rect);
+      GLuint get() const { return texture_.get(); }
+      Vector2u size() const { return texture_size_; }
+
+      void update(Vector2i pos, const sf::Image& image);
+      void update(Vector2i pos, const std::uint8_t* data, Vector2u data_size);
+
+    private:
+      std::unique_ptr<GLuint, detail::TextureDeleter> texture_;
+      Vector2u texture_size_;
+    };
 
     Texture create_texture_from_image(const sf::Image& image);
     GLint max_texture_size();

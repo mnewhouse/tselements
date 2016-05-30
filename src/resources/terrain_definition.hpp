@@ -19,6 +19,8 @@ namespace ts
 
     struct TerrainDefinition
     {
+      TerrainId id;
+
       double acceleration = 1.0;
       double braking = 1.0;
       double steering = 1.0;

@@ -12,6 +12,7 @@
 #include "cup/cup_message_fwd.hpp"
 #include "stage/stage_message_fwd.hpp"
 #include "client/update_message.hpp"
+#include "world/world_message_fwd.hpp"
 
 namespace ts
 {
@@ -23,10 +24,13 @@ namespace ts
       CupEssentials* cup_essentials;
       
       void forward(cup::messages::PreInitialization&& pre_initialization);
+
       void forward(const ClientMessage<cup::messages::Advance>& advance);
       void forward(const ClientMessage<cup::messages::Ready>& ready);
       void forward(const ClientMessage<stage::messages::ControlUpdate>& control_update);
-      void forward(const ClientMessage<client::messages::Update>& update);
+      void forward(const ClientMessage<client::messages::Update>& update);      
+
+      void forward(const world::messages::ControlPointHit& cp_hit);
 
       template <typename MessageType>
       void forward(const MessageType& m) {}

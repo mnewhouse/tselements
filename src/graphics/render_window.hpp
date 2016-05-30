@@ -8,6 +8,7 @@
 #define WINDOW_HPP_58912
 
 #include "utility/vector2.hpp"
+#include "utility/color.hpp"
 
 #include <SFML/Window/Event.hpp>
 
@@ -34,6 +35,7 @@ namespace ts
       RenderWindow(const char* title, std::uint32_t width, std::uint32_t height, WindowMode window_mode);
       ~RenderWindow();
 
+      void clear(Colorf color);
       void display();
       void activate();
 

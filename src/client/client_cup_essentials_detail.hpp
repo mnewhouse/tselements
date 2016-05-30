@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <exception>
+#include <iostream>
 
 namespace ts
 {
@@ -85,9 +86,10 @@ namespace ts
           action_essentials_ = std::make_unique<action_type>(this, scene_loader_.get_result());
         }
 
-        catch (const std::exception&)
+        catch (const std::exception& e)
         {
           // If something went wrong with the loading process, handle it gracefully #TODO
+          std::cout << e.what() << std::endl;
         }
 
         // Inform the server that we are ready, regardless of whether an exception happened.

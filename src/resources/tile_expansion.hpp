@@ -23,7 +23,7 @@ namespace ts
     // taking the sub-tiles and calculating their positions as if they were normal tiles.
 
     template <typename InputIt, typename OutIt>
-    void expand_tiles(InputIt tile_it, InputIt tile_end, std::uint32_t level, 
+    void expand_tiles(InputIt tile_it, InputIt tile_end,
                       const TileLibrary& tile_library, OutIt out)
     {
       const auto& tile_groups = tile_library.tile_groups();
@@ -42,7 +42,7 @@ namespace ts
             // It's not a tile group but a regular tile, so this will just be a simple copy.
             PlacedTile placed_tile;
             placed_tile.id = tile.id;
-            placed_tile.level = level + tile.level;
+            placed_tile.level = tile.level;
             placed_tile.position = tile.position;
             placed_tile.rotation = tile.rotation;
             placed_tile.definition = &*tile_def_it;

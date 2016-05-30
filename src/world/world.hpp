@@ -74,6 +74,8 @@ namespace ts
         Vector2<double> old_position;
         Vector2<double> new_position;
 
+        double old_z_position;
+        double new_z_position;
         std::uint32_t z_level;
         Vector2i current_position;
 
@@ -104,11 +106,14 @@ namespace ts
       
       const resources::Track& track() const noexcept;
 
-      const resources::TerrainDefinition& terrain_at(Vector2<double> position, std::uint32_t level = 0) const;
-      const resources::TerrainDefinition& terrain_at(Vector2i position, std::uint32_t level = 0) const;
+      const resources::TerrainDefinition& terrain_at(Vector2i position) const;
+      const resources::TerrainDefinition& terrain_at(Vector2<double> position) const;
+      const resources::TerrainDefinition& terrain_at(Vector2<double> position, std::uint32_t level) const;
+      const resources::TerrainDefinition& terrain_at(Vector2i position, std::uint32_t level) const;
 
     private:
       Vector2<double> accomodate_position(Vector2<double> position) const;
+      double accomodate_z_position(double z_position) const;
 
       std::vector<Car*> cars_;
       std::vector<std::unique_ptr<Entity>> entity_map_;

@@ -23,19 +23,23 @@ namespace ts
     class TerrainLibrary
     {
     public:
-      void define_terrain(TerrainId terrain_id, const TerrainDefinition& terrain);
+      void define_terrain(const TerrainDefinition& terrain);
       const TerrainDefinition& terrain(TerrainId terrain_id) const;
       const TerrainDefinition& terrain(TerrainId terrain_id, std::uint8_t level) const;
 
       void define_sub_terrain(TerrainId terrain_id, SubTerrain sub_terrain);
       TerrainId sub_terrain(TerrainId terrain_id, std::uint8_t level) const;
 
+      using level_range_type = std::pair<std::uint8_t, std::uint8_t>;
+      level_range_type sub_level_range(TerrainId terrain_id, std::uint8_t level) const;
+
       static constexpr std::uint32_t max_terrains = 256;
       static constexpr std::uint32_t max_levels = 16;
 
     private:
       std::vector<TerrainDefinition> terrains_ = std::vector<TerrainDefinition>(max_terrains);
-      std::vector<TerrainId> sub_terrains_ = std::vector<TerrainId>(max_terrains * max_levels);
+      std::vector<TerrainId> sub_terrains_ = std::vector<TerrainId>(max_terrains * max_levels);      
+      std::vector<level_range_type> sub_levels_ = std::vector<level_range_type>(max_terrains * max_levels);
     };
   }
 }

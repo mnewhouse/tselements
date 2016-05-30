@@ -9,8 +9,11 @@
 
 #include "car_hash.hpp"
 #include "collision_mask.hpp"
+#include "handling.hpp"
 
 #include "utility/rect.hpp"
+
+#include <boost/container/small_vector.hpp>
 
 #include <string>
 #include <cstdint>
@@ -33,14 +36,18 @@ namespace ts
       std::string car_name;
       CarHash car_hash;
 
-      std::shared_ptr<CollisionMask> collision_mask;
-      double bounciness = 1.0;
-
       std::string image_path;
       CarImage image_type = CarImage::Default;
       IntRect image_rect;
       std::uint32_t num_rotations = 1;
       double image_scale = 2.0;
+
+      boost::container::small_vector<Vector2i, 4> tyre_positions;
+
+      std::shared_ptr<CollisionMask> collision_mask;
+      double bounciness = 1.0;
+      
+      Handling handling;
 
       std::string engine_sound_path;
     };

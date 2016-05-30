@@ -241,9 +241,9 @@ namespace ts
 
           resources::ColorScheme color_scheme;
           color_scheme.scheme_id = 0;
-          color_scheme.colors[0] = { 255, 180, 0, 255 };
-          color_scheme.colors[2] = { 255, 255, 255, 255 };
-          color_scheme.colors[1] = { 180, 0, 0, 255 };
+          color_scheme.colors[0] = { 255, 255, 255, 255 };          
+          color_scheme.colors[1] = { 255, 150, 0, 255 };
+          color_scheme.colors[2] = { 180, 0, 0, 255 };
           dynamic_scene->add_entity(car, model_id, color_scheme);
         }
       }

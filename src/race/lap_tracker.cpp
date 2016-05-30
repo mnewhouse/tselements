@@ -23,7 +23,7 @@ namespace ts
     }
 
     void LapTracker::control_point_hit(const world::Entity* car, std::uint16_t point_id,
-                                       std::uint32_t frame_offset)
+                                       std::uint32_t frame_offset, LapEventHandler& lap_event_handler)
     {
       auto car_id = world::entity_id_to_car_id(car->entity_id());
       if (world::entity_id_to_car_id(car_id) == car->entity_id())
@@ -41,7 +41,13 @@ namespace ts
 
             car_info.last_lap_start += lap_time;
 
+            messages::LapComplete event;
+            event.entity = car;
+            event.lap_time = lap_time;
+            event.race_time = race_time_;
+
             // Lap completed
+            lap_event_handler.on_lap_complete(event);
           }
 
           ++car_info.current_control_point;

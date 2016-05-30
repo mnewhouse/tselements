@@ -35,5 +35,10 @@ namespace ts
     {
       cup_essentials->forward_stage_message(message);
     }
+
+    void MessageForwarder::forward(const world::messages::ControlPointHit& cp_hit)
+    {
+      cup_essentials->forward_stage_message(cp_hit);
+    }
   }
 }

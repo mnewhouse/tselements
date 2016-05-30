@@ -11,6 +11,11 @@
 
 namespace ts
 {
+  namespace fonts
+  {
+    class FontLibrary;
+  }
+
   namespace resources
   {
     class CarStore;
@@ -33,6 +38,9 @@ namespace ts
 
       Settings& settings();
       const Settings& settings() const;
+
+      fonts::FontLibrary& font_library();
+      const fonts::FontLibrary& font_library() const;
 
     private:
       struct Impl;

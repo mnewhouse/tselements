@@ -192,12 +192,13 @@ namespace ts
         }) != placement_map.atlases.end();
       }
 
-      bool fragmented_texture_rect_exists(const PlacementMap& placement_map, boost::string_ref, const IntRect& rect)
+      bool fragmented_texture_rect_exists(const PlacementMap& placement_map, boost::string_ref file_name, 
+                                          const IntRect& rect)
       {
         return std::find_if(placement_map.atlas_fragments.begin(), placement_map.atlas_fragments.end(),
-                            [rect](const AtlasFragment& fragment)
+                            [=](const AtlasFragment& fragment)
         {
-          return contains(fragment.full_source_rect, rect);
+          return file_name == fragment.image_file && contains(fragment.full_source_rect, rect);
         }) != placement_map.atlas_fragments.end();
       }
 
@@ -255,41 +256,41 @@ namespace ts
             for (const auto& atlas : placement_map.atlases)
             {
               auto image_it = atlas.image_data.find(image_file);
-              if (image_it == atlas.image_data.end()) continue;
-
-              // Find all the existing atlas rects that already contain the image,
-              // and store information for each one.
-
-              placement_buffer.clear();
-              std::copy_if(image_it->second.begin(), image_it->second.end(), std::back_inserter(placement_buffer),
-                           [=](const AtlasPlacement& placement)
+              if (image_it != atlas.image_data.end())
               {
-                return contains(placement.full_source_rect, image_rect);
-              });
+                // Find all the existing atlas rects that already contain the image,
+                // and store information for each one.
 
-              for (const auto& placement : placement_buffer)
-              {
-                // The rect we need may be only a sub-rect of the atlas rect we found. Take that into account.
-                IntRect partial_rect;
-                partial_rect.left = placement.atlas_rect.left + image_rect.left - placement.source_rect.left;
-                partial_rect.top = placement.atlas_rect.top + image_rect.top - placement.source_rect.top;
-                partial_rect.width = image_rect.width;
-                partial_rect.height = image_rect.height;                
-
-                if (placement.source_rect != placement.full_source_rect)
+                placement_buffer.clear();
+                std::copy_if(image_it->second.begin(), image_it->second.end(), std::back_inserter(placement_buffer),
+                             [=](const AtlasPlacement& placement)
                 {
-                  Vector2i fragment_offset(placement.source_rect.left - placement.full_source_rect.left,
-                                           placement.source_rect.top - placement.full_source_rect.top);
+                  return contains(placement.full_source_rect, image_rect);
+                });
 
-                  
-
-
-                  map_interface.map_texture_fragment(resource_id, atlas_id, partial_rect, fragment_offset);
-                }
-
-                else
+                for (const auto& placement : placement_buffer)
                 {
-                  map_interface.map_texture(resource_id, atlas_id, partial_rect);
+                  // The rect we need may be only a sub-rect of the atlas rect we found. Take that into account.
+                  IntRect partial_rect;
+                  partial_rect.left = placement.atlas_rect.left + image_rect.left - placement.source_rect.left;
+                  partial_rect.top = placement.atlas_rect.top + image_rect.top - placement.source_rect.top;
+                  partial_rect.width = image_rect.width;
+                  partial_rect.height = image_rect.height;
+
+                  if (placement.source_rect != placement.full_source_rect)
+                  {
+                    Vector2i fragment_offset(placement.source_rect.left - placement.full_source_rect.left,
+                                             placement.source_rect.top - placement.full_source_rect.top);
+
+                    map_interface.map_texture_fragment(resource_id, atlas_id,
+                                                       intersection(partial_rect, placement.atlas_rect),
+                                                       fragment_offset);
+                  }
+
+                  else
+                  {
+                    map_interface.map_texture(resource_id, atlas_id, partial_rect);
+                  }
                 }
               }
 
@@ -344,6 +345,7 @@ namespace ts
             fragment.atlas_rect = entry.atlas_rect;
             fragment.source_rect = entry.source_rect;
             fragment.full_source_rect = full_source_rect;
+            fragment.image_file = file_name;
             placement_map.atlas_fragments.push_back(fragment);
           }
         };
@@ -404,6 +406,8 @@ namespace ts
             // Looking in the tile cache is a cheap operation, so we do that first.
             if (tile_cache.is_set(atlas_id, tile.id)) continue;
 
+            auto tile_id = tile.id;
+
             auto tile_it = tile_interface.find(tile.id);
 
             // First see if there's a tile with this id
@@ -425,8 +429,6 @@ namespace ts
                 {
                   // Another tight loop, do the cheap cache operation first.
                   if (tile_cache.is_set(atlas_list.current_atlas(), sub_tile.id)) continue;
-
-
 
                   auto sub_tile_it = tile_interface.find(sub_tile.id);
                   if (sub_tile_it != tile_interface.end())
@@ -474,9 +476,11 @@ namespace ts
       {
         ImageLoader image_loader;
         auto track_scene = std::make_unique<TrackScene>(track.size());
+
         for (const auto& atlas : placement_map.atlases)
         {
           auto surface = build_atlas_surface(atlas, image_loader);
+
           auto texture = std::make_unique<graphics::Texture>(graphics::create_texture_from_image(surface));
 
           track_scene->register_texture(std::move(texture));

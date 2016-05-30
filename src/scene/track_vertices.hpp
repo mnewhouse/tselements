@@ -54,8 +54,10 @@ namespace ts
       auto tile_position = vector2_cast<float>(tile.position);
       auto scaled_offset = vector2_cast<float>(fragment_offset) * scale;
 
+      auto fragment_size = vector2_cast<float>(make_vector2(texture_rect.width, texture_rect.height));
+
       auto top_left = scaled_offset - center;
-      auto bottom_right = scaled_offset + center;
+      auto bottom_right = top_left + fragment_size * scale;
       auto top_right = make_vector2(bottom_right.x, top_left.y);
       auto bottom_left = make_vector2(top_left.x, bottom_right.y);
 
@@ -115,6 +117,7 @@ namespace ts
 
       for (const auto& layer : track.layers())
       {
+        /*
         for (const auto& vertex_array : layer.geometry)
         {
           auto texture_it = textures.find(vertex_array.texture_id);          
@@ -143,34 +146,43 @@ namespace ts
             }
           }
         }
+        */
 
-        placed_tiles.clear();
-        resources::expand_tiles(layer.tiles.begin(), layer.tiles.end(), layer.level, 
+        resources::expand_tiles(layer.tiles.begin(), layer.tiles.end(),
                                 tile_library, std::back_inserter(placed_tiles));
+      }
 
-        // Now, we need to generate vertices for all tiles in the vector.
-        // Loop through the tiles in the list, look up the texture, and generate the vertices into
-        // our vertex cache. While the texture handle remains the same, keep adding to the vertex cache,
-        // and once it changes, flush the vertices into our output object.
-        for (const auto& placed_tile : placed_tiles)
+      using resources::PlacedTile;
+      std::stable_sort(placed_tiles.begin(), placed_tiles.end(), 
+                       [](const PlacedTile& a, const PlacedTile& b)
+      {
+        return a.level < b.level;
+      });
+
+
+      // Now, we need to generate vertices for all tiles in the vector.
+      // Loop through the tiles in the list, look up the texture, and generate the vertices into
+      // our vertex cache. While the texture handle remains the same, keep adding to the vertex cache,
+      // and once it changes, flush the vertices into our output object.
+      for (const auto& placed_tile : placed_tiles)
+      {        
+        auto mapping_range = texture_lookup(texture_mapping.tile_id(placed_tile.id));
+        for (const auto& mapping : mapping_range)
         {
-          auto mapping_range = texture_lookup(texture_mapping.tile_id(placed_tile.id));
-          for (const auto& mapping : mapping_range)
-          {
-            current_texture = mapping.texture;
+          current_texture = mapping.texture;
 
-            vertex_cache.clear();
-            generate_tile_vertices(placed_tile, *placed_tile.definition, mapping.texture_rect,
-                                   mapping.fragment_offset, std::back_inserter(vertex_cache));
+          vertex_cache.clear();
+          generate_tile_vertices(placed_tile, *placed_tile.definition, mapping.texture_rect,
+                                 mapping.fragment_offset, std::back_inserter(vertex_cache));
 
-            auto conversion_func = std::bind(convert_vertex, std::placeholders::_1, mapping.texture);
+          auto conversion_func = std::bind(convert_vertex, std::placeholders::_1, mapping.texture);
 
-            auto begin = boost::make_transform_iterator(vertex_cache.begin(), conversion_func);
-            auto end = boost::make_transform_iterator(vertex_cache.end(), conversion_func);
+          auto begin = boost::make_transform_iterator(vertex_cache.begin(), conversion_func);
+          auto end = boost::make_transform_iterator(vertex_cache.end(), conversion_func);
 
-            vertex_interface.append_vertices(convert_texture(mapping.texture), begin, end, layer.level);
-          }
+          vertex_interface.append_vertices(convert_texture(mapping.texture), begin, end, placed_tile.level);
         }
+
       }
     }
 

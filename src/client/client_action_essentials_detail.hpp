@@ -93,7 +93,7 @@ namespace ts
       {
         scene_.scene_renderer.render(viewport_arrangement_.viewport(viewport_id),
                                      render_context.screen_size, render_context.frame_progress);
-      }      
+      }
     }
 
     template <typename MessageDispatcher>

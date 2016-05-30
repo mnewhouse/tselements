@@ -16,6 +16,14 @@ namespace ts
 {
   namespace graphics
   {
+    inline std::size_t next_power_of_two(std::size_t n)
+    {
+      std::size_t result = 1;
+      while (result < n) result <<= 1;
+
+      return result;
+    }
+
     namespace detail
     {
       struct VertexArrayDeleter

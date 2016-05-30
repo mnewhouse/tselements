@@ -228,6 +228,7 @@ namespace ts
       drawable_entity.texture = model.texture;
       drawable_entity.frame_offset = vector2_cast<float>(entity->position()) - stored_position;
       drawable_entity.frame_bounds = model.frame_bounds;
+      drawable_entity.hover_distance = static_cast<float>(entity->hover_distance());
 
       drawable_entity.texture_coords =
       {

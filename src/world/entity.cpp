@@ -37,9 +37,29 @@ namespace ts
       return rotating_speed_;
     }
 
+    double Entity::z_speed() const
+    {
+      return z_speed_;
+    }
+
     double Entity::z_position() const
     {
       return z_position_;
+    }
+
+    bool Entity::is_flying() const
+    {
+      return std::abs(hover_distance_) > 0.0001;
+    }
+
+    void Entity::set_hover_distance(double hover_distance)
+    {
+      hover_distance_ = hover_distance;
+    }
+
+    double Entity::hover_distance() const
+    {
+      return hover_distance_;
     }
 
     std::uint32_t Entity::z_level() const
@@ -65,6 +85,11 @@ namespace ts
     void Entity::set_rotating_speed(double rotating_speed)
     {
       rotating_speed_ = rotating_speed;
+    }
+
+    void Entity::set_z_speed(double z_speed)
+    {
+      z_speed_ = z_speed;
     }
 
     void Entity::set_z_position(double z)
@@ -105,6 +130,14 @@ namespace ts
     void Entity::set_mass(double mass)
     {
       mass_ = mass;
+    }
+
+    void Entity::update_z_speed(double frame_duration)
+    {
+      if (is_flying())
+      {
+        z_speed_ -= 1.5 * frame_duration;
+      }      
     }
   }
 }

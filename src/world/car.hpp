@@ -9,7 +9,11 @@
 
 #include "entity.hpp"
 
+#include "resources/handling.hpp"
+
 #include "controls/controllable.hpp"
+
+#include <boost/container/small_vector.hpp>
 
 #include <cstdint>
 #include <vector>
@@ -34,8 +38,21 @@ namespace ts
 
       void update(const resources::TerrainDefinition& terrain_def, double frame_duration);
 
+      const resources::Handling& handling() const;
+
+      double engine_rev_speed() const;
+      double traction() const;
+      double load_balance() const;
+
+      const boost::container::small_vector<Vector2i, 4>& tyre_positions() const;
+
+    private:
       double engine_rev_speed_ = 0.0;
       double traction_ = 1.0;
+      double load_balance_ = 0.0;
+      boost::container::small_vector<Vector2i, 4> tyre_positions_;
+
+      resources::Handling handling_;
     };
   }
 }

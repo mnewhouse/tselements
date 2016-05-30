@@ -7,6 +7,11 @@
 #include "graphics/render_window.hpp"
 #include "graphics/gl_context.hpp"
 
+#include "user_interface/gui_context.hpp"
+
+#include "fonts/builtin_fonts.hpp"
+#include "fonts/font_library.hpp"
+
 #include "game/game_context.hpp"
 #include "game/loading_thread.hpp"
 
@@ -22,9 +27,12 @@
 #include "controls/control_center.hpp"
 
 #include "utility/debug_log.hpp"
+#include "utility/random.hpp"
 #include "utility/stream_utilities.hpp"
 
 #include <GL/glew.h>
+
+#include <SFML/System/Clock.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -64,13 +72,19 @@ int main(int argc, char** argv)
     }
 
     game::LoadingThread loading_thread;
+    gui::Context gui_context;
 
     resources::ResourceStore resource_store;
     resource_store.car_store().load_car_directory("cars");
 
+    for (const auto& font : fonts::builtin_fonts)
+    {
+      resource_store.font_library().load_font(font.name, font.path);
+    }    
+
     resources::TrackReference track_ref;
-    track_ref.path = "tracks/pu_Tilulei.trk";
-    track_ref.name = "banaring";
+    track_ref.path = "tracks/banaring.trk";
+    track_ref.name = "Sc_Clarityre";
 
     auto& player_settings = resource_store.settings().player_settings();
 
@@ -92,6 +106,7 @@ int main(int argc, char** argv)
     game::GameContext context;
     context.state_machine = &state_machine;
     context.render_window = &window;
+    context.gui_context = &gui_context;
     context.resource_store = &resource_store;
     context.loading_thread = &loading_thread;
 
@@ -108,32 +123,22 @@ int main(int argc, char** argv)
 
     std::uint64_t update_count = 0;
     std::uint64_t update_lag = 0;
-    auto start_time = high_resolution_clock::now(), last_update = start_time, last_display = start_time;
+
+    auto start_time = high_resolution_clock::now(), last_update = start_time, last_display = last_update;
     auto frame_duration = milliseconds(update_context.frame_duration);
-    auto frame_delta = microseconds(0);
 
     window.activate();
-
+    
     while (state_machine)
     {
       // Make sure the state machine doesn't haphazardly empty itself prior to finishing this loop body.
       auto state_transition_guard = state_machine.transition_guard();
 
-      for (sf::Event event; window.poll_event(event);)
-      {
-        if (event.type == sf::Event::Closed)
-        {
-          // Clearing the state machine is equivalent to quitting the program.
-          state_machine.clear();
-        }
+      auto time_point = high_resolution_clock::now();
 
-        state_machine->process_event(event);
-      }
-
-      auto time_point = last_display + frame_delta;
       auto frame_progress = time_point - last_update;
       auto next_update = start_time + frame_duration * (update_count + update_lag);
-      
+
       if (time_point >= next_update)
       {
         ++update_count;
@@ -146,6 +151,17 @@ int main(int argc, char** argv)
           ++update_lag;
         }
 
+        for (sf::Event event; window.poll_event(event);)
+        {
+          if (event.type == sf::Event::Closed)
+          {
+            // Clearing the state machine is equivalent to quitting the program.
+            state_machine.clear();
+          }
+
+          state_machine->process_event(event);
+        }
+
         frame_progress = duration;
         state_machine->update(update_context);
       }      
@@ -155,12 +171,10 @@ int main(int argc, char** argv)
       render_context.frame_progress = duration_cast<milliseconds>(frame_progress).count() * frame_progress_multiplier;
       if (render_context.frame_progress > 1.0) render_context.frame_progress = 1.0;
 
+      window.clear({ 0.0f, 0.0f, 0.0f, 1.0f });
       state_machine->render(render_context);
-      window.display();     
 
-      time_point = high_resolution_clock::now();
-      frame_delta = duration_cast<microseconds>(time_point - last_display);
-      last_display = time_point;
+      window.display();
     }
   }
 
@@ -175,7 +189,5 @@ int main(int argc, char** argv)
 
   return 0;
 }
-
-
 
 #include "core/config_definitions.hpp"

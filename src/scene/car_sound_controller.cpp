@@ -11,6 +11,8 @@
 #include "world/car.hpp"
 #include "world/world_limits.hpp"
 
+#include <algorithm>
+
 namespace ts
 {
   namespace scene
@@ -71,16 +73,18 @@ namespace ts
       {
         if (car_info.engine_sound)
         {
-          auto pitch = static_cast<float>(0.25 + car_info.car->engine_rev_speed_ * 0.75);
+          auto pitch = static_cast<float>(0.25 + car_info.car->engine_rev_speed() * 0.75);
 
-          car_info.engine_sound.set_volume(pitch * pitch);          
-          car_info.engine_sound.set_pitch(pitch);
+          car_info.engine_sound.set_volume(std::min(pitch * pitch, 1.0f));
+          car_info.engine_sound.set_pitch(std::min(pitch, 1.1f));
         }
 
-        if (car_info.car->traction_ < 0.8)
+        if (car_info.car->traction() < 0.95)
         {
           auto velocity = car_info.car->velocity();
-          auto volume = static_cast<float>(std::min(magnitude(velocity) / (400.0 * car_info.car->traction_), 1.0));
+          auto speed = magnitude(velocity);
+          auto volume = static_cast<float>(speed / (400.0 * std::max(car_info.car->traction(), 0.25)));
+          volume = std::min(volume, 1.0f);
 
           if (!car_info.skid_sound)
           {

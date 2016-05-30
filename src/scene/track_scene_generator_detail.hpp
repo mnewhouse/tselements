@@ -48,6 +48,7 @@ namespace ts
         : AtlasPlacement
       {
         std::size_t atlas_id;
+        boost::string_ref image_file;
       };
 
       struct AtlasDefinition

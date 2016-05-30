@@ -40,6 +40,9 @@ namespace ts
       void set_velocity(double x, double y);
       Vector2<double> velocity() const;
 
+      double z_speed() const;
+      void set_z_speed(double z_speed);
+
       void set_rotation(Rotation<double> rotation);
       void set_rotation(double rotation, rotation_units::degrees_t);
       void set_rotation(double rotation, rotation_units::radians_t);
@@ -47,8 +50,6 @@ namespace ts
 
       void set_rotating_speed(double rotation_speed);
       double rotating_speed() const;
-
-      void set_bounding_box(DoubleRect bounding_box);
 
       void set_z_position(double z_position);
       double z_position() const;
@@ -65,12 +66,21 @@ namespace ts
       double mass() const;
       void set_mass(double mass);
 
+      bool is_flying() const;
+      void set_hover_distance(double hover_distance);
+      double hover_distance() const;
+
+      void update_z_speed(double frame_duration);
+
     private:
       Vector2<double> position_;
       Vector2<double> velocity_;
       Rotation<double> rotation_;
       double rotating_speed_ = 0.0;
+      double z_speed_ = 0.0;
       double z_position_ = 0.0;
+      double hover_distance_ = 0.0;
+      
       EntityId entity_id_;
       EntityType entity_type_;
 

@@ -105,7 +105,7 @@ namespace ts
   {
     auto x = std::minmax(a.x, b.x);
     auto y = std::minmax(a.y, b.y);
-    return Rect<T>(x.first, y.first, x.second - x.first, y.second - y - first);
+    return Rect<T>(x.first, y.first, x.second - x.first, y.second - y.first);
   }
 
   template <typename To, typename From>

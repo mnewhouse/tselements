@@ -7,6 +7,8 @@
 #ifndef LAP_TRACKER_HPP_48935819385
 #define LAP_TRACKER_HPP_48935819385
 
+#include "race_messages.hpp"
+
 #include <vector>
 #include <cstdint>
 
@@ -19,6 +21,12 @@ namespace ts
 
   namespace race
   {
+    struct LapEventHandler
+    {
+      virtual void on_lap_complete(const messages::LapComplete& lap_event) {};
+      virtual void on_sector_complete(const messages::LapComplete& sector_event) {}
+    };
+
     // The LapTracker class keeps track of all cars' laptimes, by processing control point events
     // and dispatching an event in case of a finished lap.
     class LapTracker
@@ -27,7 +35,7 @@ namespace ts
       explicit LapTracker(std::uint16_t lap_count, std::uint16_t control_point_count);
 
       void control_point_hit(const world::Entity* entity, std::uint16_t point_id,
-                             std::uint32_t frame_offset);
+                             std::uint32_t frame_offset, LapEventHandler& event_handler);
 
       void update_race_time(std::uint32_t frame_duration);
 

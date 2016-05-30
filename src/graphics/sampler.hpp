@@ -1,0 +1,34 @@
+/*
+* TS Elements
+* Copyright 2015-2016 M. Newhouse
+* Released under the MIT license.
+*/
+
+#ifndef SAMPLER_HPP_182591825
+#define SAMPLER_HPP_182591825
+
+#include <GL/glew.h>
+
+#include <memory>
+
+namespace ts
+{
+  namespace graphics
+  {
+    namespace detail
+    {
+      struct SamplerDeleter
+      {
+        using pointer = GLuint;
+        void operator()(pointer sampler) const
+        {
+          glDeleteSamplers(1, &sampler);
+        }
+      };
+    }
+
+    using Sampler = std::unique_ptr<GLuint, detail::SamplerDeleter>;
+  }
+}
+
+#endif

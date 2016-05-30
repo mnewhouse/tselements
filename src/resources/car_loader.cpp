@@ -34,6 +34,7 @@ namespace ts
                                       LineIt line_it, LineIt lines_end, CarDefinition& car_def, PatternLoader& pattern_loader)
     {
       car_def.car_name.assign(car_name.begin(), car_name.end());
+      auto& handling = car_def.handling;
 
       for (std::string directive; directive != "end" && line_it != lines_end; ++line_it)
       {
@@ -45,6 +46,59 @@ namespace ts
 
         boost::string_ref remainder = make_string_ref(directive_view.end(), line_it->end());
         remainder = remove_leading_spaces(remainder);
+
+        auto read_property = [&](const char* property, auto& value)
+        {
+          if (directive == property)
+          {
+            if (ArrayStream(remainder) >> value) return true;
+            else insufficient_parameters(car_name, directive_view);
+          }
+
+          return false;
+        };
+
+        auto read_traction_loss_behavior = [&](const char* property, auto& result)
+        {
+          Handling::TractionLossBehavior behavior = {};
+          if (directive == property)
+          {
+            if (ArrayStream(remainder) >> behavior.torque_reduction >> behavior.braking_reduction >>
+                behavior.steering_reduction >> behavior.turn_in_reduction >> behavior.antislide_reduction)
+            {
+              result = behavior;
+              return true;
+            }
+
+            else insufficient_parameters(car_name, directive_view);
+          }
+
+          return false;
+        };
+
+        auto read_stress_factor = [&](const char* property, auto& result)
+        {
+          ArrayStream stream(remainder);
+          Handling::StressFactor stress;
+          if (directive == property)
+          {
+            if (stream >> stress.front)
+            {
+              if (!(stream >> stress.neutral >> stress.back))
+              {
+                stress.neutral = stress.front;
+                stress.back = stress.front;
+              }
+
+              result = stress;
+              return true;
+            }
+
+            else insufficient_parameters(car_name, directive_view);
+          }
+          
+          return false;
+        };
 
         if (directive == "image" || directive == "rotimage")
         {
@@ -109,7 +163,7 @@ namespace ts
               const auto& pattern = pattern_loader.load_from_file(full_pattern_path.string());
 
               car_def.collision_mask = std::make_shared<CollisionMask>(dynamic_mask, pattern, rect,
-                                                                        frame_count, wall_test);
+                                                                       frame_count, wall_test);
             }
 
             else
@@ -132,6 +186,41 @@ namespace ts
             DEBUG_RELEVANT << "Error loading car '" << car_name << "': engine sample not found" << debug::endl;
           }
         }
+
+        else if (directive == "tire")
+        {
+          Vector2i position;
+          if (ArrayStream(remainder) >> position.x >> position.y)
+          {
+            car_def.tyre_positions.push_back(position);
+          }
+
+          else insufficient_parameters(car_name, directive_view);
+        }
+
+        else if (read_property("torque", handling.torque)) { handling.torque *= 1000.0; }
+        else if (read_property("braking", handling.braking)) { handling.braking *= 1000.0; }
+        else if (read_property("steering", handling.steering)) {}
+        else if (read_property("grip", handling.grip)) {}
+        else if (read_property("turnin", handling.turn_in)) {}
+        else if (read_property("antislide", handling.antislide)) {}
+        else if (read_property("tractionlimit", handling.traction_limit)) { handling.traction_limit *= 1000.0; }
+        else if (read_property("dragcoefficient", handling.drag_coefficient)) {}
+        else if (read_property("rollingcoefficient", handling.rolling_coefficient)) {}
+        else if (read_property("downforcecoefficient", handling.downforce_coefficient)) {}
+        else if (read_property("mass", handling.mass)) {}
+        else if (read_property("maxenginerevs", handling.max_engine_revs)) {}
+        else if (read_property("torquemultiplier", handling.torque_multiplier)) {}
+        else if (read_property("loadbalancelimit", handling.load_balance_limit)) { handling.load_balance_limit *= 1000.0; }
+        else if (read_property("balanceshiftfactor", handling.balance_shift_factor)) {}
+
+        else if (read_stress_factor("torquestress", handling.torque_stress)) {}
+        else if (read_stress_factor("brakingstress", handling.braking_stress)) {}
+        else if (read_stress_factor("turning_stress", handling.turning_stress)) {}
+
+        else if (read_traction_loss_behavior("lockupbehavior", handling.lock_up_behavior)) {}
+        else if (read_traction_loss_behavior("wheelspinbehavior", handling.wheel_spin_behavior)) {}
+        else if (read_traction_loss_behavior("slide_behavior", handling.slide_behavior)) {}
       }
 
       return line_it;

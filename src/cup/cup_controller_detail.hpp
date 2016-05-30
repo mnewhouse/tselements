@@ -146,18 +146,6 @@ namespace ts
           stage_description.car_instances.push_back(car);
         }
       }
-      
-      for (std::uint32_t x = 1; x != 5; ++x)
-      {
-        stage::object_description::Car car;
-        car.controller_id = 0xFFFF;
-        car.instance_id = instance_id++;
-        car.model_id = 0;
-        car.slot_id = 0;
-        car.start_pos = instance_id;
-        stage_description.car_instances.push_back(car);
-      }
-
 
       dispatch_message(std::move(pre_initialization));
     }

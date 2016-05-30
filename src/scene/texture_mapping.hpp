@@ -77,7 +77,8 @@ namespace ts
       ~TextureMappingInterface();
 
       void map_texture(std::size_t resource_id, TextureType texture, IntRect texture_rect);
-      void map_texture_fragment(std::size_t resource_id, TextureType, IntRect texture_rect, Vector2i fragment_offset);
+      void map_texture_fragment(std::size_t resource_id, TextureType texture, 
+                                IntRect texture_rect, Vector2i fragment_offset);
 
     private:
       friend TextureMapping<TextureType>;

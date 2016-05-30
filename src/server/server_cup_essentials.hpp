@@ -50,7 +50,7 @@ namespace ts
       void handle_ready_signal(const RemoteClient& client);
 
       template <typename MessageType>
-      void forward_stage_message(const ClientMessage<MessageType>& client_message);
+      void forward_stage_message(const MessageType& message);
 
     private:
       void initialize_loaded_stage();
@@ -69,11 +69,11 @@ namespace ts
     };
 
     template <typename MessageType>
-    void CupEssentials::forward_stage_message(const ClientMessage<MessageType>& client_message)
+    void CupEssentials::forward_stage_message(const MessageType& message)
     {
       if (stage_essentials_)
       {
-        stage_essentials_->handle_message(client_message);
+        stage_essentials_->handle_message(message);
       }
     }
   }

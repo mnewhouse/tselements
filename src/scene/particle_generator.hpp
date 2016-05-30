@@ -32,12 +32,6 @@ namespace ts
       std::size_t max_particles = 1024;
     };
 
-    struct ParticleVertex
-    {
-      Vector2<float> position;
-      Colorb color;
-    };
-
     // The particle generator class generates particles for all cars in the game world,
     // if certain criteria are met. On rough terrains, particles will be shown, 
     // otherwise if the car is sliding, smoke will be shown. The particle's properties are
@@ -49,28 +43,37 @@ namespace ts
 
       void update(std::uint32_t frame_duration);
 
-      const ParticleVertex* vertices() const;
-      std::size_t vertex_count() const;
-
-      const std::uint32_t* indices() const;
-
-      std::size_t particle_count() const;
-      std::size_t max_particles() const;
-
-      static std::size_t vertices_per_particle();
-      static std::size_t indices_per_particle();
-
-    private:
-      const world::World* world_;
-      ParticleSettings settings_;
+      std::size_t level_count() const;
+      std::size_t max_particles_per_level() const;      
 
       struct ParticleInfo
       {
+        Vector2f position;
+        float radius;
+        Colorb color;
         std::uint64_t end_ticks;
       };
+
+      const ParticleInfo* particle_info(std::size_t level) const;
+      std::size_t particle_count(std::size_t level) const;
+
+    private:
+      struct LevelInfo
+      {
+        std::size_t base_index;
+        std::size_t index;
+        std::size_t count;
+      };
+
+      void add_particle(LevelInfo& level_info, const ParticleInfo& particle_info);
+
+      const world::World* world_;
+      ParticleSettings settings_;
+
+
       
-      std::vector<ParticleVertex> vertices_;
       std::vector<ParticleInfo> particle_info_;
+      std::vector<LevelInfo> level_info_;
       std::uint64_t tick_counter_ = 0;   
     };
   }

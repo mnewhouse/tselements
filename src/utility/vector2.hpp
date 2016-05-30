@@ -189,8 +189,8 @@ namespace ts
     using std::abs;
     using std::hypot;
 
-    if (vec.x == 0.0f) return abs(vec.y);
-    if (vec.y == 0.0f) return abs(vec.x);
+    if (vec.x == 0.0) return abs(vec.y);
+    if (vec.y == 0.0) return abs(vec.x);
 
     return std::hypot(vec.x, vec.y);
   }

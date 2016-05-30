@@ -12,12 +12,14 @@
 #include "viewport.hpp"
 
 #include "graphics/shader.hpp"
-#include "graphics/vertex_array.hpp"
+#include "graphics/sampler.hpp"
+#include "graphics/vertex_buffer.hpp"
 
 #include "world/world_limits.hpp"
 
 #include "utility/vertex.hpp"
 #include "utility/transform.hpp"
+#include "utility/color.hpp"
 
 #include <glm/fwd.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -42,28 +44,27 @@ namespace ts
       Vector2<float> colorizer_coords;
 
       Rect<float> colorizer_bounds;
+      float hover_distance;      
 
       Colorb primary_color;
       Colorb secondary_color;
       Colorb tertiary_color;
+    };
 
-      float padding;
+    struct ParticleVertex
+    {
+      Vector2<float> position;
+      Vector2<float> center;
+      float radius;
+      Colorb color;
     };
 
     namespace detail
     {
-      static std::size_t next_power_of_two(std::size_t n)
-      {
-        std::size_t result = 1; 
-        while (result < n) result <<= 1;
-
-        return result;
-      }
-
       const std::size_t vertices_per_entity = 4;
       const std::size_t indices_per_entity = 6;
 
-      const std::size_t entity_buffer_size = next_power_of_two(
+      const std::size_t entity_buffer_size = graphics::next_power_of_two(
         world::limits::max_car_count * sizeof(EntityVertex) * vertices_per_entity +
         world::limits::max_car_count * sizeof(GLuint) * indices_per_entity
       );
@@ -87,10 +88,19 @@ namespace ts
         std::uint32_t level;
       };
 
+      struct ParticleRange
+      {
+        std::size_t element_index;
+        std::size_t element_count;
+      };
+
       static ShaderType entity_type_to_shader_type(world::EntityType entity_type);
       static void generate_entity_indices(GLuint* index_ptr, GLuint entity_count, GLuint vertex_index);
       static void generate_entity_vertices(const DrawableEntity& drawable_entity, EntityVertex* vertices,
                                            Vector2<float> frame_movement);
+
+      static void generate_particle_vertices(const ParticleGenerator::ParticleInfo& particle_info,
+                                             ParticleVertex* vertices);
     }
 
     struct SceneRenderer::Impl
@@ -110,6 +120,9 @@ namespace ts
       void initialize_entity_buffers();
       void initialize_particle_buffers();
 
+      void update_entity_vertices(double frame_duration);
+      void update_particle_vertices();
+
       std::size_t calculate_particle_buffer_size() const;   
 
       const TrackScene* track_scene;
@@ -117,8 +130,7 @@ namespace ts
       const ParticleGenerator* particle_generator;
 
       bool rendering_initialized_ = false;
-      graphics::Shader track_vertex_shader;
-      graphics::Shader track_fragment_shader;
+      bool scene_ready_ = false;
       graphics::Sampler texture_sampler;
       graphics::Sampler color_sampler;
       graphics::ShaderProgram track_shader_program;
@@ -126,31 +138,21 @@ namespace ts
       graphics::Buffer track_vertex_buffer;
       GLint track_view_matrix_location = 0;      
 
-      graphics::Shader car_vertex_shader;
-      graphics::Shader car_fragment_shader;
       graphics::ShaderProgram car_shader_program;
       GLint car_view_matrix_location = 0;
       GLint car_frame_progress_location = 0;
 
-      graphics::Shader shadow_vertex_shader;
-      graphics::Shader shadow_fragment_shader;
       graphics::ShaderProgram shadow_shader_program;
       GLint shadow_view_matrix_location = 0;
       GLint shadow_color_location = 0;
       GLint shadow_frame_progress_location = 0;
 
-      graphics::Shader particle_vertex_shader;
-      graphics::Shader particle_fragment_shader;
       graphics::ShaderProgram particle_shader_program;
       GLint particle_view_matrix_location = 0;
       graphics::Buffer particle_vertex_buffer;
       graphics::VertexArray particle_vertex_array;
       std::size_t particle_buffer_size = 0;
       std::size_t particle_buffer_offset = 0;
-      std::size_t particle_buffer_draw_offset = 0;
-      std::size_t particle_buffer_range_size = 0;
-      std::size_t particle_index_count = 0;
-      std::size_t particle_vertex_index = 0;
 
       // Dynamic entities are grouped by shader/texture combination, so that we can
       // draw them all at the same time, given only one type of entity.
@@ -158,11 +160,10 @@ namespace ts
       graphics::VertexArray entity_vertex_array;
       std::size_t entity_buffer_offset = 0;
       std::size_t entity_buffer_draw_offset = 0;
-      std::size_t entity_buffer_range_size = 0;
-      std::size_t entity_vertex_index = 0;
       
       std::vector<detail::DrawableEntityGroup> entity_groups;
       std::vector<DrawableEntity> drawable_cache;
+      std::vector<detail::ParticleRange> particle_ranges;
     };
 
     void SceneRenderer::Impl::initialize_track_shaders()
@@ -170,15 +171,15 @@ namespace ts
       using graphics::Shader;
       using graphics::ShaderProgram;
 
-      track_vertex_shader = Shader(glCreateShader(GL_VERTEX_SHADER));
-      track_fragment_shader = Shader(glCreateShader(GL_FRAGMENT_SHADER));
-      track_shader_program = ShaderProgram(glCreateProgram());
+      Shader track_vertex_shader(glCreateShader(GL_VERTEX_SHADER));
+      Shader track_fragment_shader(glCreateShader(GL_FRAGMENT_SHADER));
+      track_shader_program.reset(glCreateProgram());
 
       graphics::compile_shader(track_vertex_shader, shaders::track_vertex_shader);
       graphics::compile_shader(track_fragment_shader, shaders::track_fragment_shader);
 
-      glAttachShader(track_shader_program.get(), track_vertex_shader.get());
-      glAttachShader(track_shader_program.get(), track_fragment_shader.get()); 
+      graphics::attach_shader(track_shader_program, track_vertex_shader);
+      graphics::attach_shader(track_shader_program, track_fragment_shader);
       
       graphics::link_shader_program(track_shader_program);
 
@@ -219,7 +220,7 @@ namespace ts
           buffer_size += component.vertex_count;
         }
 
-        buffer_size = detail::next_power_of_two(buffer_size * sizeof(Vertex));
+        buffer_size = graphics::next_power_of_two(buffer_size * sizeof(Vertex));
         glBufferData(GL_ARRAY_BUFFER, buffer_size, nullptr, GL_STATIC_DRAW);
 
         std::size_t offset = 0;
@@ -264,15 +265,15 @@ namespace ts
       using graphics::Shader;
       using graphics::ShaderProgram;
 
-      car_vertex_shader = Shader(glCreateShader(GL_VERTEX_SHADER));
-      car_fragment_shader = Shader(glCreateShader(GL_FRAGMENT_SHADER));
+      Shader car_vertex_shader(glCreateShader(GL_VERTEX_SHADER));
+      Shader car_fragment_shader(glCreateShader(GL_FRAGMENT_SHADER));
       car_shader_program = ShaderProgram(glCreateProgram());
 
       graphics::compile_shader(car_vertex_shader, shaders::car_vertex_shader);
       graphics::compile_shader(car_fragment_shader, shaders::car_fragment_shader);
 
-      glAttachShader(car_shader_program.get(), car_vertex_shader.get());
-      glAttachShader(car_shader_program.get(), car_fragment_shader.get());
+      graphics::attach_shader(car_shader_program, car_vertex_shader);
+      graphics::attach_shader(car_shader_program, car_fragment_shader);
 
       graphics::link_shader_program(car_shader_program);
 
@@ -286,15 +287,15 @@ namespace ts
       car_frame_progress_location = glGetUniformLocation(car_shader_program.get(), "frameProgress");
       car_view_matrix_location = glGetUniformLocation(car_shader_program.get(), "viewMat");
 
-      shadow_vertex_shader = Shader(glCreateShader(GL_VERTEX_SHADER));
-      shadow_fragment_shader = Shader(glCreateShader(GL_FRAGMENT_SHADER));
+      Shader shadow_vertex_shader(glCreateShader(GL_VERTEX_SHADER));
+      Shader shadow_fragment_shader(glCreateShader(GL_FRAGMENT_SHADER));
       shadow_shader_program = ShaderProgram(glCreateProgram());
 
       graphics::compile_shader(shadow_vertex_shader, shaders::shadow_vertex_shader);
       graphics::compile_shader(shadow_fragment_shader, shaders::shadow_fragment_shader);
 
-      glAttachShader(shadow_shader_program.get(), shadow_vertex_shader.get());
-      glAttachShader(shadow_shader_program.get(), shadow_fragment_shader.get());
+      graphics::attach_shader(shadow_shader_program, shadow_vertex_shader);
+      graphics::attach_shader(shadow_shader_program, shadow_fragment_shader);
 
       graphics::link_shader_program(shadow_shader_program);
 
@@ -334,6 +335,7 @@ namespace ts
       glEnableVertexAttribArray(5);
       glEnableVertexAttribArray(6);
       glEnableVertexAttribArray(7);
+      glEnableVertexAttribArray(8);
 
       glBindBuffer(GL_ARRAY_BUFFER, entity_vertex_buffer.get());
 
@@ -361,6 +363,9 @@ namespace ts
       glVertexAttribPointer(7, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(EntityVertex),
                             reinterpret_cast<const GLvoid*>(offsetof(EntityVertex, tertiary_color)));
 
+      glVertexAttribPointer(8, 1, GL_FLOAT, GL_FALSE, sizeof(EntityVertex),
+                            reinterpret_cast<const GLvoid*>(offsetof(EntityVertex, hover_distance)));
+
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, entity_vertex_buffer.get());
 
       glBindVertexArray(0);
@@ -373,15 +378,15 @@ namespace ts
       using graphics::Shader;
       using graphics::ShaderProgram;
 
-      particle_vertex_shader = Shader(glCreateShader(GL_VERTEX_SHADER));
-      particle_fragment_shader = Shader(glCreateShader(GL_FRAGMENT_SHADER));
+      Shader particle_vertex_shader(glCreateShader(GL_VERTEX_SHADER));
+      Shader particle_fragment_shader(glCreateShader(GL_FRAGMENT_SHADER));
       particle_shader_program = ShaderProgram(glCreateProgram());
 
       graphics::compile_shader(particle_vertex_shader, shaders::particle_vertex_shader);
       graphics::compile_shader(particle_fragment_shader, shaders::particle_fragment_shader);
 
-      glAttachShader(particle_shader_program.get(), particle_vertex_shader.get());
-      glAttachShader(particle_shader_program.get(), particle_fragment_shader.get());
+      graphics::attach_shader(particle_shader_program, particle_vertex_shader);
+      graphics::attach_shader(particle_shader_program, particle_fragment_shader);
 
       graphics::link_shader_program(particle_shader_program);
 
@@ -396,6 +401,7 @@ namespace ts
         particle_vertex_buffer = Buffer(buffer);
 
         particle_buffer_size = calculate_particle_buffer_size();
+        particle_ranges.resize(particle_generator->level_count());
 
         glBindBuffer(GL_ARRAY_BUFFER, buffer);
         glBufferData(GL_ARRAY_BUFFER, particle_buffer_size, nullptr, GL_DYNAMIC_DRAW);
@@ -417,12 +423,20 @@ namespace ts
 
       glEnableVertexAttribArray(0);
       glEnableVertexAttribArray(1);      
+      glEnableVertexAttribArray(2);
+      glEnableVertexAttribArray(3);
 
       glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(ParticleVertex),
                             reinterpret_cast<const GLvoid*>(offsetof(ParticleVertex, position)));
 
-      glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ParticleVertex),
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(ParticleVertex),
+                            reinterpret_cast<const GLvoid*>(offsetof(ParticleVertex, center)));
+
+      glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ParticleVertex),
                             reinterpret_cast<const GLvoid*>(offsetof(ParticleVertex, color)));
+
+      glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(ParticleVertex),
+                            reinterpret_cast<const GLvoid*>(offsetof(ParticleVertex, radius)));
       
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, particle_vertex_buffer.get());
 
@@ -433,17 +447,18 @@ namespace ts
 
     std::size_t SceneRenderer::Impl::calculate_particle_buffer_size() const
     {
-      auto vertex_count = particle_generator->max_particles() * particle_generator->vertices_per_particle();
-      auto index_count = particle_generator->max_particles() * particle_generator->indices_per_particle();
+      auto max_particles = particle_generator->max_particles_per_level() * particle_generator->level_count();
+      auto max_vertices = max_particles * 4;
+      auto max_indices = max_particles * 6;
 
-      auto buffer_size = vertex_count * sizeof(ParticleVertex) + index_count * sizeof(GLuint);
+      auto buffer_size = max_vertices * sizeof(ParticleVertex) + max_indices * sizeof(GLuint);
       if (auto mod = buffer_size % sizeof(ParticleVertex))
       {
         buffer_size -= mod;
         buffer_size += sizeof(ParticleVertex);
       }
 
-      return detail::next_power_of_two(buffer_size * 3);
+      return graphics::next_power_of_two(buffer_size * 3);
     }
 
     SceneRenderer::SceneRenderer()
@@ -511,163 +526,180 @@ namespace ts
       //   Draw the track scene
       //   Draw the dynamic scene
 
-      glDisable(GL_CULL_FACE);      
+      glDisable(GL_CULL_FACE);
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
       glDisable(GL_DEPTH_TEST);
       glDisable(GL_STENCIL_TEST);
       glEnable(GL_SCISSOR_TEST);
-      
-      glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-      glClearDepth(0.0f);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      auto screen_rect = rect_cast<float>(viewport.screen_rect());
-
-      Rect<GLint> scissor_region =
+      if (impl_->scene_ready_)
       {
-        static_cast<GLint>(std::round(screen_size.x * screen_rect.left)),
-        static_cast<GLint>(std::round(screen_size.y - (screen_size.y * screen_rect.bottom()))),
-        static_cast<GLint>(std::round(screen_size.x * screen_rect.width)),
-        static_cast<GLint>(std::round(screen_size.y * screen_rect.height))
-      };
+        auto screen_rect = rect_cast<float>(viewport.screen_rect());
 
-      glScissor(scissor_region.left, scissor_region.top, scissor_region.width, scissor_region.height);
-
-      auto world_size = impl_->track_scene->track_size();
-      auto view_mat = detail::compute_matrix(viewport, world_size, screen_size, frame_progress);
-
-      const float shadow_color[4] = { 0.2f, 0.2f, 0.2f, 0.5f };
-
-      // Set up the uniform variables for all shaders
-      glUseProgram(impl_->shadow_shader_program.get());
-      glUniform4fv(impl_->shadow_color_location, 1, shadow_color);
-      glUniformMatrix4fv(impl_->shadow_view_matrix_location, 1, GL_FALSE, glm::value_ptr(view_mat));
-      glUniform1f(impl_->shadow_frame_progress_location, static_cast<GLfloat>(frame_progress));
-
-      glUseProgram(impl_->car_shader_program.get());
-      glUniformMatrix4fv(impl_->car_view_matrix_location, 1, GL_FALSE, glm::value_ptr(view_mat));
-      glUniform1f(impl_->car_frame_progress_location, static_cast<GLfloat>(frame_progress));
-
-      glUseProgram(impl_->particle_shader_program.get());
-      glUniformMatrix4fv(impl_->particle_view_matrix_location, 1, GL_FALSE, glm::value_ptr(view_mat));
-
-      glUseProgram(impl_->track_shader_program.get());
-      glUniformMatrix4fv(impl_->track_view_matrix_location, 1, GL_FALSE, glm::value_ptr(view_mat));  
-
-      const auto& components = impl_->track_scene->components();
-
-      auto draw_entity_groups = [=](auto group_begin, auto group_end)
-      {  
-        glBindVertexArray(impl_->entity_vertex_array.get());
-        glActiveTexture(GL_TEXTURE0);
-        glBindSampler(0, impl_->texture_sampler.get());
-        glActiveTexture(GL_TEXTURE1);
-        glBindSampler(1, impl_->color_sampler.get());
-        glBindTexture(GL_TEXTURE_2D, impl_->dynamic_scene->color_scheme_texture()->get());
-        glActiveTexture(GL_TEXTURE0);
-
-        for (; group_begin != group_end; ++group_begin)
+        Rect<GLint> scissor_region =
         {
-          auto group = *group_begin;
-          glUseProgram(impl_->shadow_shader_program.get());
+          static_cast<GLint>(std::round(screen_size.x * screen_rect.left)),
+          static_cast<GLint>(std::round(screen_size.y - (screen_size.y * screen_rect.bottom()))),
+          static_cast<GLint>(std::round(screen_size.x * screen_rect.width)),
+          static_cast<GLint>(std::round(screen_size.y * screen_rect.height))
+        };
 
-          glBindTexture(GL_TEXTURE_2D, group.texture->get());
+        glScissor(scissor_region.left, scissor_region.top, scissor_region.width, scissor_region.height);
 
-          auto draw_offset = impl_->entity_buffer_draw_offset + sizeof(GLuint) * group.element_index;
-          glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(group.element_count), GL_UNSIGNED_INT,
-                         reinterpret_cast<const void*>(draw_offset));
+        auto world_size = impl_->track_scene->track_size();
+        auto view_mat = detail::compute_matrix(viewport, world_size, screen_size, frame_progress);
 
-          
-          if (group.shader_type == detail::ShaderType::Car)
+        const float shadow_color[4] = { 0.2f, 0.2f, 0.2f, 0.5f };
+
+        // Set up the uniform variables for all shaders
+        glUseProgram(impl_->shadow_shader_program.get());
+        glUniform4fv(impl_->shadow_color_location, 1, shadow_color);
+        glUniformMatrix4fv(impl_->shadow_view_matrix_location, 1, GL_FALSE, glm::value_ptr(view_mat));
+        glUniform1f(impl_->shadow_frame_progress_location, static_cast<GLfloat>(frame_progress));
+
+        glUseProgram(impl_->car_shader_program.get());
+        glUniformMatrix4fv(impl_->car_view_matrix_location, 1, GL_FALSE, glm::value_ptr(view_mat));
+        glUniform1f(impl_->car_frame_progress_location, static_cast<GLfloat>(frame_progress));
+
+        glUseProgram(impl_->particle_shader_program.get());
+        glUniformMatrix4fv(impl_->particle_view_matrix_location, 1, GL_FALSE, glm::value_ptr(view_mat));
+
+        glUseProgram(impl_->track_shader_program.get());
+        glUniformMatrix4fv(impl_->track_view_matrix_location, 1, GL_FALSE, glm::value_ptr(view_mat));
+
+        const auto& components = impl_->track_scene->components();
+
+        auto draw_entity_groups = [=](auto group_begin, auto group_end)
+        {
+          if (group_begin != group_end)
           {
-            glUseProgram(impl_->car_shader_program.get());
+            glBindVertexArray(impl_->entity_vertex_array.get());
+            glActiveTexture(GL_TEXTURE0);
+            glBindSampler(0, impl_->texture_sampler.get());
+            glActiveTexture(GL_TEXTURE1);
+            glBindSampler(1, impl_->color_sampler.get());
+            glBindTexture(GL_TEXTURE_2D, impl_->dynamic_scene->color_scheme_texture()->get());
+            glActiveTexture(GL_TEXTURE0);
+
+            for (; group_begin != group_end; ++group_begin)
+            {
+              auto group = *group_begin;
+              glUseProgram(impl_->shadow_shader_program.get());
+
+              glBindTexture(GL_TEXTURE_2D, group.texture->get());
+
+              auto draw_offset = impl_->entity_buffer_draw_offset + sizeof(GLuint) * group.element_index;
+              glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(group.element_count), GL_UNSIGNED_INT,
+                             reinterpret_cast<const void*>(draw_offset));
+
+              if (group.shader_type == detail::ShaderType::Car)
+              {
+                glUseProgram(impl_->car_shader_program.get());
+              }
+
+              glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(group.element_count), GL_UNSIGNED_INT,
+                             reinterpret_cast<const void*>(draw_offset));
+            }
+          }
+        };
+
+        auto draw_particles = [=](const detail::ParticleRange& particles)
+        {
+          if (particles.element_count != 0)
+          {
+            glUseProgram(impl_->particle_shader_program.get());
+            glBindVertexArray(impl_->particle_vertex_array.get());
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, impl_->particle_vertex_buffer.get());
+
+            auto buffer_offset = particles.element_index;
+
+            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(particles.element_count), GL_UNSIGNED_INT,
+                           reinterpret_cast<const void*>(buffer_offset));
+          }
+        };
+
+        auto draw_level = [=](const detail::ParticleRange& particles,
+                              auto entity_group_start, auto entity_group_end)
+        {
+          draw_particles(particles);
+
+          draw_entity_groups(entity_group_start, entity_group_end);
+        };
+
+        auto& entity_groups = impl_->entity_groups;
+        auto entity_group_it = entity_groups.begin();
+
+        std::size_t offset = 0;
+        std::size_t current_level = 0;
+        for (auto range_start = components.begin(); range_start != components.end(); )
+        {
+          current_level = range_start->level;
+
+          // Draw all the components that are on the current level
+          glUseProgram(impl_->track_shader_program.get());
+
+          glActiveTexture(GL_TEXTURE0);
+          glBindSampler(0, impl_->texture_sampler.get());
+          glBindVertexArray(impl_->track_vertex_array.get());
+          for (; range_start != components.end() && current_level == range_start->level; ++range_start)
+          {
+            const auto& component = *range_start;
+            glBindTexture(GL_TEXTURE_2D, component.texture->get());
+            glDrawArrays(GL_TRIANGLES, static_cast<GLint>(offset),
+                         static_cast<GLsizei>(component.vertex_count));
+
+            offset += component.vertex_count;
           }
 
-          glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(group.element_count), GL_UNSIGNED_INT,
-                         reinterpret_cast<const void*>(draw_offset));
-        }
-      };
-
-      auto& entity_groups = impl_->entity_groups;
-      auto entity_group_it = entity_groups.begin();      
-
-      std::size_t offset = 0;
-      for (auto range_start = components.begin(); range_start != components.end(); )
-      {
-        std::size_t current_level = range_start->level;
-
-        // Draw all the components that are on the current level
-        glUseProgram(impl_->track_shader_program.get());
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindSampler(0, impl_->texture_sampler.get());
-        glBindVertexArray(impl_->track_vertex_array.get());
-        for (; range_start != components.end() && current_level == range_start->level; ++range_start)
-        {
-          const auto& component = *range_start;
-          glBindTexture(GL_TEXTURE_2D, component.texture->get());
-          glDrawArrays(GL_TRIANGLES, static_cast<GLint>(offset),
-                       static_cast<GLsizei>(component.vertex_count));
-          
-          offset += component.vertex_count;
-        }
-
-        if (range_start != components.end())
-        {
-          std::size_t next_level = range_start->level;
-
-          // And find all the entity groups that are to be drawn at this point.
-          // That is, all the entity groups with a level that's smaller than the next component's level.
-          auto entity_group_end = std::find_if(entity_group_it, entity_groups.end(),
-                                               [=](const auto& entity_group)
+          if (range_start != components.end())
           {
-            return entity_group.level >= next_level;
+            std::size_t next_level = range_start->level;
+            for (std::size_t level = current_level; level < next_level; ++level)
+            {
+              auto group_end = std::find_if(entity_group_it, entity_groups.end(),
+                                            [=](const auto& entity_group)
+              {
+                return entity_group.level != level;
+              });
+
+              draw_level(impl_->particle_ranges[level], entity_group_it, group_end);
+
+              entity_group_it = group_end;
+            }
+          }
+        }
+
+        for (std::size_t level = current_level; level < impl_->particle_ranges.size(); ++level)
+        {
+          auto group_end = std::find_if(entity_group_it, entity_groups.end(),
+                                        [=](const auto& entity_group)
+          {
+            return entity_group.level != level;
           });
 
-          draw_entity_groups(entity_group_it, entity_group_end);
+          draw_level(impl_->particle_ranges[level], entity_group_it, group_end);
 
-          entity_group_it = entity_group_end;
-        }       
+          entity_group_it = group_end;
+        }
+
+        glBindSampler(0, 0);
+        glBindSampler(1, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        glUseProgram(0);
+        glBindVertexArray(0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
       }
-
-      draw_entity_groups(entity_group_it, entity_groups.end());
-
-      glBindSampler(0, 0);
-      glBindSampler(1, 0);
-      glBindTexture(GL_TEXTURE_2D, 0);
-
-      if (impl_->particle_index_count != 0)
-      {
-        glUseProgram(impl_->particle_shader_program.get());
-        glBindVertexArray(impl_->particle_vertex_array.get());
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, impl_->particle_vertex_buffer.get());
-
-        auto buffer_offset = impl_->particle_buffer_draw_offset;
-
-        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(impl_->particle_index_count), GL_UNSIGNED_INT,
-                       reinterpret_cast<const void*>(buffer_offset));
-      }
-
-      glUseProgram(0);
-      glBindVertexArray(0);
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
-    void SceneRenderer::update(std::uint32_t frame_duration)
+    void SceneRenderer::Impl::update_entity_vertices(double frame_duration)
     {
-      double fd = frame_duration * 0.001;
-
-      // What we need here:
-      // Query the DynamicScene for the entities that need to be drawn
-      // Populate our vertex buffer object with the needed data
-
-      auto& drawable_cache = impl_->drawable_cache;
       drawable_cache.clear();
-      for (std::size_t instance_id = 0, count = impl_->dynamic_scene->entity_count(); instance_id != count; ++instance_id)
+      for (std::size_t instance_id = 0, count = dynamic_scene->entity_count(); instance_id != count; ++instance_id)
       {
-        drawable_cache.push_back(impl_->dynamic_scene->entity_info(instance_id));
+        drawable_cache.push_back(dynamic_scene->entity_info(instance_id));
       }
 
       if (!drawable_cache.empty())
@@ -691,11 +723,10 @@ namespace ts
           return tuple_a < tuple_b;
         });
 
-        auto& entity_groups = impl_->entity_groups;
         entity_groups.clear();
 
         auto entity_vertex_count = drawable_cache.size() * detail::vertices_per_entity;
-        auto entity_index_count = drawable_cache.size() * detail::indices_per_entity;        
+        auto entity_index_count = drawable_cache.size() * detail::indices_per_entity;
 
         auto range_size = entity_vertex_count * sizeof(EntityVertex) + sizeof(GLuint) * entity_index_count;
         if (auto mod = range_size % sizeof(EntityVertex))
@@ -704,29 +735,28 @@ namespace ts
           range_size += sizeof(EntityVertex);
         }
 
-        auto buffer_offset = impl_->entity_buffer_offset;
+        auto buffer_offset = entity_buffer_offset;
 
-        glBindBuffer(GL_ARRAY_BUFFER, impl_->entity_vertex_buffer.get());
+        glBindBuffer(GL_ARRAY_BUFFER, entity_vertex_buffer.get());
         if (buffer_offset + range_size > detail::entity_buffer_size)
         {
-          impl_->entity_buffer_offset = 0;
-          impl_->entity_vertex_index = 0;
+          entity_buffer_offset = 0;
           buffer_offset = 0;
           glBufferData(GL_ARRAY_BUFFER, detail::entity_buffer_size, nullptr, GL_DYNAMIC_DRAW);
         }
 
         auto buffer_flags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_RANGE_BIT;
-        
+
         auto mapping = glMapBufferRange(GL_ARRAY_BUFFER, buffer_offset, range_size, buffer_flags);
         auto entity_vertex_ptr = static_cast<EntityVertex*>(mapping);
-        
-        auto entity_index_ptr = reinterpret_cast<GLuint*>(static_cast<char*>(mapping) + 
-                                                          sizeof(EntityVertex) * entity_vertex_count);        
+
+        auto entity_index_ptr = reinterpret_cast<GLuint*>(static_cast<char*>(mapping) +
+                                                          sizeof(EntityVertex) * entity_vertex_count);
 
         if (mapping)
         {
           GLuint element_index = 0;
-          GLuint vertex_index = static_cast<GLuint>(impl_->entity_buffer_offset / sizeof(EntityVertex));
+          GLuint vertex_index = static_cast<GLuint>(entity_buffer_offset / sizeof(EntityVertex));
 
           // Now, group the drawable entities by shader/texture combination, so that we can render them efficiently.
           auto group_start = drawable_cache.begin();
@@ -754,7 +784,7 @@ namespace ts
             group.shader_type = shader_type;
             group.texture = texture;
             group.level = level;
-            group.element_index = element_index;            
+            group.element_index = element_index;
             group.element_count = entity_count * detail::indices_per_entity;
 
             detail::generate_entity_indices(entity_index_ptr + element_index, entity_count, vertex_index);
@@ -765,30 +795,153 @@ namespace ts
               detail::generate_entity_vertices(*group_start, entity_vertex_ptr, group_start->frame_offset);
 
               entity_vertex_ptr += detail::vertices_per_entity;
-            }            
+            }
+
+            element_index += group.element_count;
+            vertex_index += entity_count * detail::vertices_per_entity;
           }
 
           glUnmapBuffer(GL_ARRAY_BUFFER);
           glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-          impl_->entity_vertex_index = vertex_index;
-          impl_->entity_buffer_offset = buffer_offset + range_size;
-          impl_->entity_buffer_draw_offset = buffer_offset + sizeof(EntityVertex) * entity_vertex_count;
-          impl_->entity_buffer_range_size = range_size;
+          entity_buffer_offset = buffer_offset + range_size;
+          entity_buffer_draw_offset = buffer_offset + sizeof(EntityVertex) * entity_vertex_count;
         }
 
         else
         {
-          impl_->entity_vertex_index = 0;
-          impl_->entity_buffer_offset = 0;
-          impl_->entity_buffer_draw_offset = 0;
-          impl_->entity_buffer_range_size = 0;
+          entity_buffer_offset = 0;
+          entity_buffer_draw_offset = 0;
         }
+      }
+    }
+
+    void SceneRenderer::Impl::update_particle_vertices()
+    {
+      auto buffer_offset = particle_buffer_offset;
+
+      std::size_t particle_count = 0;
+      for (std::size_t level = 0; level != particle_generator->level_count(); ++level)
+      {
+        particle_count += particle_generator->particle_count(level);
+      }
+
+      if (particle_count != 0)
+      {
+        const auto indices_per_particle = 6;
+        const auto vertices_per_particle = 4;
+
+        const auto vertex_count = particle_count * vertices_per_particle;
+
+        auto range_size = vertex_count * sizeof(ParticleVertex) +
+          particle_count * indices_per_particle * sizeof(GLuint);
+
+        if (auto mod = range_size % sizeof(ParticleVertex))
+        {
+          range_size -= mod;
+          range_size += sizeof(ParticleVertex);
+        }
+
+        glBindBuffer(GL_ARRAY_BUFFER, particle_vertex_buffer.get());
+        if (buffer_offset + range_size > particle_buffer_size)
+        {
+          particle_buffer_offset = 0;
+          buffer_offset = 0;
+          glBufferData(GL_ARRAY_BUFFER, particle_buffer_size, nullptr, GL_DYNAMIC_DRAW);
+        }
+
+        auto buffer_flags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_RANGE_BIT;
+        auto mapping = glMapBufferRange(GL_ARRAY_BUFFER, buffer_offset, range_size, buffer_flags);
+        if (mapping)
+        {
+          GLuint vertex_index = static_cast<GLuint>(buffer_offset / sizeof(ParticleVertex));
+          auto particle_vertex_ptr = reinterpret_cast<ParticleVertex*>(mapping);
+          auto particle_index_ptr = reinterpret_cast<GLuint*>(static_cast<char*>(mapping) +
+                                                              sizeof(ParticleVertex) * vertex_count);
+
+          for (std::uint32_t particle_index = 0; particle_index != particle_count; ++particle_index)
+          {
+            particle_index_ptr[0] = vertex_index;
+            particle_index_ptr[1] = vertex_index + 1;
+            particle_index_ptr[2] = vertex_index + 2;
+            particle_index_ptr[3] = vertex_index;
+            particle_index_ptr[4] = vertex_index + 2;
+            particle_index_ptr[5] = vertex_index + 3;
+
+            vertex_index += vertices_per_particle;
+            particle_index_ptr += indices_per_particle;
+          }
+
+          auto offset = buffer_offset + sizeof(ParticleVertex) * vertex_count;
+          for (std::size_t level = 0; level != particle_generator->level_count(); ++level)
+          {
+            auto count = particle_generator->particle_count(level);
+            auto& range = particle_ranges[level];
+            range.element_count = count * indices_per_particle;
+            range.element_index = offset;
+
+            const auto* particle_info = particle_generator->particle_info(level);
+            for (std::size_t idx = 0; idx != count; ++idx)
+            {
+              detail::generate_particle_vertices(particle_info[idx], particle_vertex_ptr);
+              particle_vertex_ptr += vertices_per_particle;
+            }
+
+            //offset += range.element_count * sizeof(GLuint);
+          }
+
+          particle_buffer_offset = buffer_offset + range_size;
+          glUnmapBuffer(GL_ARRAY_BUFFER);
+        }
+
+        else
+        {
+          particle_buffer_offset = 0;
+        }
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      }
+    }
+
+    void SceneRenderer::update(std::uint32_t frame_duration)
+    {
+      if (impl_->rendering_initialized_)
+      {
+        double fd = frame_duration * 0.001;
+
+        // What we need here:
+        // Query the DynamicScene for the entities that need to be drawn
+        // Populate our vertex buffer object with the needed data
+        impl_->update_entity_vertices(fd);
+        impl_->update_particle_vertices();
+
+        impl_->scene_ready_ = true;
       }
     }
 
     namespace detail
     {
+      static void generate_particle_vertices(const ParticleGenerator::ParticleInfo& particle_info,
+                                             ParticleVertex* vertices)
+      {
+        auto radius = particle_info.radius;
+        const Vector2f offsets[] = 
+        {
+          { -radius, -radius },
+          { -radius, radius },
+          { radius, radius },
+          { radius, -radius }
+        };
+
+        for (auto i = 0; i != 4; ++i)
+        {
+          vertices[i].color = particle_info.color;
+          vertices[i].center = particle_info.position;
+          vertices[i].position = particle_info.position + offsets[i];
+          vertices[i].radius = particle_info.radius;
+        }
+      }
+
       static void generate_entity_indices(GLuint* index_ptr, GLuint entity_count, GLuint vertex_index)
       {
         while (entity_count-- != 0)
@@ -876,6 +1029,7 @@ namespace ts
           vertex.primary_color = colors[0];
           vertex.secondary_color = colors[1];
           vertex.tertiary_color = colors[2];
+          vertex.hover_distance = drawable_entity.hover_distance;
         }
       }
 

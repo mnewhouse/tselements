@@ -461,7 +461,8 @@ namespace ts
 
       else
       {
-        terrain_library.define_terrain(*terrain_id, terrain_def);
+        terrain_def.id = *terrain_id;
+        terrain_library.define_terrain(terrain_def);
       }
     }
 

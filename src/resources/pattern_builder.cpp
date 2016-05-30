@@ -43,9 +43,15 @@ namespace ts
       const auto& layers = track.layers();
       for (const auto& layer : layers)
       {
-        expand_tiles(layer.tiles.begin(), layer.tiles.end(), layer.level, track.tile_library(),
+        expand_tiles(layer.tiles.begin(), layer.tiles.end(), track.tile_library(),
                      std::back_inserter(tile_expansion));
       }
+
+      std::stable_sort(tile_expansion.begin(), tile_expansion.end(),
+                       [](const PlacedTile& a, const PlacedTile& b)
+      {
+        return a.level < b.level;
+      });
 
       // Then for each one, apply it to the resulting pattern.
       for (const auto& placed_tile : tile_expansion)

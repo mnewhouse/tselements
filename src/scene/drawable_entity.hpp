@@ -32,6 +32,7 @@ namespace ts
       FloatRect frame_bounds;
 
       Vector2f frame_offset;
+      float hover_distance = 0.0;
 
       glm::mat4 transformation;
       glm::mat2 colorizer_transformation;      

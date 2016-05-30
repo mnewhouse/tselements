@@ -13,6 +13,8 @@
 #include <SFML/Window.hpp>
 #include <SFML/Window/ContextSettings.hpp>
 
+#include <GL/glew.h>
+
 
 namespace ts
 {
@@ -23,15 +25,18 @@ namespace ts
     {
       Impl(const char* title, std::uint32_t width, std::uint32_t height, WindowMode window_mode)
       {
-        std::uint32_t style = sf::Style::Titlebar;
-        if (window_mode == WindowMode::FullScreen) style = sf::Style::Fullscreen;
-
         sf::ContextSettings context_settings;
         context_settings.majorVersion = gl_version::major;
         context_settings.minorVersion = gl_version::minor;
 
-        sf::Window::create(sf::VideoMode(width, height), title, style, context_settings);
-        setVerticalSyncEnabled(true);
+        std::uint32_t style = sf::Style::Titlebar;
+        if (window_mode == WindowMode::FullScreen) {}
+        
+        style = sf::Style::Fullscreen;
+        const auto& modes = sf::VideoMode::getFullscreenModes();
+
+        sf::Window::create(modes.front(), title, style, context_settings);
+        setMouseCursorVisible(false);
       }
     };
 
@@ -50,9 +55,16 @@ namespace ts
       return Vector2u(result.x, result.y);
     }
 
+    void RenderWindow::clear(Colorf color)
+    {
+      glClearColor(color.r, color.g, color.b, color.a);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    }
+
     void RenderWindow::display()
     {
       impl_->display();
+      glFinish();
     }
 
     void RenderWindow::activate()

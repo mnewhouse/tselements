@@ -1,0 +1,61 @@
+===== TODO LIST (optimistic time estimates between parentheses) =====
+
+* User interface (1-2 months)
+  * Bitmap font rendering
+  * Basic widgets
+  * Sound effects
+  * Make sure that it looks pretty
+  * Screens
+   * Settings
+    * Player setup
+    * Keys
+    * Video
+    * Audio
+    * Network        
+   * Track, car & module selection
+   * Cup screen
+  * Animated background?
+  * Make sure the GUI can be fully operated by using the keyboard.
+  
+* Network connectivity (1 week)
+ * Server
+ * Client
+   * Prediction
+
+* Scripting core (1 week)
+* Scripting API (continuously)
+* Modules (a few days)
+
+* Track editor (3-4 weeks)
+ 
+* Viewport arrangement - split screens (1 afternoon)
+ 
+* A few more rendering features (1 week)
+ * Vertex-based tracks
+ * Particle throwing
+ * Skidmarks?
+ * Animations?
+ * Legacy renderer (GL 2.1)
+ * Ghost cars.
+ 
+* Core game logic (1-2 weeks)
+ * Finish collision detection
+  * Implement entity<->entity collisions
+   * Use spatial hashing
+ * Z-level transitions
+ * Finish handling system (reversing, finalize terrain effects, include it into car definition, ...)
+ 
+* Cup infrastructure
+ * Players joining/leaving
+  * Give players their car back when they rejoin
+ * Resource downloading
+ * Chat
+ 
+* Recording system (a few days)
+* Records
+* Track & car hashing + security
+
+* Player profiles (Steam integration? a few days, depending on eomplexity of Steam API)
+* Joypad support.
+
+* Settings loading/saving (1-2 days)
