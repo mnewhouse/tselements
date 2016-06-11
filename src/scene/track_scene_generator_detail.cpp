@@ -215,9 +215,9 @@ namespace ts
         placement_list.push_back(atlas_placement);
       }
 
-      AtlasSurface build_atlas_surface(const AtlasDefinition& atlas, ImageLoader& image_loader)
+      sf::Image build_atlas_surface(const AtlasDefinition& atlas, ImageLoader& image_loader)
       {
-        AtlasSurface surface;
+        sf::Image surface;
         surface.create(atlas.size.x, atlas.size.y, sf::Color(0, 0, 0, 0));
 
         // Copy the loaded images into the newly created atlas image.

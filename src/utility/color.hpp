@@ -14,10 +14,16 @@ namespace ts
   template <typename T>
   struct Color
   {
-    T r;
-    T g;
-    T b;
-    T a;
+    Color() = default;
+
+    Color(T r, T g, T b, T a)
+      : r(r), g(g), b(b), a(a)
+    {}
+
+    T r = {};
+    T g = {};
+    T b = {};
+    T a = {};
   };
 
   using Colorb = Color<std::uint8_t>;
@@ -40,7 +46,7 @@ namespace ts
     std::uint8_t b = (color_int >> 8) & 0xFF;
     std::uint8_t a = color_int & 0xFF;
 
-    return { r, g, b, a };
+    return Colorb(r, g, b, a);
   }
 }
 

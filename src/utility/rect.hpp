@@ -87,6 +87,15 @@ namespace ts
       b.left < a.right() && b.top < a.bottom();
   }
 
+  template <typename T>
+  auto make_rect_from_points(const Vector2<T>& a, const Vector2<T>& b)
+  {
+    auto x = std::minmax(a.x, b.x);
+    auto y = std::minmax(a.y, b.y);
+    return Rect<T>(x.first, y.first, x.second - x.first, y.second - y.first);
+  }
+
+
   template <typename T, typename U>
   Rect<typename std::common_type<T, U>::type> intersection(const Rect<T>& a, const Rect<U>& b)
   {
@@ -98,14 +107,6 @@ namespace ts
     result.height = std::min(a.bottom(), b.bottom()) - result.top;
 
     return result;
-  }
-
-  template <typename T>
-  auto make_rect_from_points(const Vector2<T>& a, const Vector2<T>& b)
-  {
-    auto x = std::minmax(a.x, b.x);
-    auto y = std::minmax(a.y, b.y);
-    return Rect<T>(x.first, y.first, x.second - x.first, y.second - y.first);
   }
 
   template <typename To, typename From>

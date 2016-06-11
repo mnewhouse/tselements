@@ -11,6 +11,11 @@
 
 namespace ts
 {
+  namespace gui
+  {
+    class Context;
+  }
+
   namespace graphics
   {
     class RenderWindow;
@@ -21,11 +26,6 @@ namespace ts
     class ResourceStore;
   }
 
-  namespace gui
-  {
-    class Context;
-  }
-
   namespace game
   {
     class LoadingThread;
@@ -34,8 +34,8 @@ namespace ts
     struct GameContext
     {
       components::StateMachine<GameState>* state_machine = nullptr;
-      graphics::RenderWindow* render_window = nullptr;
       gui::Context* gui_context = nullptr;
+      graphics::RenderWindow* render_window = nullptr;
       game::LoadingThread* loading_thread = nullptr;
       resources::ResourceStore* resource_store = nullptr;
     };

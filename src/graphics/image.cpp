@@ -35,6 +35,11 @@ namespace ts
       return image;
     }
 
+    sf::Image load_image(const std::string& file_name)
+    {
+      return load_image(file_name.data(), file_name.size());
+    }
+
     sf::Image load_image(const char* file_name, std::size_t file_name_length)
     {
       std::string file_name_string(file_name, file_name_length);
@@ -49,7 +54,7 @@ namespace ts
       image.saveToFile(file_name);
     }
 
-    sf::Image DefaultImageLoader::operator()(const char* file_name, std::size_t file_name_length) const
+    sf::Image LoadImage::operator()(const char* file_name, std::size_t file_name_length) const
     {
       return load_image(file_name, file_name_length);
     }

@@ -80,10 +80,8 @@ namespace ts
 
       std::unique_ptr<TrackScene> generate_track_scene(const resources::Track& track, const PlacementMap& placement_map);
 
-      using AtlasSurface = sf::Image;
-      using ImageLoader = graphics::ImageLoader<AtlasSurface, graphics::DefaultImageLoader>;
-
-      AtlasSurface build_atlas_surface(const AtlasDefinition &atlas, ImageLoader& image_loader);
+      using ImageLoader = graphics::DefaultImageLoader;
+      sf::Image build_atlas_surface(const AtlasDefinition &atlas, ImageLoader& image_loader);
     }
   }
 }

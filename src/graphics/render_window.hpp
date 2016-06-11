@@ -35,7 +35,7 @@ namespace ts
       RenderWindow(const char* title, std::uint32_t width, std::uint32_t height, WindowMode window_mode);
       ~RenderWindow();
 
-      void clear(Colorf color);
+      void clear(Colorf color = Colorf(0.0f, 0.0f, 0.0f, 1.0f));
       void display();
       void activate();
 

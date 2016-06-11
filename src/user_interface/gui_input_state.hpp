@@ -13,22 +13,31 @@ namespace ts
 {
   namespace gui
   {
-    enum class MouseButton
-      : std::uint32_t
+    namespace mouse_button
     {
-      Left = 1,
-      Right = 2,
-      Middle = 4
-    };
+      enum MouseButton
+        : std::uint32_t
+      {
+        none = 0,
+        left = 1,
+        right = 2,
+        middle = 4
+      };
+    }
+
 
     struct InputState
     {
+      bool updated = false;
+
       Vector2i mouse_position;
-      Vector2i mouse_delta;
+      Vector2i old_mouse_position;
+      Vector2i click_position;
+
       std::int32_t mouse_wheel_delta = 0;
       std::uint32_t old_mouse_button_state = 0;
-      std::uint32_t mouse_button_state = 0;
-    }
+      std::uint32_t mouse_button_state = 0;     
+    };
   }
 }
 

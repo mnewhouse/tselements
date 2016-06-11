@@ -66,6 +66,13 @@ namespace ts
       return Texture(image);
     }
 
+    TextureArray::TextureArray(GLuint name, Vector3u size)
+      : texture_array_(name),
+        texture_size_(size)
+    {
+    }
+
+
     GLint max_texture_size()
     {
       GLint result = 0;

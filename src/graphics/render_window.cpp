@@ -28,15 +28,17 @@ namespace ts
         sf::ContextSettings context_settings;
         context_settings.majorVersion = gl_version::major;
         context_settings.minorVersion = gl_version::minor;
+        context_settings.antialiasingLevel = 4;
 
         std::uint32_t style = sf::Style::Titlebar;
-        if (window_mode == WindowMode::FullScreen) {}
         
-        style = sf::Style::Fullscreen;
+        //style = sf::Style::Fullscreen;
         const auto& modes = sf::VideoMode::getFullscreenModes();
 
-        sf::Window::create(modes.front(), title, style, context_settings);
-        setMouseCursorVisible(false);
+        sf::VideoMode windowed_mode(1280, 800);
+        
+
+        sf::Window::create(windowed_mode, title, style, context_settings);
       }
     };
 

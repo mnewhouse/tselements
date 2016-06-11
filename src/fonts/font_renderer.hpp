@@ -10,18 +10,20 @@
 #include "graphics/shader.hpp"
 #include "graphics/sampler.hpp"
 
+#include <glm/mat4x4.hpp>
+
 namespace ts
 {
   namespace fonts
   {
-    class TextVertexBuffer;
+    class TextGeometry;
 
     class FontRenderer
     {
     public:
       FontRenderer();
 
-      void draw(const TextVertexBuffer& vertex_buffer) const;
+      void draw(const TextGeometry& vertex_buffer, const glm::mat4& view_matrix) const;
 
     private:
       graphics::ShaderProgram shader_program_;

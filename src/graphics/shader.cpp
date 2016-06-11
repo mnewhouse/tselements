@@ -40,5 +40,12 @@ namespace ts
         throw std::runtime_error(error);
       }
     }
+
+    ShaderProgram create_shader_program(const char* vertex_shader_code, const char* fragment_shader_code)
+    {
+      const char* const vertex_code[] = { vertex_shader_code };
+      const char* const fragment_code[] = { fragment_shader_code };
+      return create_shader_program(vertex_code, fragment_code);
+    }
   }
 }

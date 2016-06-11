@@ -181,6 +181,19 @@ namespace ts
       p += ttt * curve.end_point;
       return p;
     }
+
+    template <typename CurveType>
+    Vector2<double> bezier_normal_at(const CurveType& curve, double time_point)
+    {
+      auto t = time_point, a = curve.start_point, b = curve.start_control, 
+        c = curve.end_control, d = curve.end_point;
+
+      auto c1 = (d - (3.0 * c) + (3.0 * b) - a);
+      auto c2 = ((3.0 * c) - (6.0 * b) + (3.0 * a));
+      auto c3 = ((3.0 * b) - (3.0 * a));
+
+      return ((3.0 * c1 * time_point * time_point) + (2.0 * c2 * time_point) + c3);
+    }
   }
 }
 

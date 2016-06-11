@@ -6,11 +6,9 @@
 
 #include "font_renderer.hpp"
 #include "text_shaders.hpp"
-#include "text_vertex_buffer.hpp"
+#include "text_geometry.hpp"
 
-#include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/transform.hpp>
 
 namespace ts
 {
@@ -35,15 +33,12 @@ namespace ts
       glCreateSamplers(1, &sampler);
       sampler_.reset(sampler);
 
-      glSamplerParameterf(sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-      glSamplerParameterf(sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glSamplerParameterf(sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glSamplerParameterf(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     }
 
-    void FontRenderer::draw(const TextVertexBuffer& text_buffer) const
+    void FontRenderer::draw(const TextGeometry& text_geometry, const glm::mat4& view_matrix) const
     {
-      auto mat = glm::translate(glm::mat4(), glm::vec3(-1.0, 1.0, 0.0));
-      mat = glm::scale(mat, glm::vec3(1.0 / 840, -1.0 / 525.0, 1.0));
-
       glUseProgram(shader_program_.get());
       glBindSampler(0, sampler_.get());
 
@@ -53,10 +48,10 @@ namespace ts
       auto view_loc = glGetUniformLocation(shader_program_.get(), "u_viewMat");
       auto sampler_loc = glGetUniformLocation(shader_program_.get(), "u_textureSampler");
 
-      glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(mat));
-      glUniform1ui(sampler_loc, 0);
+      glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(view_matrix));
+      glUniform1i(sampler_loc, 0);
 
-      text_buffer.draw();
+      text_geometry.draw();
       glUseProgram(0);
       glBindSampler(0, 0);
     }

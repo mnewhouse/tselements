@@ -7,8 +7,9 @@
 #ifndef VERTEX_ARRAY_HPP_3312950
 #define VERTEX_ARRAY_HPP_3312950
 
-
 #include <GL/glew.h>
+
+#include "graphics/gl_check.hpp"
 
 #include <memory>
 
@@ -87,6 +88,13 @@ namespace ts
       handle.ptr = ptr;
       handle.buffer = buffer;
       return MappedBuffer<T>(handle);
+    }
+
+    inline Buffer create_buffer()
+    {
+      GLuint buffer;
+      glCheck(glGenBuffers(1, &buffer));
+      return Buffer(buffer);
     }
   }
 }

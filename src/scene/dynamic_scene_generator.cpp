@@ -29,7 +29,7 @@ namespace ts
 {
   namespace scene
   {
-    using ImageLoader = graphics::ImageLoader<sf::Image, graphics::DefaultImageLoader>;
+    using ImageLoader = graphics::DefaultImageLoader;
 
     namespace detail
     {

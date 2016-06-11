@@ -35,6 +35,8 @@ namespace ts
     // and will create a new context that shares its resources with the existing context.
     GLContextHandle create_gl_context();
     void activate_gl_context(const GLContextHandle& context);
+
+    void initialize_glew();
   }
 }
 

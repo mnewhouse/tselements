@@ -17,6 +17,11 @@
 
 namespace ts
 {
+  namespace gui
+  {
+    class Renderer;
+  }
+
   namespace game
   {
     class GameState;

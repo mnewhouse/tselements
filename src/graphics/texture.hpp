@@ -8,6 +8,7 @@
 #define TEXTURE_HPP_58391285
 
 #include "utility/vector2.hpp"
+#include "utility/vector3.hpp"
 #include "utility/rect.hpp"
 
 #include <cstddef>
@@ -50,6 +51,20 @@ namespace ts
     private:
       std::unique_ptr<GLuint, detail::TextureDeleter> texture_;
       Vector2u texture_size_;
+    };
+
+    class TextureArray
+    {
+    public:
+      TextureArray() = default;
+      explicit TextureArray(GLuint name, Vector3u texture_size);
+
+      GLuint get() const { return texture_array_.get(); }
+      Vector3u size() const { return texture_size_; }
+
+    private:
+      std::unique_ptr<GLuint, detail::TextureDeleter> texture_array_;
+      Vector3u texture_size_;
     };
 
     Texture create_texture_from_image(const sf::Image& image);

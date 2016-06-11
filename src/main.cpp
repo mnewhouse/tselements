@@ -9,6 +9,8 @@
 
 #include "user_interface/gui_context.hpp"
 
+#include "menu/main_menu_state.hpp"
+
 #include "fonts/builtin_fonts.hpp"
 #include "fonts/font_library.hpp"
 
@@ -29,8 +31,6 @@
 #include "utility/debug_log.hpp"
 #include "utility/random.hpp"
 #include "utility/stream_utilities.hpp"
-
-#include <GL/glew.h>
 
 #include <SFML/System/Clock.hpp>
 
@@ -60,16 +60,10 @@ int main(int argc, char** argv)
 
     int screen_width = 1280, screen_height = 800;
     graphics::RenderWindow window("TS Elements", screen_width, screen_height, graphics::WindowMode::Windowed);
+    graphics::initialize_glew();
 
-    {
-      glewExperimental = GL_TRUE;
-      auto glew_state = glewInit();
-      if (glew_state != GLEW_OK)
-      {
-        std::cout << glewGetErrorString(glew_state) << std::endl;
-        throw std::runtime_error("Failed to initialize glew");
-      }
-    }
+    window.clear();
+    window.display();
 
     game::LoadingThread loading_thread;
     gui::Context gui_context;
@@ -105,12 +99,12 @@ int main(int argc, char** argv)
 
     game::GameContext context;
     context.state_machine = &state_machine;
-    context.render_window = &window;
     context.gui_context = &gui_context;
+    context.render_window = &window;
     context.resource_store = &resource_store;
     context.loading_thread = &loading_thread;
 
-    state_machine.create_state<client::LocalCupState>(context);
+    state_machine.create_state<menu::MainMenuState>(context);
 
     game::UpdateContext update_context;
     update_context.frame_duration = 20;

@@ -51,6 +51,8 @@ namespace ts
       std::map<std::string, ImageType, std::less<>> images_;
       LoadingFunc loading_func_;
     };
+
+    using DefaultImageLoader = ImageLoader<sf::Image, LoadImage>;
   }
 }
 

@@ -11,7 +11,6 @@ set(SOURCES
     ${PROJECT_SOURCE_DIR}/track_loading.cpp
 	${PROJECT_SOURCE_DIR}/collision_mask.cpp
 	${PROJECT_SOURCE_DIR}/cup_infrastructure.cpp
-	${PROJECT_SOURCE_DIR}/bezier_curves.cpp
 )
 
 add_executable(test_suite ${SOURCES})

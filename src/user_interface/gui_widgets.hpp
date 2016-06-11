@@ -19,11 +19,14 @@ namespace ts
 
     namespace widgets
     {
-      template <typename Style, typename OutIt, typename... EventHandlers>
-      void button(boost::string_ref text, IntRect rect, const Style& style,
-                  const InputState& input_state, OutIt vertex_out, EventHandlers&&... event_handlers);
+      template <typename Area, typename Style, typename Geometry, typename... EventHandlers>
+      auto button(boost::string_ref text, const Area& area, const Style& style,
+                  const InputState& input_state, Geometry& vertex_cache, 
+                  EventHandlers&&... event_handlers);
     }
   }
 }
+
+#include "gui_widgets_impl.hpp"
 
 #endif

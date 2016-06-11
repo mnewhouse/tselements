@@ -15,12 +15,13 @@ namespace ts
 {
   namespace graphics
   {
+    sf::Image load_image(const std::string& file_name);
     sf::Image load_image(const char* file_name, std::size_t file_name_length);
     sf::Image load_image(std::istream& stream);
 
     void save_image(const sf::Image& image, const std::string& file_name);
 
-    struct DefaultImageLoader
+    struct LoadImage
     {
       template <typename String>
       sf::Image operator()(const String& file_name) const

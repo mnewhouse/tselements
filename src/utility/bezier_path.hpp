@@ -123,7 +123,8 @@ namespace ts
     template <typename CurveType>
     Vector2<double> bezier_point_at(const CurveType& curve, double time_point);
 
-    std::pair<BezierPath, BezierPath> generate_path_outline(const BezierPath& bezier_path, double width);
+    template <typename CurveType>
+    Vector2<double> bezier_normal_at(const CurveType& curve, double time_point);
   }
 }
 

@@ -17,7 +17,7 @@
 
 #include <exception>
 #include <stdexcept>
-
+#include <string>
 
 namespace ts
 {
@@ -44,6 +44,7 @@ namespace ts
       sf::ContextSettings settings;
       settings.majorVersion = gl_version::major;
       settings.minorVersion = gl_version::minor;
+      settings.antialiasingLevel = 4;
 
       auto context = new sf::Context(settings, 0, 0);      
       return GLContextHandle(context);
@@ -52,6 +53,17 @@ namespace ts
     void activate_gl_context(const GLContextHandle& context)
     {
       static_cast<sf::Context*>(context.get())->setActive(true);
+    }
+
+    void initialize_glew()
+    {
+      glewExperimental = GL_TRUE;
+      auto glew_state = glewInit();
+      if (glew_state != GLEW_OK)
+      {
+        throw std::runtime_error(std::string("Failed to initialize glew") + 
+                                 reinterpret_cast<const char*>(glewGetErrorString(glew_state)));
+      }
     }
   }
 }
