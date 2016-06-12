@@ -66,9 +66,14 @@ namespace ts
       Increment increment_;
     };
 
-    auto vertical_layout_generator(Vector2f initial_position, Vector2f area_size = {})
+    inline auto vertical_layout_generator(Vector2f initial_position, Vector2f area_size = {})
     {
       return LayoutGenerator<detail::VerticalIncrement>(FloatRect(initial_position, area_size));
+    }
+
+    inline auto horizontal_layout_generator(Vector2f initial_position, Vector2f area_size)
+    {
+      return LayoutGenerator<detail::HorizontalIncrement>(FloatRect(initial_position, area_size));
     }
   }
 }

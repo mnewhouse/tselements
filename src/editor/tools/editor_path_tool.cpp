@@ -13,6 +13,7 @@
 #include "editor/path_vertices_detail.hpp"
 
 #include "graphics/gl_check.hpp"
+#include "graphics/gl_scissor_box.hpp"
 #include "graphics/texture.hpp"
 
 #include "utility/vector2.hpp"
@@ -35,8 +36,7 @@ layout(location = 1) in vec4 in_color;
 out vec4 frag_color;
 void main()
 {
-    vec2 mapCoord = calculateHeightMapCoord(in_position.xy);
-    float z = heightAt(mapCoord);
+    float z = heightAt(in_position);
     gl_Position = u_projectionMatrix * u_viewMatrix * vec4(in_position, z, 1.0);
     frag_color = in_color;
 }
@@ -170,7 +170,8 @@ void main()
             {
               if (!selected_path_->nodes.empty())
               {
-                selected_path_->nodes.push_back(path.nodes.front());
+                auto node = path.nodes.front();
+                path.nodes.push_back(node);
 
                 update_path_buffer();
                 editor_scene()->commit(selected_path);
@@ -263,6 +264,8 @@ void main()
 
       void PathTool::render() const
       {
+        graphics::scissor_box(editor_scene()->screen_size(), editor_scene()->view_port());
+
         glCheck(glUseProgram(path_shader_.get()));
         glCheck(glBindBuffer(GL_ARRAY_BUFFER, path_vertex_buffer_.get()));
         glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, path_index_buffer_.get()));
@@ -309,6 +312,8 @@ void main()
 
         glCheck(glDisableVertexAttribArray(0));
         glCheck(glDisableVertexAttribArray(1));
+
+        graphics::disable_scissor_box();
       }
     }
   }

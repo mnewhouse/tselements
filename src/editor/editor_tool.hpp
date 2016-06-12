@@ -7,9 +7,12 @@
 #ifndef EDITOR_TOOL_HPP_3518945
 #define EDITOR_TOOL_HPP_3518945
 
-#include <glm/mat4x4.hpp>
-
 #include "game/game_events.hpp"
+
+#include "utility/vector2.hpp"
+#include "utility/rect.hpp"
+
+#include <glm/mat4x4.hpp>
 
 namespace ts
 {

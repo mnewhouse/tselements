@@ -53,21 +53,24 @@ namespace ts
       auto operator+(CompoundStyle<First...>&& first, Second&& second)
       {
         using result_type = CompoundStyle<First..., std::remove_reference_t<Second>>;
-        return result_type(static_cast<First&&>(first)..., std::forward<Second>(second));
+        return result_type(typename result_type::init_tag{},
+                           static_cast<First&&>(first)..., std::forward<Second>(second));
       }
 
       template <typename First, typename... Second>
       auto operator+(First&& first, CompoundStyle<Second...>&& second)
       {
         using result_type = CompoundStyle<std::remove_reference_t<First>, Second...>;
-        return result_type(std::forward<First>(first), static_cast<Second&&>(second)...);
+        return result_type(typename result_type::init_tag{},
+                           std::forward<First>(first), static_cast<Second&&>(second)...);
       }
 
       template <typename... First, typename Second>
       auto operator+(CompoundStyle<First...>&& first, CompoundStyle<Second...>&& second)
       {
         using result_type = CompoundStyle<First..., Second...>;
-        return result_type(static_cast<First&&>(first)..., static_cast<Second&&>(second)...);
+        return result_type(typename result_type::init_tag{},
+                           static_cast<First&&>(first)..., static_cast<Second&&>(second)...);
       }
 
       // Todo: const lvalue overloads if needed?

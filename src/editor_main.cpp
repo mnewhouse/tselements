@@ -8,7 +8,14 @@
 #include "graphics/gl_context.hpp"
 
 #include "game/game_state.hpp"
-#include "editor/editor_test_state.hpp"
+#include "editor/track_edit_state.hpp"
+
+#include "resources/resource_store.hpp"
+
+#include "fonts/builtin_fonts.hpp"
+#include "fonts/font_library.hpp"
+
+#include "user_interface/gui_context.hpp"
 
 #include <string>
 #include <thread>
@@ -22,20 +29,35 @@ int main(int argc, char* argv[])
   try
   {
     int screen_width = 1280, screen_height = 800;
-    graphics::RenderWindow window("TS Elements", screen_width, screen_height, graphics::WindowMode::Windowed);
+    graphics::RenderWindow window("Project \"Free Like Bird\" - Editor",
+                                  screen_width, screen_height, graphics::WindowMode::Windowed);
+    window.set_framerate_limit(120);
+
     graphics::initialize_glew();
 
+    window.activate();
     window.clear();
     window.display();
-    window.activate();
+
+    resources::ResourceStore resource_store;
+    for (const auto& font : fonts::builtin_fonts)
+    {
+      resource_store.font_library().load_font(font.name, font.path);
+    }
 
     game::StateMachine state_machine;
+    gui::Context gui_context;
 
     game::GameContext game_context{};
     game_context.render_window = &window;
     game_context.state_machine = &state_machine;
+    game_context.gui_context = &gui_context;
+    game_context.resource_store = &resource_store;
 
-    state_machine.create_state<editor::TestState>(game_context);
+    game::UpdateContext update_context{};
+    update_context.frame_duration = 20U;
+
+    state_machine.create_state<editor::TrackEditState>(game_context);
 
     while (state_machine)
     {
@@ -60,8 +82,7 @@ int main(int argc, char* argv[])
       state_machine->render(render_context);
       window.display();
 
-      // Hack
-      // std::this_thread::sleep_for(std::chrono::milliseconds(5));
+      state_machine->update(update_context);
     }
   }
 

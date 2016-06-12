@@ -27,6 +27,6 @@ namespace ts
   }
 }
 
-#include "gui_widgets_impl.hpp"
+#include "gui_widgets_detail.hpp"
 
 #endif

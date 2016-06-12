@@ -24,8 +24,9 @@ vec2 calculateHeightMapCoord(vec2 position)
 {
   return position * u_heightMapCellSize;
 }
-float heightAt(vec2 heightMapCoord)
+float heightAt(vec2 position)
 {
+  vec2 heightMapCoord = calculateHeightMapCoord(position);
   return texture(u_heightMapSampler, heightMapCoord).a * u_heightMapMaxZ;
 }
 vec3 triangleNormal(vec3 a, vec3 b)
@@ -34,13 +35,13 @@ vec3 triangleNormal(vec3 a, vec3 b)
   if (result.z < 0.0) result *= -1.0;
   return normalize(result);
 }
-vec3 calculateNormal(vec2 mapCoord, float z)
+vec3 calculateNormal(vec2 position, float z)
 {
   vec2 cellSize = u_heightMapCellSize;
-  float leftZ = heightAt(mapCoord - vec2(cellSize.x, 0.0));
-  float topZ = heightAt(mapCoord - vec2(0.0, cellSize.y));
-  float rightZ = heightAt(mapCoord + vec2(cellSize.x, 0.0));
-  float bottomZ = heightAt(mapCoord + vec2(0.0, cellSize.y));
+  float leftZ = heightAt(position - vec2(1.0, 0.0));
+  float topZ = heightAt(position - vec2(0.0, 1.0));
+  float rightZ = heightAt(position + vec2(1.0, 0.0));
+  float bottomZ = heightAt(position + vec2(0.0, 1.0));
   vec3 normal = triangleNormal(vec3(-1.0, 0.0, z - leftZ), vec3(0.0, -1.0, z - topZ)) +
                 triangleNormal(vec3(1.0, 0.0, z - rightZ), vec3(0.0, -1.0, z - topZ)) +
                 triangleNormal(vec3(1.0, 0.0, z - rightZ), vec3(0.0, 1.0, z - bottomZ)) +

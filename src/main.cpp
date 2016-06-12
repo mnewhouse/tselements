@@ -71,11 +71,6 @@ int main(int argc, char** argv)
     resources::ResourceStore resource_store;
     resource_store.car_store().load_car_directory("cars");
 
-    for (const auto& font : fonts::builtin_fonts)
-    {
-      resource_store.font_library().load_font(font.name, font.path);
-    }    
-
     resources::TrackReference track_ref;
     track_ref.path = "tracks/banaring.trk";
     track_ref.name = "Sc_Clarityre";

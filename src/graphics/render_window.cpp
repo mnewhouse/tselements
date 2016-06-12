@@ -31,14 +31,20 @@ namespace ts
         context_settings.antialiasingLevel = 4;
 
         std::uint32_t style = sf::Style::Titlebar;
-        
-        //style = sf::Style::Fullscreen;
-        const auto& modes = sf::VideoMode::getFullscreenModes();
+        if (window_mode == WindowMode::FullScreen)
+        {
+          style = sf::Style::Fullscreen;
+        }
 
-        sf::VideoMode windowed_mode(1280, 800);
+        else if (window_mode == WindowMode::FullScreenDesktop)
+        {
+          const auto& modes = sf::VideoMode::getFullscreenModes();
+          style = sf::Style::None;
+          width = modes.front().width;
+          height = modes.front().height;
+        }
         
-
-        sf::Window::create(windowed_mode, title, style, context_settings);
+        sf::Window::create(sf::VideoMode(width, height, 32U), title, style, context_settings);
       }
     };
 
@@ -77,6 +83,11 @@ namespace ts
     bool RenderWindow::poll_event(sf::Event& event)
     {
       return impl_->pollEvent(event);
+    }
+
+    void RenderWindow::set_framerate_limit(std::uint32_t limit)
+    {
+      impl_->setFramerateLimit(limit);
     }
   }
 }

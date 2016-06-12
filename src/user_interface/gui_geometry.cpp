@@ -21,6 +21,8 @@ namespace ts
       view_matrix = glm::scale(view_matrix, glm::vec3(2.0f / screen_size.x, -2.0f / screen_size.y, 1.0f));
       view_matrix = glm::translate(view_matrix, glm::vec3(translation.x, translation.y, 0.0f));
 
+      glViewport(0, 0, screen_size.x, screen_size.y);
+
       renderer.geometry_renderer().draw(geometry.geometry, view_matrix);
       renderer.font_renderer().draw(geometry.text, view_matrix);
     }

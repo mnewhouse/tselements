@@ -127,30 +127,39 @@ namespace ts
         std::vector<GLuint> indices;
 
         auto tex_coord_multiplier = 1.0f / (base_texture_size * 0.5f);
+        auto make_vertex = [=](auto coords)
+        {
+          TerrainVertex vertex;
+          vertex.position = vector2_cast<float>(coords);
+
+          vertex.tex_coords =
+          {
+            vertex.position.x * tex_coord_multiplier,
+            vertex.position.y * tex_coord_multiplier,
+            0.0f
+          };
+
+          return vertex;
+        };
+       
         for (std::uint32_t y = 0; y < num_rows; ++y)
         {
           auto idx = y * num_columns;
+          auto y_coord = std::min(y * cell_size, world_size.y);
 
           for (std::uint32_t x = 0; x < num_columns; ++x)
           {
-            auto& vertex = vertices[idx];
-            vertex.position = vector2_cast<float>(make_vector2(x, y) * cell_size);
-            vertex.tex_coords = 
-            { 
-              vertex.position.x * tex_coord_multiplier,
-              vertex.position.y * tex_coord_multiplier, 
-              0.0f 
-            };
-
+            auto coords = make_vector2(std::min(x * cell_size, world_size.x), y_coord);
+            vertices[idx] = make_vertex(coords);
             ++idx;
           }
         }
 
-        for (std::uint32_t y = 0; y < num_rows - 1; ++y)
+        for (std::uint32_t y = 0; y != num_rows - 1; ++y)
         {
           GLuint index = y * num_columns;
 
-          for (std::uint32_t x = 0; x < num_columns - 1; ++x, ++index)
+          for (std::uint32_t x = 0; x != num_columns - 1; ++x, ++index)
           {
             indices.push_back(index);
             indices.push_back(index + 1);
@@ -240,6 +249,7 @@ namespace ts
                                                                     height_map.cell_size(),
                                                                     base_texture->texture_id,
                                                                     base_texture->texture_size);
+
 
       auto& basic_vertices = buffer_contents.first;
       auto& basic_indices = buffer_contents.second;

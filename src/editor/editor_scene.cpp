@@ -72,7 +72,7 @@ namespace ts
 
     void EditorScene::render() const
     {
-      render_scene_.render();
+      render_scene_.render(screen_size_, view_port_);
     }
 
     void EditorScene::load_scene()
@@ -131,17 +131,28 @@ namespace ts
     // Relative_pos.xy are in range [0-1]
     boost::optional<Vector3f> EditorScene::screen_to_terrain_position(Vector2i absolute_pos) const
     {
-      // TODO: window size
-      auto relative_pos = make_vector2(absolute_pos.x / 1280.0f,
-                                       absolute_pos.y / 800.0f);
+      if (screen_size_.x == 0 || screen_size_.y == 0) return boost::none;
+
+      // Need to get the relative position *in the viewport*.      
+      Vector2f relative_pos;
+      {
+        auto screen_size = vector2_cast<std::int32_t>(screen_size_);
+        auto left = view_port_.left - (screen_size.x - view_port_.width) / 2;
+        auto bottom = (screen_size.y - view_port_.height) -
+          view_port_.top - (screen_size.y - view_port_.height) / 2;
+
+        absolute_pos.y = screen_size.y - absolute_pos.y;
+        relative_pos = vector2_cast<float>((absolute_pos - make_vector2(left, bottom))) /
+          (vector2_cast<float>(screen_size) * 0.5f) - 1.0f;
+      }
 
       auto view = render_scene_.view_matrix();
       auto projection = render_scene_.projection_matrix();
 
       // Transform to GL-style coordinates
-      relative_pos *= 2.0f;
-      relative_pos -= 1.0f;
-      relative_pos.y = -relative_pos.y;
+      //relative_pos *= 2.0f;
+      //relative_pos -= 1.0f;
+      //relative_pos.y = -relative_pos.y;
 
      auto camera_position = render_scene_.camera_position();
      auto track_size = track_.size();
@@ -259,6 +270,22 @@ namespace ts
      }
 
      return boost::none;
+    }
+
+    void EditorScene::set_view_port(Vector2u screen_size, IntRect view_port)
+    {
+      screen_size_ = screen_size;
+      view_port_ = view_port;
+    }
+
+    IntRect EditorScene::view_port() const
+    {
+      return view_port_;
+    }
+
+    Vector2u EditorScene::screen_size() const
+    {
+      return screen_size_;
     }
   }
 }

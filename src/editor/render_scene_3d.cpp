@@ -10,6 +10,7 @@
 #include "texture_library_3d.hpp"
 
 #include "graphics/image_loader.hpp"
+#include "graphics/gl_scissor_box.hpp"
 
 #include "utility/color.hpp"
 
@@ -34,12 +35,23 @@ namespace ts
       set_camera_position(make_vector2(640.0f, 400.0f), 80.0f, track.height_map());
     }
 
-    void RenderScene::render() const
+    void RenderScene::render(Vector2u screen_size, IntRect view_port) const
     {
+      graphics::scissor_box(screen_size, view_port);
+
+      auto size = vector2_cast<std::int32_t>(screen_size);
+      // If we use unsigned arithmentic, it might come to bite us in the ass when we 
+      // get negative values.
+
+      glViewport(view_port.left - (size.x - view_port.width) / 2,
+                 (size.y - view_port.height) - view_port.top - (size.y - view_port.height) / 2,
+                 size.x, size.y);
+
       auto view_mat = view_matrix();
       auto projection_mat = projection_matrix();
 
       terrain_scene_.render(view_mat, projection_mat);
+      graphics::disable_scissor_box();
     }
 
     glm::mat4x4 RenderScene::view_matrix() const

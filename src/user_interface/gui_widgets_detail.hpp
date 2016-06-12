@@ -22,12 +22,12 @@ namespace ts
       bool was_clicked = false;
     };
 
-    WidgetState widget_state(const FloatRect& area, const InputState& input_state)
+    inline WidgetState widget_state(const FloatRect& area, const InputState& input_state)
     {
       auto contained = contains(area, vector2_cast<float>(input_state.click_position));
 
       WidgetState result;
-      result.hover_state = contains(area, vector2_cast<float>(input_state.mouse_position));      
+      result.hover_state = contains(area, vector2_cast<float>(input_state.mouse_position));
 
       result.click_state = (input_state.mouse_button_state & mouse_button::left) != 0 && contained;
 
@@ -37,17 +37,17 @@ namespace ts
       return result;
     }
 
-    auto hover_state(const WidgetState& state)
+    inline auto hover_state(const WidgetState& state)
     {
       return state.hover_state;
     }
 
-    auto click_state(const WidgetState& state)
+    inline auto click_state(const WidgetState& state)
     {
       return state.click_state;
     }
 
-    auto was_clicked(const WidgetState& state)
+    inline auto was_clicked(const WidgetState& state)
     {
       return state.was_clicked;
     }
@@ -58,6 +58,13 @@ namespace ts
       if (state.click_state) func(click_style(style));
       else if (state.hover_state) func(hover_style(style));
       else func(style);
+    }
+
+    // Empty event processing function to make sure forwarding a parameter pack full of
+    // events doesn't error out.
+    template <typename WidgetState>
+    void process_event(const WidgetState&)
+    {
     }
 
     namespace widgets 

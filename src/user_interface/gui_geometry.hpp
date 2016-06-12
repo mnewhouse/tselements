@@ -28,6 +28,12 @@ namespace ts
       fonts::TextGeometry text;
     };
 
+    inline void clear(Geometry& geometry)
+    {
+      geometry.geometry.clear();
+      geometry.text.clear();
+    }
+
     template <typename Style>
     void add_text(boost::string_ref text, FloatRect area,
                   const Style& text_style, Geometry& geometry)

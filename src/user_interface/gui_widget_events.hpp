@@ -61,13 +61,6 @@ namespace ts
         }
       }
     }
-
-    // Empty event processing function to make sure forwarding a parameter pack full of
-    // events doesn't error out.
-    template <typename WidgetState>
-    void process_event(const WidgetState&)
-    {
-    }
   }
 }
 

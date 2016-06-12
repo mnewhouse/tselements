@@ -25,13 +25,13 @@ namespace ts
         IntRect texture_rect;
       };
 
-      auto fill_area(Colorb color)
+      inline auto fill_area(Colorb color)
       {
         return FillArea{ color, nullptr, IntRect() };
       }
 
-      auto fill_area(const graphics::Texture* texture, IntRect texture_rect,
-                     Colorb color = Colorb(255, 255, 255, 255))
+      inline auto fill_area(const graphics::Texture* texture, IntRect texture_rect,
+                            Colorb color = Colorb(255, 255, 255, 255))
       {
         return FillArea{ color, texture, texture_rect };
       }

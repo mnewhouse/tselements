@@ -28,6 +28,10 @@ namespace ts
 
       const resources_3d::Track& track() const;
 
+      Vector2u screen_size() const;
+      IntRect view_port() const;
+      void set_view_port(Vector2u screen_size, IntRect view_port);
+
       void render() const;
 
       void move_camera(Vector3f offset);
@@ -51,6 +55,9 @@ namespace ts
       scene_3d::RenderScene render_scene_;
 
       resources_3d::TrackPath* selected_track_path_ = nullptr;
+
+      Vector2u screen_size_;
+      IntRect view_port_;
     };
   }
 }

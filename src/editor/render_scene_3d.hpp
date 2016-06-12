@@ -37,7 +37,7 @@ namespace ts
     public:
       RenderScene();
 
-      void render() const;
+      void render(Vector2u screen_size, IntRect view_port) const;
 
       void load_track_visuals(const resources_3d::Track& track);
       

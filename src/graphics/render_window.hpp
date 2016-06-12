@@ -35,6 +35,8 @@ namespace ts
       RenderWindow(const char* title, std::uint32_t width, std::uint32_t height, WindowMode window_mode);
       ~RenderWindow();
 
+      void set_framerate_limit(std::uint32_t limit);
+
       void clear(Colorf color = Colorf(0.0f, 0.0f, 0.0f, 1.0f));
       void display();
       void activate();
