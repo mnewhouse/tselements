@@ -47,6 +47,11 @@ namespace ts
         boost::optional<Vector2i> click_position_;
         std::size_t element_count_ = 0;
         std::size_t line_element_count_ = 0;
+        
+        enum class Mode
+        {
+          Nodes
+        };
       };
     }
   }

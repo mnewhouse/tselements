@@ -16,17 +16,18 @@ namespace ts
     static const char* const terrain_vertex_shader = R"(
 uniform mat4 u_projectionMatrix;
 uniform mat4 u_viewMatrix;
-layout(location = 0) in vec2 in_position;
+layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec3 in_texCoord;
+layout(location = 2) in vec3 in_normal;
 out vec3 frag_texCoord;
 out vec3 frag_normal;
 out vec4 frag_color;
 void main()
 {
-  float z = heightAt(in_position);
+  float z = heightAt(in_position.xy) + in_position.z;
   frag_texCoord = in_texCoord;  
   frag_color = vec4(1.0, 1.0, 1.0, 1.0);
-  frag_normal = calculateNormal(in_position, z);
+  frag_normal = (calculateNormal(in_position.xy, z) + in_normal) * 0.5;
   gl_Position = u_projectionMatrix * u_viewMatrix * vec4(in_position.xy, z, 1.0);
 }
 )";

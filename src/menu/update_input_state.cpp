@@ -17,16 +17,16 @@ namespace ts
         switch (button)
         {
         case sf::Mouse::Left:
-          return gui::mouse_button::left;
+          return gui::MouseButton::Left;
 
         case sf::Mouse::Right:
-          return gui::mouse_button::right;
+          return gui::MouseButton::Right;
 
         case sf::Mouse::Middle:
-          return gui::mouse_button::middle;
+          return gui::MouseButton::Middle;
 
         default:
-          return gui::mouse_button::none;
+          return gui::MouseButton::None;
         }
       }
     }
@@ -39,7 +39,7 @@ namespace ts
       {
         auto button = detail::translate_mouse_button(event.mouseButton.button);
         input_state.mouse_button_state |= static_cast<std::uint32_t>(button);
-        if (button == gui::mouse_button::left)
+        if (button == gui::MouseButton::Left)
         {
           input_state.click_position.x = event.mouseButton.x;
           input_state.click_position.y = event.mouseButton.y;

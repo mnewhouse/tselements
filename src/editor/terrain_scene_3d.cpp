@@ -130,7 +130,9 @@ namespace ts
         auto make_vertex = [=](auto coords)
         {
           TerrainVertex vertex;
-          vertex.position = vector2_cast<float>(coords);
+          vertex.position.x = static_cast<float>(coords.x);
+          vertex.position.y = static_cast<float>(coords.y);
+          vertex.position.z = 0.0f;
 
           vertex.tex_coords =
           {
@@ -139,6 +141,7 @@ namespace ts
             0.0f
           };
 
+          vertex.normal = { 0, 0, 127 };
           return vertex;
         };
        
@@ -377,12 +380,15 @@ namespace ts
 
         glCheck(glEnableVertexAttribArray(0));
         glCheck(glEnableVertexAttribArray(1));
+        glCheck(glEnableVertexAttribArray(2));
 
-        glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
+        glCheck(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
                                       reinterpret_cast<const void*>(offsetof(TerrainVertex, position))));
 
         glCheck(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
                                       reinterpret_cast<const void*>(offsetof(TerrainVertex, tex_coords))));
+        glCheck(glVertexAttribPointer(2, 3, GL_BYTE, GL_TRUE, sizeof(TerrainVertex),
+                                      reinterpret_cast<const void*>(offsetof(TerrainVertex, normal))));
         
         auto offset = component.element_index * sizeof(GLuint);
         glCheck(glDrawElements(GL_TRIANGLES, component.element_count, GL_UNSIGNED_INT,
@@ -390,6 +396,7 @@ namespace ts
 
         glCheck(glDisableVertexAttribArray(0));
         glCheck(glDisableVertexAttribArray(1));
+        glCheck(glDisableVertexAttribArray(2));
       }
     }
 
@@ -459,7 +466,7 @@ namespace ts
         index_cache_.clear();
 
         compute_path_vertex_points(path->nodes.data(), path->nodes.data() + path->nodes.size(),
-                                   0.06f, path_vertex_point_cache_);
+                                   0.04f, path_vertex_point_cache_);
 
         // Then, for every stroke style, generate a render component.
         for (const auto& stroke_properties : path->strokes)
@@ -477,15 +484,18 @@ namespace ts
 
           auto color = stroke_properties.color;
           
-          auto vertex_func = [=](Vector2f position)
+          auto vertex_func = [=](Vector3f position, Vector2f tex_coord, Vector3f normal)
           {
+            normal = normalize(normal * normal * normal);
+
             TerrainVertex vertex;
             vertex.position = position;
             vertex.color = color;
+            vertex.normal = vector3_cast<std::int8_t>(normal * 127.0f);
             vertex.tex_coords =
             {
-              position.x / (texture_size * 0.5f),
-              position.y / (texture_size * 0.5f),
+              tex_coord.x / texture_size,
+              tex_coord.y / texture_size,
               texture_z
             };
 

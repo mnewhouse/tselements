@@ -106,17 +106,29 @@ void main()
             Vector2i release_position(event.mouseButton.x, event.mouseButton.y);
             if (release_position != *click_position_)
             {
-              if (auto pos = editor_scene()->screen_to_terrain_position(release_position))
+              if (contains(editor_scene()->view_port(), release_position))
               {
-                auto& node = path.nodes.back();
-                node.second_control = { pos->x, pos->y };
-                node.first_control = node.position - (node.second_control - node.position);
+                if (auto pos = editor_scene()->screen_to_terrain_position(release_position))
+                {
+                  auto& node = path.nodes.back();
+                  node.second_control = { pos->x, pos->y };
+                  node.first_control = node.position - (node.second_control - node.position);
 
-                update_path_buffer();
-                editor_scene()->commit(selected_path);
+                  update_path_buffer();
+                }
               }
+
+              editor_scene()->commit(selected_path);
             }
 
+            else
+            {
+              // If the node's control point is the same as the node's position,
+              // we need to abort. Things will turn ugly if we let that through.
+              path.nodes.pop_back();
+            }
+
+            
             click_position_ = boost::none;
           }
 
@@ -125,16 +137,19 @@ void main()
           {
             click_position_ = boost::none;
             Vector2i click_position = { event.mouseButton.x, event.mouseButton.y };
-            if (auto pos = editor_scene()->screen_to_terrain_position(click_position))
+            if (contains(editor_scene()->view_port(), click_position))
             {
-              click_position_.reset(click_position);
+              if (auto pos = editor_scene()->screen_to_terrain_position(click_position))
+              {
+                click_position_.reset(click_position);
 
-              resources_3d::TrackPathNode node;
-              node.position = { pos->x, pos->y };
-              node.first_control = node.position;
-              node.second_control = node.first_control;
-              node.width = 56.0f;
-              path.nodes.push_back(node);
+                resources_3d::TrackPathNode node;
+                node.position = { pos->x, pos->y };
+                node.first_control = node.position;
+                node.second_control = node.first_control;
+                node.width = 56.0f;
+                path.nodes.push_back(node);
+              }
             }
           }
 
@@ -204,15 +219,16 @@ void main()
           std::vector<scene_3d::PathVertexPoint<node_iterator>> vertex_points;
 
           scene_3d::compute_path_vertex_points(path.nodes.begin(), path.nodes.end(),
-                                               0.1f, vertex_points);
+                                               0.05f, vertex_points);
 
           std::vector<PathVertex> vertices;
           std::vector<GLuint> indices;
 
           const Colorb color = { 0, 200, 255, 50 };
-          auto vertex_func = [=](Vector2f position)
+          auto vertex_func = [=](Vector3f position, Vector2f tex_coord, Vector3f normal)
           {
-            return PathVertex{ position, color };
+            Vector2f pos_2d = { position.x, position.y };
+            return PathVertex{ pos_2d, color };
           };
 
           resources_3d::TrackPathStroke stroke;

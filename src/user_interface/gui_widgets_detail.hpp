@@ -29,10 +29,11 @@ namespace ts
       WidgetState result;
       result.hover_state = contains(area, vector2_cast<float>(input_state.mouse_position));
 
-      result.click_state = (input_state.mouse_button_state & mouse_button::left) != 0 && contained;
+      constexpr auto left_button = static_cast<std::uint32_t>(MouseButton::Left);
+      result.click_state = (input_state.mouse_button_state & left_button) != 0 && contained;
 
-      result.was_clicked = contained && (input_state.mouse_button_state & mouse_button::left) == 0 &&
-        (input_state.old_mouse_button_state & mouse_button::left) != 0;
+      result.was_clicked = contained && (input_state.mouse_button_state & left_button) == 0 &&
+        (input_state.old_mouse_button_state & left_button) != 0;
 
       return result;
     }

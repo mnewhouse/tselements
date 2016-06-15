@@ -33,11 +33,32 @@ namespace ts
       bool use_relative_size = true;
       float width = 1.0f;
       float offset = 0.0f;
+      float texture_scale = 0.5f;
+
+      float inner_normal = 0.0f;
+      float outer_normal = 0.0f;
+      
+      float bevel_width = 0.0f;
+      float bevel_strength = 0.5f;
+
+      enum TextureMode
+      {
+        Tiled,
+        Directional
+      } texture_mode = Tiled;
 
       enum Type
       {
         Default, Border
       } type = Default;
+
+      struct Segment
+      {
+        float stroke_start;
+        float stroke_length;
+      };
+
+      std::vector<Segment> segments;
     };
 
     struct TrackPath
@@ -48,6 +69,8 @@ namespace ts
       std::vector<TrackPathStroke> strokes;
     };
 
+    // Interpolate the position on a path between two path nodes
+    // at a specified time point.
     inline Vector2f path_point_at(const TrackPathNode& a, const TrackPathNode& b, float time_point)
     {
       auto t = time_point, r = 1.0f - t;
@@ -58,6 +81,7 @@ namespace ts
         3.0f * r * tt * b.first_control + ttt * b.position;
     }
 
+    // Compute the normal of a path segment at the specified time point.
     inline Vector2f path_normal_at(const TrackPathNode& a, const TrackPathNode& b, float time_point)
     {
       auto t = time_point, r = 1.0f - time_point;

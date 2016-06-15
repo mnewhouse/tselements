@@ -43,15 +43,21 @@ namespace ts
       if (center_horizontal(text_style)) text_flags |= fonts::text_style::center_horizontal;
       if (center_vertical(text_style)) text_flags |= fonts::text_style::center_vertical;
 
+      auto offset = text_offset(text_style);
+      area.left += offset.x;
+      area.top += offset.y;
+
       geometry.text.add_text(text, font(text_style), area, text_color(text_style), text_flags);
     }
 
 
     void add_vertices(FloatRect area, Colorb color, Geometry& geometry);
 
-
     void add_vertices(FloatRect area, Colorb color, const graphics::Texture* texture,
                       IntRect texture_rect, Geometry& geometry);
+
+    void add_vertical_gradient(FloatRect area, Colorb start_color, Colorb end_color,
+                               Geometry& geometry);
 
     void draw(const Renderer& renderer, const Geometry& geometry, const RenderState& render_state);
   }

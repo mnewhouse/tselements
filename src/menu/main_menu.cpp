@@ -52,7 +52,8 @@ namespace ts
       using namespace gui;
       auto font = impl_->resource_store->font_library().get_font_by_name(fonts::default_18);
 
-      auto text_style = styles::text_style(*font, Colorb(0, 190, 0, 255), styles::center_text_horizontal);
+      auto text_style = styles::text_style(*font, Colorb(0, 190, 0, 255), 
+                                           Vector2f(), styles::center_text_horizontal);
       auto hover_text_style = text_style;
       hover_text_style.text_color = { 255, 255, 255, 255 };
 

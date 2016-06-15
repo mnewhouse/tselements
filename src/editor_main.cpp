@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     int screen_width = 1280, screen_height = 800;
     graphics::RenderWindow window("Project \"Free Like Bird\" - Editor",
                                   screen_width, screen_height, graphics::WindowMode::Windowed);
-    window.set_framerate_limit(120);
+    window.set_framerate_limit(0);
 
     graphics::initialize_glew();
 
@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
     game::UpdateContext update_context{};
     update_context.frame_duration = 20U;
 
-    state_machine.create_state<editor::TrackEditState>(game_context);
+    state_machine.create_state<editor::track::EditorState>(game_context);
 
     while (state_machine)
     {
@@ -74,15 +74,15 @@ int main(int argc, char* argv[])
         state_machine->process_event(event);
       }
 
+      state_machine->update(update_context);
+
       game::RenderContext render_context;
       render_context.frame_progress = 0.0;
       render_context.screen_size = window.size();
 
       window.clear();
       state_machine->render(render_context);
-      window.display();
-
-      state_machine->update(update_context);
+      window.display();      
     }
   }
 
@@ -90,6 +90,4 @@ int main(int argc, char* argv[])
   {
     std::cerr << "An unhandled except occurred: " << e.what() << std::endl;
   }
-  
-
 }

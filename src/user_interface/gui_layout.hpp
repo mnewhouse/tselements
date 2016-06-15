@@ -26,11 +26,28 @@ namespace ts
 
       struct HorizontalIncrement
       {
-        FloatRect operator()(FloatRect area, Vector2f size) const
+        FloatRect operator()(FloatRect area) const
         {
           area.left += area.width;
           return area;
         }
+      };
+
+      struct GridIncrement
+      {
+        FloatRect operator()(FloatRect area) const
+        {
+          area.left += area.width;
+          if (area.left >= max_x)
+          {
+            area.top += area.height;
+            area.left = 0.0f;
+          }
+
+          return area;
+        }
+
+        float max_x;
       };
     }
 
@@ -74,6 +91,15 @@ namespace ts
     inline auto horizontal_layout_generator(Vector2f initial_position, Vector2f area_size)
     {
       return LayoutGenerator<detail::HorizontalIncrement>(FloatRect(initial_position, area_size));
+    }
+
+    inline auto grid_layout_generator(Vector2f initial_position, Vector2f area_size, float max_width)
+    {
+      auto max_x = initial_position.x + max_width;
+
+      return LayoutGenerator<detail::GridIncrement>(FloatRect(initial_position, area_size),
+                                                    detail::GridIncrement{ max_x });
+    
     }
   }
 }

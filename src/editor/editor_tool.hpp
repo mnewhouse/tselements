@@ -12,6 +12,8 @@
 #include "utility/vector2.hpp"
 #include "utility/rect.hpp"
 
+#include "user_interface/gui_mouse.hpp"
+
 #include <glm/mat4x4.hpp>
 
 namespace ts
@@ -29,6 +31,8 @@ namespace ts
 
       virtual void update() {}
       virtual void render() const {}
+
+      virtual void set_active_mode(std::size_t mode_id) {};
 
       using event_type = game::Event;
       virtual void process_event(const event_type& event) {}

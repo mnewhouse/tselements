@@ -47,6 +47,27 @@ namespace ts
     }
 
 
+    void add_vertical_gradient(FloatRect area, Colorb start_color, Colorb end_color,
+                               Geometry& geometry)
+    {
+      auto right = area.right();
+      auto bottom = area.bottom();
+
+      graphics::Geometry::vertex_type vertices[6]
+      {
+        { { area.left, area.top },{}, start_color },
+        { { area.left, bottom },{}, end_color },
+        { { right, bottom },{}, end_color },
+        { { right, area.top },{}, start_color }
+      };
+
+      vertices[4] = vertices[0];
+      vertices[5] = vertices[2];
+
+      geometry.geometry.add_vertices(vertices, 6, nullptr);
+    }
+
+
     void add_vertices(FloatRect area, Colorb color, const graphics::Texture* texture,
                       IntRect texture_rect, Geometry& geometry)
     {

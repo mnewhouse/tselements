@@ -38,9 +38,11 @@ namespace ts
   {
     struct TerrainVertex
     {
-      Vector2f position;
+      Vector3f position;
       Vector3f tex_coords;
+      Vector3<std::int8_t> normal;
       Colorb color;
+      
     };
 
     class TerrainScene

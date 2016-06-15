@@ -23,6 +23,7 @@ namespace ts
         auto distance = new_position - old_position;
         auto point_size = vector2_cast<double>(point.end - point.start);
 
+        /*
         auto cp = cross_product(distance, point_size);
         if (cp != 0.0)
         {
@@ -38,6 +39,7 @@ namespace ts
             }           
           }          
         }
+        */
       }
 
       template <typename EventCallback>

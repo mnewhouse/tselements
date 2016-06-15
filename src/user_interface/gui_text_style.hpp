@@ -8,8 +8,10 @@
 #define GUI_TEXT_STYLE_HPP_8129481234
 
 #include "utility/color.hpp"
+#include "utility/vector2.hpp"
 
 #include <type_traits>
+#include <cstdint>
 
 namespace ts
 {
@@ -26,7 +28,8 @@ namespace ts
       {
         const fonts::BitmapFont& bitmap_font;
         Colorb text_color;
-        std::uint32_t text_flags;
+        Vector2f text_offset;
+        std::uint32_t text_flags;        
       };
 
       struct center_text_horizontal_t : std::integral_constant<std::uint32_t, 1> {};
@@ -56,9 +59,10 @@ namespace ts
       static constexpr center_text_vertical_t center_text_vertical;
       
       template <typename... Flags>
-      auto text_style(const fonts::BitmapFont& font, Colorb color, Flags... flags)
+      auto text_style(const fonts::BitmapFont& font, Colorb color, 
+                      Vector2f text_offset, Flags... flags)
       {
-        return TextStyle{ font, color, detail::make_text_flag_mask(flags...) };
+        return TextStyle{ font, color, text_offset, detail::make_text_flag_mask(flags...) };
       }
 
       inline const auto& font(const TextStyle& style)
@@ -69,6 +73,11 @@ namespace ts
       inline auto text_color(const TextStyle& style)
       {
         return style.text_color;
+      }
+
+      inline auto text_offset(const TextStyle& style)
+      {
+        return style.text_offset;
       }
 
       inline bool center_horizontal(const TextStyle& style)

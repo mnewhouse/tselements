@@ -25,6 +25,12 @@ namespace ts
         IntRect texture_rect;
       };
 
+      struct VerticalGradient
+      {
+        Colorb start_color;
+        Colorb end_color;
+      };
+
       inline auto fill_area(Colorb color)
       {
         return FillArea{ color, nullptr, IntRect() };
@@ -34,6 +40,11 @@ namespace ts
                             Colorb color = Colorb(255, 255, 255, 255))
       {
         return FillArea{ color, texture, texture_rect };
+      }
+
+      inline auto vertical_gradient(Colorb start_color, Colorb end_color)
+      {
+        return VerticalGradient{ start_color, end_color };
       }
 
       template <typename Area, typename Geometry>
@@ -48,6 +59,12 @@ namespace ts
         {
           add_vertices(area, fill_area.color, fill_area.texture, fill_area.texture_rect, geometry);
         }        
+      }
+
+      template <typename Area, typename Geometry>
+      void add_background(const Area& area, const VerticalGradient& gradient, Geometry& geometry)
+      {
+        add_vertical_gradient(area, gradient.start_color, gradient.end_color, geometry);
       }
     }
   }

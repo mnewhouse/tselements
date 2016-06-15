@@ -201,12 +201,6 @@ namespace ts
     return a.x * b.x + a.y * b.y;
   }
 
-  template <typename T, typename U>
-  auto cross_product(const Vector2<T>& a, const Vector2<U>& b)
-  {
-    return a.x * b.y - a.y * b.x;
-  }
-
   template <typename T>
   Vector2<T> normalize(Vector2<T> vec)
   {
@@ -214,6 +208,13 @@ namespace ts
     if (mag == 0) return vec;
 
     return vec /= mag;
+  }
+
+  template <typename T>
+  T distance(const Vector2<T>& a, const Vector2<T>& b)
+  {
+    using std::hypot;
+    return hypot(a.x - b.x, a.y - b.y);
   }
 
   template <typename T>
