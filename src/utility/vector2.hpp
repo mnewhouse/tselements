@@ -26,7 +26,7 @@ namespace ts
     {}
 
     template <typename U>
-    Vector2(Vector2<U> other)
+    explicit Vector2(Vector2<U> other)
       : x(static_cast<T>(other.x)), y(static_cast<T>(other.y))
     {}
 

@@ -58,12 +58,12 @@ namespace ts
       {
         if ((i & 1) == 0)
         {
-          start_point.position = left_column_start + offset;
+          start_point.position = vector2_round<std::int32_t>(left_column_start + offset);
         }
 
         else
         {
-          start_point.position = right_column_start + offset;
+          start_point.position = vector2_round<std::int32_t>(right_column_start + offset);
           offset += grid_direction * spacing * 2.0;
         }
 

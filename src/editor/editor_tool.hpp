@@ -18,6 +18,12 @@
 
 namespace ts
 {
+  namespace gui
+  {
+    struct Geometry;
+    struct InputState;
+  }
+
   namespace editor
   {
     class EditorScene;
@@ -29,10 +35,10 @@ namespace ts
         : editor_scene_(editor_scene)
       {}
 
-      virtual void update() {}
       virtual void render() const {}
 
       virtual void set_active_mode(std::size_t mode_id) {};
+      virtual std::size_t active_mode() const { return 0; }
 
       using event_type = game::Event;
       virtual void process_event(const event_type& event) {}

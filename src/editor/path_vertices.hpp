@@ -42,7 +42,14 @@ namespace ts
     // It also performs the operation *index_out++ = std::size_t(start_index + index)
     template <typename PathNodeIt, typename VertexFunc, typename VertexOut, typename IndexOut>
     auto generate_path_vertices(const std::vector<PathVertexPoint<PathNodeIt>>& points,
-                                const resources_3d::TrackPathStroke& stroke_properties,
+                                PathNodeIt first_node,
+                                const resources_3d::SegmentedStroke& stroke,
+                                VertexFunc&& vertex_func, VertexOut vertex_out,
+                                std::uint32_t start_index, IndexOut index_out);
+
+    template <typename PathNodeIt, typename VertexFunc, typename VertexOut, typename IndexOut>
+    auto generate_path_vertices(const std::vector<PathVertexPoint<PathNodeIt>>& points,
+                                const resources_3d::StrokeProperties& stroke_properties,
                                 VertexFunc&& vertex_func, VertexOut vertex_out,
                                 std::uint32_t start_index, IndexOut index_out);
   }

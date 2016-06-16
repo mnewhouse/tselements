@@ -94,7 +94,7 @@ namespace ts
       }
 
       Menu::UpdateState
-        Menu::update(InterfaceState& interface_state, Vector2i screen_size,
+        Menu::update(InterfaceState& interface_state, Vector2u screen_size,
                      const gui::InputState& input_state, gui::Geometry& geometry)
       {
         using namespace gui;

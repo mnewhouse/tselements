@@ -88,6 +88,24 @@ namespace ts
 
         return state;
       }
+
+      template <typename Area, typename Style, typename Geometry, typename... EventHandlers>
+      auto button(const Area& area, const Style& style,
+                  const InputState& input_state, Geometry& geometry, EventHandlers&&... event_handlers)
+      {
+        auto state = widget_state(area, input_state);
+
+        auto button_impl = [&](const auto& style)
+        {
+          add_background_if_applicable(area, style, geometry);
+        };
+
+        do_widget(state, style, button_impl);
+
+        process_event(state, std::forward<EventHandlers>(event_handlers)...);
+
+        return state;
+      }
     }
   }
 }

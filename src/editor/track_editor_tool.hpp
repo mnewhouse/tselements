@@ -27,7 +27,6 @@ namespace ts
       {
         const char* const path_tool_mode_names[] =
         {
-          "Add Nodes",
           "Edit Nodes",
           "Stroke Segments",
         };

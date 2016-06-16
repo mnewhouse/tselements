@@ -1,0 +1,59 @@
+* Editor GUI
+ * Menu bar.
+ 
+* Viewport
+* Path modification
+ * Editing nodes
+ * Editing stroke styles
+ * Segmented stroke segments kerbs
+  * What does this need?
+   * Being able to stroke certain segments of the path with two clicks of a button
+   * Two modes, adding and removing
+    * Need to transform screen coordinates to world coordinates to path time point
+    
+  * What does the GUI need?
+   * Selecting certain stroke style
+   * Display currently selected stroke style in tool info
+* Stroke styles
+ * Can be modified on-the-fly
+* Stroking path segments
+ * In case of a border, potentially only stroke one side of it
+ 
+* Path creation/selection
+* Terrain drawing
+* Elevation modifiers
+* Trees, foliage (animations?)
+* Walls
+* Elevation layers: bridges, tunnels
+* Undo/redo
+* Track saving/loading
+* Make track border prettier
+* Camera scrolling/zooming/panning
+
+...
+* Spawning cars
+* Car editing
+* Game physics
+
+* What should editor GUI have?
+ * Menu bar
+ * Menu bar items
+  * File
+   * Track properties
+   * Main Menu
+   * Quit
+  * Edit
+   * Undo/redo
+   * Resize
+   * etc.
+  * Tools
+   * Tool selection
+   * Path tool
+   * Terrain tool
+   * Elevation tool
+  * Modes
+   * Depends on tool
+  
+* Goal: Post another video before going on vacation.
+ 
+ 

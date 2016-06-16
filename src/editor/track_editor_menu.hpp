@@ -37,7 +37,7 @@ namespace ts
           bool focus_state = false;
         };
 
-        UpdateState update(InterfaceState& interface_state, Vector2i screen_size,
+        UpdateState update(InterfaceState& interface_state, Vector2u screen_size,
                            const gui::InputState& input_state, gui::Geometry& geometry);
 
       private:
@@ -52,7 +52,7 @@ namespace ts
         InterfaceState* interface_state_;
         gui::Geometry* geometry_;
         const gui::InputState* input_state_;
-        Vector2i screen_size_;
+        Vector2u screen_size_;
       };
     }
   }

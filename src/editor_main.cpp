@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     int screen_width = 1280, screen_height = 800;
     graphics::RenderWindow window("Project \"Free Like Bird\" - Editor",
                                   screen_width, screen_height, graphics::WindowMode::Windowed);
-    window.set_framerate_limit(0);
+    window.set_framerate_limit(120);
 
     graphics::initialize_glew();
 

@@ -27,6 +27,18 @@ namespace ts
       std::uint32_t old_mouse_button_state = 0;
       std::uint32_t mouse_button_state = 0;     
     };
+
+    inline bool click_state(const InputState& input_state, gui::MouseButton button)
+    {
+      return (input_state.mouse_button_state & static_cast<std::uint32_t>(button)) != 0;
+    }
+
+    inline bool was_clicked(const InputState& input_state, 
+                            gui::MouseButton button = gui::MouseButton::Left)
+    {
+      auto b = static_cast<std::uint32_t>(button);
+      return (input_state.old_mouse_button_state & b) != 0 && !click_state(input_state, button);
+    }
   }
 }
 

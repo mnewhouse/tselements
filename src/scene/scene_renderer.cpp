@@ -493,7 +493,8 @@ namespace ts
         auto position = vector2_cast<float>(camera.position());
         auto rotation = static_cast<float>(camera.rotation().radians());
 
-        auto center = compute_camera_center(camera, world_size, screen_size, frame_progress);
+        auto center = compute_camera_center(camera, vector2_cast<double>(world_size), 
+                                            vector2_cast<double>(screen_size), frame_progress);
 
         glm::vec3 scale(2.0f * zoom_level / screen_size.x, -2.0f * zoom_level / screen_size.y, 0.0f);
         glm::vec3 translation(-center.x, -center.y, 0.0f);

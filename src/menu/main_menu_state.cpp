@@ -29,7 +29,7 @@ namespace ts
     void MainMenuState::render(const render_context& render_ctx) const
     {
       gui::RenderState render_state;
-      render_state.screen_size = render_ctx.screen_size;
+      render_state.screen_size = vector2_cast<float>(render_ctx.screen_size);
       main_menu_.render(context().gui_context->renderer(), render_state);
     }
 

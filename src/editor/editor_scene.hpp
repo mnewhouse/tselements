@@ -41,10 +41,16 @@ namespace ts
 
       boost::optional<Vector3f> screen_to_terrain_position(Vector2i pos) const;
 
+      Vector2i world_to_screen_position(Vector2f position) const;
+      Vector2i world_to_screen_position(Vector3f world_position) const;
+
       resources_3d::TrackPath* create_track_path();
       resources_3d::TrackPath* selected_track_path();
       const resources_3d::TrackPath* selected_track_path() const;
+      std::size_t selected_track_path_stroke_index() const;
+
       void select_track_path(resources_3d::TrackPath* path);
+      void select_track_path_stroke_index(std::size_t index);
 
       void commit(const resources_3d::TrackPath* track_path);
       void commit(const resources_3d::TrackPath* track_path,
@@ -55,6 +61,7 @@ namespace ts
       scene_3d::RenderScene render_scene_;
 
       resources_3d::TrackPath* selected_track_path_ = nullptr;
+      std::size_t selected_track_path_stroke_index_ = 0;
 
       Vector2u screen_size_;
       IntRect view_port_;

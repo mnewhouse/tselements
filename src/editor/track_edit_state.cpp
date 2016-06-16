@@ -27,7 +27,7 @@ namespace ts
         auto load_track()
         {
           resources_3d::Track track;
-          auto height_map = resources_3d::generate_height_map(128, 16, 32.0f, 1.0f);
+          auto height_map = resources_3d::generate_height_map(128, 16, 32.0f, 0.5f);
 
           track.update_height_map(std::move(height_map));
           track.resize({ 1280, 800, 128 });
@@ -38,31 +38,33 @@ namespace ts
           track.define_texture(27, "editor/kerb.png", IntRect(0, 0, 32, 32));
           track.set_base_texture(0);
 
-          using resources_3d::TrackPathStroke;
+          using SegmentedStroke = resources_3d::SegmentedStroke;
+          using Stroke = resources_3d::StrokeProperties;
 
           auto path = track.create_path();
-          TrackPathStroke tarmac;
+          Stroke tarmac;
           tarmac.texture_id = 1;
           tarmac.outer_normal = -0.4f;
 
-          TrackPathStroke track_edge;
-          track_edge.type = TrackPathStroke::Border;
+          Stroke track_edge;
+          track_edge.type = Stroke::Border;
           track_edge.use_relative_size = false;
           track_edge.width = 2.5f;
           track_edge.offset = -2.0f;
           track_edge.texture_id = 2;
 
-          TrackPathStroke tarmac_edge;
-          tarmac_edge.type = TrackPathStroke::Border;
+          Stroke tarmac_edge;
+          tarmac_edge.type = Stroke::Border;
           tarmac_edge.use_relative_size = false;
           tarmac_edge.width = 1.0f;
           tarmac_edge.offset = -2.5f;
           tarmac_edge.texture_id = 1;
           tarmac_edge.color = { 150, 150, 150, 255 };
 
-          TrackPathStroke kerb;
-          kerb.type = TrackPathStroke::Border;
-          kerb.texture_mode = TrackPathStroke::Directional;
+          Stroke kerb;
+          kerb.type = Stroke::Border;
+          kerb.texture_mode = Stroke::Directional;
+          kerb.is_segmented = true;
           kerb.use_relative_size = false;
           kerb.width = 5.0f;
           kerb.offset = -7.0f;
@@ -79,6 +81,9 @@ namespace ts
           path->strokes.push_back(track_edge);
           path->strokes.push_back(tarmac);
 
+          path->min_width = 56.0f;
+          path->max_width = 56.0f;
+
           return track;
         }
       }
@@ -92,6 +97,8 @@ namespace ts
           active_tool_(&path_tool_)
       {
         editor_scene_.load_scene();
+
+        active_tool_->set_active_mode(active_mode());
       }
 
       void EditorState::render(const render_context& ctx) const
@@ -104,7 +111,7 @@ namespace ts
         const auto& gui_renderer = game_context.gui_context->renderer();
 
         gui::RenderState render_state;
-        render_state.screen_size = game_context.render_window->size();
+        render_state.screen_size = vector2_cast<float>(game_context.render_window->size());
         render_state.translation = { 0.0f, 0.0f };
 
         gui::draw(gui_renderer, gui_geometry_, render_state);
@@ -124,6 +131,10 @@ namespace ts
         editor_scene_.set_view_port(screen_size, view_port);
 
         bool has_focus = !menu_update_state.focus_state;
+        if (active_tool_ == &path_tool_)
+        {
+          path_tool_.update_gui(has_focus, input_state_, gui_geometry_);
+        }
 
         // If our focus wasn't stolen by some other component, forward the events over to
         // the active tool object (if there is one).
@@ -180,12 +191,30 @@ namespace ts
 
       void EditorState::active_tool_changed(Tool previous, Tool current)
       {
-        printf("CUNT %d\n", current);
+        auto tool_pointer = [=]() -> EditorTool*
+        {
+          switch (current)
+          {
+          case Tool::Path:
+            return &path_tool_;
+
+          default:
+            return nullptr;
+          }
+        }();
+        
+        if (tool_pointer)
+        {
+          active_tool_ = tool_pointer;
+        }
       }
 
       void EditorState::active_mode_changed(std::size_t previous, std::size_t current)
       {
-
+        if (active_tool_)
+        {
+          active_tool_->set_active_mode(current);
+        }        
       }
     }
   }

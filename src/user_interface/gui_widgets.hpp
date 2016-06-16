@@ -23,6 +23,10 @@ namespace ts
       auto button(boost::string_ref text, const Area& area, const Style& style,
                   const InputState& input_state, Geometry& vertex_cache, 
                   EventHandlers&&... event_handlers);
+
+      template <typename Area, typename Style, typename Geometry, typename... EventHandlers>
+      auto button(const Area& area, const Style& style,
+                  const InputState& input_state, Geometry& geometry, EventHandlers&&... event_handlers);
     }
   }
 }

@@ -3,6 +3,7 @@ project(tselements)
 
 set(STATIC_STD_LIBS OFF)
 set(TSELEMENTS_DEBUG_INFO ON)
+add_definitions(-DTS_GL_DEBUG)
 
 if(MSVC)
     set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
@@ -30,15 +31,18 @@ source_group(core REGULAR_EXPRESSION src/core/[^/]+)
 source_group(components REGULAR_EXPRESSION src/components/[^/]+)
 source_group(controls REGULAR_EXPRESSION src/controls/[^/]+)
 source_group(cup REGULAR_EXPRESSION src/cup/[^/]+)
+source_group(editor REGULAR_EXPRESSION src/editor/[^/])
+source_group(fonts REGULAR_EXPRESSION src/fonts/[^/]+)
 source_group(game REGULAR_EXPRESSION src/game/[^/]+)
 source_group(graphics REGULAR_EXPRESSION src/graphics/[^/]+)
+source_group(menu REGULAR_EXPRESSION src/menu/[^/]+)
 source_group(messages REGULAR_EXPRESSION src/messages/[^/]+)
 source_group(resources REGULAR_EXPRESSION src/resources/[^/]+)
 source_group(scene REGULAR_EXPRESSION src/scene/[^/]+)
 source_group(race REGULAR_EXPRESSION src/race/[^/]+)
 source_group(server REGULAR_EXPRESSION src/server/[^/]+)
 source_group(stage REGULAR_EXPRESSION src/stage/[^/]+)
-source_group(states REGULAR_EXPRESSION src/states/[^/]+)
+source_group(user_interface REGULAR_EXPRESSION src/user_interface/[^/]+)
 source_group(utility REGULAR_EXPRESSION src/utility/[^/]+)
 source_group(world REGULAR_EXPRESSION src/world/[^/]+)
 
@@ -64,13 +68,38 @@ set(LIB_SOURCES
 	src/cup/cup_synchronizer.cpp
 	src/cup/cup_messages.cpp
 
+	src/editor/tools/editor_path_tool.cpp
+	src/editor/editor_scene.cpp
+	src/editor/height_map.cpp
+	src/editor/render_scene_3d.cpp
+	src/editor/texture_library_3d.cpp
+	src/editor/terrain_scene_3d.cpp
+	src/editor/track_3d.cpp
+	src/editor/track_edit_state.cpp
+	src/editor/track_editor_interface_state.cpp
+	src/editor/track_editor_menu.cpp
+	src/editor/track_loader_3d.cpp
+
+	src/fonts/bitmap_font.cpp
+	src/fonts/font_library.cpp
+	src/fonts/font_renderer.cpp
+	src/fonts/text_geometry.cpp
+
 	src/game/loading_thread.cpp
 
+	src/graphics/geometry.cpp
+	src/graphics/geometry_renderer.cpp
 	src/graphics/gl_context.cpp
+	src/graphics/gl_check.cpp
 	src/graphics/image.cpp
 	src/graphics/render_window.cpp
 	src/graphics/shader.cpp	
 	src/graphics/texture.cpp
+	src/graphics/vertex_buffer.cpp
+
+	src/menu/update_input_state.cpp
+	src/menu/main_menu.cpp
+	src/menu/main_menu_state.cpp
 
 	src/race/lap_tracker.cpp
 	src/race/race.cpp
@@ -120,6 +149,10 @@ set(LIB_SOURCES
 	src/stage/stage_loader.cpp
 	src/stage/stage_regulator.cpp
 
+	src/user_interface/gui_context.cpp
+	src/user_interface/gui_renderer.cpp
+	src/user_interface/gui_geometry.cpp
+
 	src/utility/logger.cpp
 	src/utility/random.cpp
 	src/utility/sha256.cpp
@@ -134,7 +167,6 @@ set(LIB_SOURCES
 	src/world/handling_physics.cpp
 	src/world/world.cpp
 )
-
 
 file(GLOB_RECURSE LIB_HEADERS *.hpp *.inl)
 
@@ -152,55 +184,56 @@ if(MSVC)
 endif()
 
 add_library(libtselements STATIC ${LIB_SOURCES} ${PRECOMPILED_SOURCE} ${LIB_HEADERS})
-add_executable(tselements src/main.cpp ${LIB_HEADERS})
+add_executable(tselements src/main.cpp)
+add_executable(editor src/editor_main.cpp)
 
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 set(Boost_USE_MULTITHREADED ON)
 
-add_subdirectory("${PROJECT_SOURCE_DIR}/dependencies/zlib-1.2.8")
-add_subdirectory("${PROJECT_SOURCE_DIR}/dependencies/libpng-1.2.51")
+set(ZLIB_PATH "dependencies/zlib-1.2.8")
+set(PNG_PATH "dependencies/libpng-1.2.51")
+
+add_subdirectory("${PROJECT_SOURCE_DIR}/${ZLIB_PATH}")
+add_subdirectory("${PROJECT_SOURCE_DIR}/${PNG_PATH}")
+
+set(ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/${ZLIB_PATH}" "${PROJECT_BINARY_DIR}/${ZLIB_PATH}")
+set(PNG_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/${PNG_PATH}" "${PROJECT_BINARY_DIR}/${PNG_PATH}")
+
+set(ZLIB_LIBRARY zlib)
+set(PNG_LIBRARY png12)
+
+find_package(Boost REQUIRED COMPONENTS system filesystem locale)
+find_package(SFML 2 REQUIRED system window graphics network audio)
+find_package(GLEW REQUIRED)
+add_definitions("-DHAS_BOOST")
 
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/include")
-include_directories("${PROJECT_SOURCE_DIR}/ui/include")
 include_directories("${PROJECT_SOURCE_DIR}/dependencies/catch/single_include")
 include_directories("${PROJECT_SOURCE_DIR}/dependencies/glm")
 
+include_directories(${Boost_INCLUDE_DIR})
+include_directories(${SFML_INCLUDE_DIR})
+include_directories(${GLEW_INCLUDE_DIRS})
 include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${PNG_INCLUDE_DIR})
 
-target_link_libraries(libtselements zlib)
-target_link_libraries(libtselements png12)
-
-find_package(Boost REQUIRED COMPONENTS system filesystem locale)
-if(Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIR})
-    add_definitions("-DHAS_BOOST")
-    target_link_libraries(libtselements ${Boost_LIBRARIES})
-endif()
-
-find_package(SFML 2 REQUIRED system window graphics network audio)
-
-if(SFML_FOUND)
-  include_directories(${SFML_INCLUDE_DIR})
-  target_link_libraries(libtselements ${SFML_LIBRARIES})
-endif()
-
-find_package(GLEW)
-if(GLEW_FOUND)
-	include_directories(${GLEW_INCLUDE_DIRS})
-	target_link_libraries(libtselements ${GLEW_LIBRARIES})
-endif()
-
-
-if (MSVC)
+if(MSVC)
   target_link_libraries(libtselements "winmm.lib")
   target_link_libraries(libtselements "opengl32.lib")
 endif()
 
 enable_testing()
 
+target_link_libraries(libtselements ${Boost_LIBRARIES})
+target_link_libraries(libtselements ${SFML_LIBRARIES})
+target_link_libraries(libtselements ${GLEW_LIBRARIES})
+
+target_link_libraries(libtselements ${ZLIB_LIBRARY})
+target_link_libraries(libtselements ${PNG_LIBRARY})
+
 target_link_libraries(tselements libtselements)
+target_link_libraries(editor libtselements)
 
 add_subdirectory("${PROJECT_SOURCE_DIR}/tests")

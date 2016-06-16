@@ -466,11 +466,12 @@ namespace ts
         index_cache_.clear();
 
         compute_path_vertex_points(path->nodes.data(), path->nodes.data() + path->nodes.size(),
-                                   0.04f, path_vertex_point_cache_);
+                                   0.025f, path_vertex_point_cache_);
 
         // Then, for every stroke style, generate a render component.
-        for (const auto& stroke_properties : path->strokes)
+        for (const auto& stroke : path->strokes)
         {
+          const auto& stroke_properties = stroke.properties;
           auto texture_mapping = find_terrain_texture(stroke_properties.texture_id);
           auto texture_size = 1.0f;
           auto texture_z = 0.0f;
@@ -509,7 +510,7 @@ namespace ts
           component.user_data = user_data;
 
           // Now, genenerate the path vertices
-          generate_path_vertices(path_vertex_point_cache_, stroke_properties,
+          generate_path_vertices(path_vertex_point_cache_, path->nodes.data(), stroke,
                                  vertex_func, std::back_inserter(vertex_cache_),
                                  vertex_cache_.size(), std::back_inserter(index_cache_));
 

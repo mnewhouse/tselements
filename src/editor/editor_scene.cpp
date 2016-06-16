@@ -112,6 +112,16 @@ namespace ts
       return selected_track_path_;
     }
 
+    std::size_t EditorScene::selected_track_path_stroke_index() const
+    {
+      return selected_track_path_stroke_index_;
+    }
+    
+    void EditorScene::select_track_path_stroke_index(std::size_t index)
+    {
+      selected_track_path_stroke_index_ = index;
+    }
+
     void EditorScene::select_track_path(resources_3d::TrackPath* path)
     {
       selected_track_path_ = path;
@@ -148,11 +158,6 @@ namespace ts
 
       auto view = render_scene_.view_matrix();
       auto projection = render_scene_.projection_matrix();
-
-      // Transform to GL-style coordinates
-      //relative_pos *= 2.0f;
-      //relative_pos -= 1.0f;
-      //relative_pos.y = -relative_pos.y;
 
      auto camera_position = render_scene_.camera_position();
      auto track_size = track_.size();
@@ -270,6 +275,40 @@ namespace ts
      }
 
      return boost::none;
+    }
+
+    // This function gets the terrain elevation at the specified 2D position,
+    // and uses that as its Z value.
+    Vector2i EditorScene::world_to_screen_position(Vector2f position) const
+    {
+      const auto& height_map = track_.height_map();
+
+      Vector3f position_3d(position.x, position.y, interpolate_height_at(height_map, position));
+      return world_to_screen_position(position_3d);
+    }
+
+    Vector2i EditorScene::world_to_screen_position(Vector3f position) const
+    {
+      auto view = render_scene_.view_matrix();
+      auto projection = render_scene_.projection_matrix();
+
+      auto projected_view = projection * view;
+      auto relative_pos = projected_view * glm::vec4(position.x, position.y, position.z, 1.0);
+      relative_pos /= relative_pos.w;
+
+      // Transform relative position according to viewport
+
+      auto screen_size = vector2_cast<std::int32_t>(screen_size_);
+      auto view_port = view_port_;
+
+      auto left = view_port.left - (screen_size.x - view_port.width) / 2;
+      auto bottom = (screen_size.y - view_port.height) -
+        view_port.top - (screen_size.y - view_port.height) / 2;     
+      
+      auto x = (relative_pos.x + 1.0f) * (screen_size.x / 2) + left;
+      auto y = (relative_pos.y + 1.0f) * (screen_size.y / 2) + bottom;
+      return make_vector2(static_cast<std::int32_t>(x),
+                          static_cast<std::int32_t>(screen_size.y - y));
     }
 
     void EditorScene::set_view_port(Vector2u screen_size, IntRect view_port)

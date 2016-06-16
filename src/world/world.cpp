@@ -291,9 +291,10 @@ namespace ts
 
         for (auto& attempt : avoidance_attempts)
         {
+          auto offset = vector2_cast<std::int32_t>(attempt.offset);
           auto update_pass = entity_update_pass(world_obj, update_state,
                                                 scenery, object_states,
-                                                attempt.offset, rotate_subject);
+                                                offset, rotate_subject);
 
           attempt.collision = update_pass.collision;
           attempt.rotate_subject = rotate_subject;
