@@ -94,6 +94,7 @@ namespace ts
           editor_scene_(detail::load_track()),
           track_editor_menu_(&ctx.resource_store->font_library()),
           path_tool_(&editor_scene_),
+          terrain_tool_(&editor_scene_),
           active_tool_(&path_tool_)
       {
         editor_scene_.load_scene();
@@ -134,6 +135,11 @@ namespace ts
         if (active_tool_ == &path_tool_)
         {
           path_tool_.update_gui(has_focus, input_state_, gui_geometry_);
+        }
+
+        else if (active_tool_ == &terrain_tool_)
+        {
+          terrain_tool_.update_gui(has_focus, input_state_, gui_geometry_);
         }
 
         // If our focus wasn't stolen by some other component, forward the events over to
@@ -197,6 +203,9 @@ namespace ts
           {
           case Tool::Path:
             return &path_tool_;
+
+          case Tool::Terrain:
+            return &terrain_tool_;
 
           default:
             return nullptr;

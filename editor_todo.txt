@@ -5,11 +5,9 @@
 * Path modification
  * Editing nodes
  * Editing stroke styles
- * Segmented stroke segments kerbs
+ * Segmented stroke segments: kerbs
   * What does this need?
    * Being able to stroke certain segments of the path with two clicks of a button
-   * Two modes, adding and removing
-    * Need to transform screen coordinates to world coordinates to path time point
     
   * What does the GUI need?
    * Selecting certain stroke style
@@ -17,7 +15,6 @@
 * Stroke styles
  * Can be modified on-the-fly
 * Stroking path segments
- * In case of a border, potentially only stroke one side of it
  
 * Path creation/selection
 * Terrain drawing
@@ -27,7 +24,7 @@
 * Elevation layers: bridges, tunnels
 * Undo/redo
 * Track saving/loading
-* Make track border prettier
+* Make track border prettier <-----
 * Camera scrolling/zooming/panning
 
 ...
@@ -43,17 +40,48 @@
    * Main Menu
    * Quit
   * Edit
-   * Undo/redo
+   * Undo/redo <-----
    * Resize
    * etc.
   * Tools
    * Tool selection
    * Path tool
-   * Terrain tool
+   * Terrain tool <-------
    * Elevation tool
   * Modes
-   * Depends on tool
-  
-* Goal: Post another video before going on vacation.
+   * Depends on tool 
+* 
+
+* Priorities:
+ * Generating trees
+ * Modifying terrains
+ * Doing more GUI things
  
+* Modifying terrains
+ * Terrain tool
+  * What should the terrain tool do?
+   * Create shapes filled with a terrain type
+   * Convex polygons, circles, rectangles
+   * Abstracted as "TerrainArea"
+   * Use configurable "fade" effect
+* Tree generator
+ * Can randomly generate a tree model
+ * Go for a slightly cartoonish look; they must look good from above
+ * 
+ 
+* Models
+ * Can be animated in different ways
+ * Has a list of vertices and a list of faces
+ 
+* Tree generator
+ * Features
+ * Trunk
+  * N-sided tube
+  * Has a number of segments to simulate the curvature
+  * Splits until it's all branched out
+ * Branches
+  * Has the same features as the trunk. We can use this to our advantage.
+  
+ * What happens when a branch splits?
+ * When does a branch split?
  

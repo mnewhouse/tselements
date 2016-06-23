@@ -128,7 +128,7 @@ namespace ts
 
       std::vector<TerrainVertex> vertex_cache_;
       std::vector<GLuint> index_cache_;
-      std::vector<PathVertexPoint<const resources_3d::TrackPathNode*>> path_vertex_point_cache_;
+      std::vector<PathVertexPoint> path_vertex_point_cache_;
     };
   }
 }

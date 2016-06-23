@@ -17,6 +17,7 @@
 #include "user_interface/gui_input_state.hpp"
 
 #include "tools/editor_path_tool.hpp"
+#include "tools/editor_terrain_tool.hpp"
 
 namespace ts
 {
@@ -42,6 +43,7 @@ namespace ts
         Menu track_editor_menu_;
         // Tools
         tools::PathTool path_tool_;
+        tools::TerrainTool terrain_tool_;
 
         EditorTool* active_tool_ = nullptr;
 

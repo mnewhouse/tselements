@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <array>
 #include <cmath>
+#include <iterator>
 
 #include <boost/container/small_vector.hpp>
 
@@ -22,10 +23,11 @@ namespace ts
   {
     namespace detail
     {
-      template <typename NodeIt>
-      auto make_path_vertex_point_at(NodeIt first_node, NodeIt second_node, float time_point)
+      inline auto make_path_vertex_point_at(PathNodeIterator first_node, 
+                                            PathNodeIterator second_node, 
+                                            float time_point)
       {
-        PathVertexPoint<NodeIt> point;
+        PathVertexPoint point;
         point.first = first_node;
         point.second = second_node;
         point.time_point = time_point;
@@ -35,7 +37,7 @@ namespace ts
       }
 
       template <typename NodeIt>
-      void divide_path_segment(std::vector<PathVertexPoint<NodeIt>>& vertex_points,
+      void divide_path_segment(std::vector<PathVertexPoint>& vertex_points,
                                NodeIt first_node, NodeIt second_node,
                                float min_time_point, float max_time_point,
                                Vector2f first_point, Vector2f second_point,
@@ -94,12 +96,11 @@ namespace ts
     // Lower tolerance values will give smoother results at the cost of more vertices.
     // 0.0 < tolerance <= 1.0, but it should not be too close to zero.
     // PathNodeIt must be a forward iterator that dereferences to resources_3d::TrackPathNode.
-    template <typename PathNodeIt>
-    auto compute_path_vertex_points(PathNodeIt node_it, PathNodeIt node_end, float tolerance,
-                                    std::vector<PathVertexPoint<PathNodeIt>>& result)
+    inline auto compute_path_vertex_points(PathNodeIterator node_it, 
+                                      PathNodeIterator node_end, 
+                                      float tolerance,
+                                      std::vector<PathVertexPoint>& result)
     {
-      using info_type = PathVertexPoint<PathNodeIt>;
-
       if (node_it != node_end)
       {
         auto next_node_it = std::next(node_it);
@@ -137,10 +138,10 @@ namespace ts
 
     namespace detail
     {
-      template <typename PathNodeIt, typename TexCoordAccumulator,
+      template <typename TexCoordAccumulator,
         typename VertexFunc, typename VertexOut, typename IndexOut>
-      auto generate_point_vertices(const PathVertexPoint<PathNodeIt>& point,
-                                   const PathVertexPoint<PathNodeIt>& next_point,
+      auto generate_point_vertices(const PathVertexPoint& point,
+                                   const PathVertexPoint& next_point,
                                    const resources_3d::StrokeProperties& stroke_properties,
                                    resources_3d::StrokeSegment::Side stroke_side,
                                    TexCoordAccumulator& tex_coord_x_accumulator,
@@ -446,119 +447,184 @@ namespace ts
 
     namespace detail
     {
-      template <typename PathNodeIt, typename SegmentArray,
-        typename VertexFunc, typename VertexOut, typename IndexOut>
-      auto generate_path_vertices(const std::vector<PathVertexPoint<PathNodeIt>>& points,
-                                  PathNodeIt first_node,
+      template <typename VertexFunc, typename VertexOut, typename IndexOut>
+      auto generate_stroke_segment(const resources_3d::TrackPath& path,
+                                   const resources_3d::StrokeSegment& segment,
+                                   const resources_3d::StrokeProperties& stroke_properties,
+                                   const std::vector<PathVertexPoint>& points,
+                                   VertexFunc& vertex_func, VertexOut& vertex_out,
+                                   std::uint32_t& start_index, IndexOut& index_out)
+      {
+        using Point = PathVertexPoint;
+        auto first_node = path.nodes.begin();
+
+        auto start = std::make_pair(first_node + segment.start_index, segment.start_time_point);
+        auto end = std::make_pair(first_node + segment.end_index, segment.end_time_point);
+
+        auto cmp = [](const auto& a, const auto& b)
+        {
+          return std::tie(a.first, a.time_point) < std::tie(b.first, b.second);
+        };
+
+        auto lower = std::lower_bound(points.begin(), points.end(), start, cmp);
+        auto upper = std::lower_bound(points.begin(), points.end(), end, cmp);
+
+        if (lower > upper)
+        {
+          std::swap(lower, upper);
+          std::swap(start, end);
+        }
+
+        if (lower != points.begin()) --lower;
+
+        if (lower != upper)
+        {
+          auto tex_coord_accumulator = std::make_pair(0.0f, 0.0f);
+
+          auto num_points = static_cast<std::size_t>(std::distance(lower, upper));
+          auto point_it = lower, next_point_it = std::next(point_it);
+
+          auto interpolate = [=](const auto& a, const auto& b, float time_point, float time_span)
+          {
+            if (time_span == 0.0f) return a;
+
+            return a + (b - a) * (time_point / time_span);
+          };
+
+          Point start_point;
+          start_point.time_point = start.second;
+          start_point.first = point_it->first;
+          start_point.second = point_it->second;
+
+          {
+            auto time_point = (start.first - point_it->first) + (start.second - point_it->time_point);
+            auto time_span = (next_point_it->first - point_it->first) +
+              (next_point_it->time_point - point_it->time_point);
+            start_point.normal = interpolate(point_it->normal, next_point_it->normal,
+                                             time_point, time_span);
+            start_point.point = interpolate(point_it->point, next_point_it->point,
+                                            time_point, time_span);
+          }
+
+          // End point lies in the range prev(upper), upper
+          auto after_end = upper;
+          auto before_end = std::prev(upper);
+
+          Point end_point;
+          end_point.time_point = end.second;
+          end_point.first = before_end->first;
+          end_point.second = before_end->second;
+          {
+            auto time_point = (end.first - before_end->first) + (end.second - before_end->time_point);
+            auto time_span = (after_end->first - before_end->first) +
+              (after_end->time_point - before_end->time_point);
+
+            end_point.normal = interpolate(before_end->normal, after_end->normal,
+                                           time_point, time_span);
+            end_point.point = interpolate(before_end->point, after_end->point,
+                                          time_point, time_span);
+          }
+
+          if (num_points == 1)
+          {
+            // There's only something between the start point and end point.
+            detail::generate_point_vertices(start_point, end_point, stroke_properties, segment.side,
+                                            tex_coord_accumulator,
+                                            vertex_func, vertex_out, start_index, index_out);
+          }
+
+          else
+          {
+            detail::generate_point_vertices(start_point, *next_point_it, stroke_properties, segment.side,
+                                            tex_coord_accumulator,
+                                            vertex_func, vertex_out, start_index, index_out);
+
+            ++point_it, ++next_point_it;
+
+            for (; point_it != before_end; ++point_it, ++next_point_it)
+            {
+              detail::generate_point_vertices(*point_it, *next_point_it,
+                                              stroke_properties, segment.side,
+                                              tex_coord_accumulator,
+                                              vertex_func, vertex_out, start_index, index_out);
+            }
+
+            detail::generate_point_vertices(*before_end, end_point, stroke_properties, segment.side,
+                                            tex_coord_accumulator,
+                                            vertex_func, vertex_out, start_index, index_out);
+          }
+        }
+      }
+
+      template <typename VertexFunc, typename VertexOut, typename IndexOut>
+      auto generate_path_vertices(const resources_3d::TrackPath& path,
                                   const resources_3d::StrokeProperties& stroke_properties,
-                                  const SegmentArray& segments,
+                                  const std::vector<resources_3d::StrokeSegment>& segments,
+                                  const std::vector<PathVertexPoint>& points,
                                   VertexFunc&& vertex_func, VertexOut vertex_out,
                                   std::uint32_t start_index, IndexOut index_out)
       {
-        using Point = PathVertexPoint<PathNodeIt>;
-
         using resources_3d::TrackPathNode;
         using resources_3d::StrokeProperties;
         using resources_3d::StrokeSegment;
 
-        // For each segment, find matching range of vertex points and use that
-        // to generate the vertices.
-        for (const StrokeSegment& segment : segments)
+        auto first_node = path.nodes.begin();
+        if (!path.nodes.empty())
         {
-          auto start = std::make_pair(first_node + segment.start_index, segment.start_time_point);
-          auto end = std::make_pair(first_node + segment.end_index, segment.end_time_point);
-          
-          auto cmp = [](const auto& a, const auto& b)
+          // For each segment, find matching range of vertex points and use that
+          // to generate the vertices.
+          for (StrokeSegment segment : segments)
           {
-            return std::tie(a.first, a.time_point) < std::tie(b.first, b.second);
-          };
+            auto max_index = static_cast<std::uint32_t>(path.nodes.size() - 1);
 
-          auto lower = std::lower_bound(points.begin(), points.end(), start, cmp);
-          auto upper = std::lower_bound(points.begin(), points.end(), end, cmp);
-
-          if (lower > upper)
-          {
-            std::swap(lower, upper);
-            std::swap(start, end);
-          }
-
-          if (lower != points.begin()) --lower;
-
-          if (lower != upper)
-          {
-            auto tex_coord_accumulator = std::make_pair(0.0f, 0.0f);
-
-            auto num_points = static_cast<std::size_t>(std::distance(lower, upper));
-            auto point_it = lower, next_point_it = std::next(point_it);
-
-            auto interpolate = [=](const auto& a, const auto& b, float time_point, float time_span)
+            // Sanitize the segment in case it's out of bounds.
+            if (segment.end_index >= max_index)
             {
-              if (time_span == 0.0f) return a;
-
-              return a + (b - a) * (time_point / time_span);
-            };
-
-            Point start_point;
-            start_point.time_point = start.second;
-            start_point.first = point_it->first;
-            start_point.second = point_it->second;
-
-            {
-              auto time_point = (start.first - point_it->first) + (start.second - point_it->time_point);
-              auto time_span = (next_point_it->first - point_it->first) +
-                (next_point_it->time_point - point_it->time_point);
-              start_point.normal = interpolate(point_it->normal, next_point_it->normal,
-                                               time_point, time_span);
-              start_point.point = interpolate(point_it->point, next_point_it->point,
-                                              time_point, time_span);
+              segment.end_index = max_index;
+              segment.end_time_point = 0.0f;
             }
 
-            // End point lies in the range prev(upper), upper
-            auto after_end = upper;
-            auto before_end = std::prev(upper);
-
-            Point end_point;
-            end_point.time_point = end.second;
-            end_point.first = before_end->first;
-            end_point.second = before_end->second;
+            if (segment.start_index >= max_index)
             {
-              auto time_point = (end.first - before_end->first) + (end.second - before_end->time_point);
-              auto time_span = (after_end->first - before_end->first) +
-                (after_end->time_point - before_end->time_point);
+              segment.start_index = max_index;
+              segment.start_time_point = 0.0f;
+            }
+            // If the path is closed, and the shortest route between the points
+            // goes through the closing segment, generate two stroke segments.
+            // One going from segment.first to path.begin, and another going from path.begin
+            // to segment.second.
+            auto first = segment.start_index + segment.start_time_point;
+            auto second = segment.end_index + segment.end_time_point;
+            if (second < first) std::swap(second, first);
 
-              end_point.normal = interpolate(before_end->normal, after_end->normal,
-                                             time_point, time_span);
-              end_point.point = interpolate(before_end->point, after_end->point,
-                                              time_point, time_span);
-            }          
-            
-            if (num_points == 1)
+            if (path.closed && second - first >= path.nodes.size() * 0.5f)
             {
-              // There's only something between the start point and end point.
-              detail::generate_point_vertices(start_point, end_point, stroke_properties, segment.side,
-                                              tex_coord_accumulator,
-                                              vertex_func, vertex_out, start_index, index_out);
+              auto first_segment = segment;
+              auto second_segment = segment;
+
+              // Artificially generate two segments.
+              if (segment.start_index + segment.start_time_point <
+                  segment.end_index + segment.end_time_point)
+              {
+                std::swap(first_segment.start_index, second_segment.end_index);
+                std::swap(first_segment.start_time_point, second_segment.end_time_point);
+              }
+
+              first_segment.end_index = max_index;
+              first_segment.end_time_point = 0.0f;
+              second_segment.start_index = 0;
+              second_segment.start_time_point = 0.0f;
+
+              generate_stroke_segment(path, first_segment, stroke_properties, points,
+                                      vertex_func, vertex_out, start_index, index_out);
+              generate_stroke_segment(path, second_segment, stroke_properties, points,
+                                      vertex_func, vertex_out, start_index, index_out);
             }
 
             else
             {
-              detail::generate_point_vertices(start_point, *next_point_it, stroke_properties, segment.side,
-                                              tex_coord_accumulator,
-                                              vertex_func, vertex_out, start_index, index_out);
-
-              ++point_it, ++next_point_it;
-
-              for (; point_it != before_end; ++point_it, ++next_point_it)
-              {
-                detail::generate_point_vertices(*point_it, *next_point_it,
-                                                stroke_properties, segment.side,
-                                                tex_coord_accumulator,
-                                                vertex_func, vertex_out, start_index, index_out);
-              }
-
-              detail::generate_point_vertices(*before_end, end_point, stroke_properties, segment.side,
-                                              tex_coord_accumulator,
-                                              vertex_func, vertex_out, start_index, index_out);
+              generate_stroke_segment(path, segment, stroke_properties, points,
+                                      vertex_func, vertex_out, start_index, index_out);
             }
           }
         }
@@ -568,9 +634,10 @@ namespace ts
     }
 
 
-    template <typename PathNodeIt, typename VertexFunc, typename VertexOut, typename IndexOut>
-    auto generate_path_vertices(const std::vector<PathVertexPoint<PathNodeIt>>& points,
+    template <typename VertexFunc, typename VertexOut, typename IndexOut>
+    auto generate_path_vertices(const resources_3d::TrackPath& path,                                
                                 const resources_3d::StrokeProperties& stroke_properties,
+                                const std::vector<PathVertexPoint>& points,
                                 VertexFunc&& vertex_func, VertexOut vertex_out,
                                 std::uint32_t start_index, IndexOut index_out)
     {
@@ -605,23 +672,23 @@ namespace ts
     //   *index_out++ = std::size_t(start_index + index);
     // Note that the texture coordinates are absolute, meaning they may well have to be divided
     // by the texture size in order to be usable.
-    template <typename PathNodeIt, typename VertexFunc, typename VertexOut, typename IndexOut>
-    auto generate_path_vertices(const std::vector<PathVertexPoint<PathNodeIt>>& points,
-                                PathNodeIt first_node,
-                                const resources_3d::SegmentedStroke& stroke,
+    template <typename VertexFunc, typename VertexOut, typename IndexOut>
+    auto generate_path_vertices(const resources_3d::TrackPath& path,
+		                            const resources_3d::SegmentedStroke& stroke,
+                                const std::vector<PathVertexPoint>& points,
                                 VertexFunc&& vertex_func, VertexOut vertex_out,
                                 std::uint32_t start_index, IndexOut index_out)
     {
       if (stroke.properties.is_segmented)
       {
-        return detail::generate_path_vertices(points, first_node, 
-                                              stroke.properties, stroke.segments,
+        return detail::generate_path_vertices(path, stroke.properties, stroke.segments,
+                                              points,
                                               vertex_func, vertex_out, start_index, index_out);
       }
 
       else
       {
-        return generate_path_vertices(points, stroke.properties,
+        return generate_path_vertices(path, stroke.properties, points,
                                       vertex_func, vertex_out,
                                       start_index, index_out);
       }

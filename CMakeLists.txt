@@ -69,6 +69,7 @@ set(LIB_SOURCES
 	src/cup/cup_messages.cpp
 
 	src/editor/tools/editor_path_tool.cpp
+	src/editor/tools/editor_terrain_tool.cpp
 	src/editor/editor_scene.cpp
 	src/editor/height_map.cpp
 	src/editor/render_scene_3d.cpp

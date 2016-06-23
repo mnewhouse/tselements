@@ -88,6 +88,6 @@ int main(int argc, char* argv[])
 
   catch (const std::exception& e)
   {
-    std::cerr << "An unhandled except occurred: " << e.what() << std::endl;
+    std::cerr << "An unhandled exception occurred: " << e.what() << std::endl;
   }
 }

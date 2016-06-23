@@ -187,7 +187,7 @@ namespace ts
 
         UpdateState result;
         result.bounding_box = rect_cast<std::int32_t>(menu_bar_area);
-        result.focus_state = !menu_expansion_state_.empty();
+        result.focus_state = expansion_state || !menu_expansion_state_.empty();
         return result;
       }
 

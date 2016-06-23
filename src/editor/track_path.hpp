@@ -121,6 +121,23 @@ namespace ts
       return normalize(make_vector2(-d.y, d.x));
     }
 
+    inline float path_width_at(const TrackPathNode& a, const TrackPathNode& b, float time_point)
+    {
+      return a.width * (1.0f - time_point) + b.width * time_point;
+    }
+
+    // Compute the path position at the given time point, offset by the normal multiplied by the
+    // half path width and the relative offset parameter specified.
+    inline Vector2f path_point_at(const TrackPathNode& a, const TrackPathNode& b,
+                                  float time_point, float relative_offset)
+    {
+      auto point = path_point_at(a, b, time_point);
+      auto normal = path_normal_at(a, b, time_point);
+      auto width = path_width_at(a, b, time_point);
+
+      return point + normal * width * 0.5f * relative_offset;
+    }
+
     template <typename NodeIt>
     struct PathPoint
     {
@@ -131,13 +148,20 @@ namespace ts
 
     template <typename NodeIt>
     PathPoint<NodeIt>
-      find_first_matching_path_position(NodeIt node_it, NodeIt node_end,                            
+      find_best_matching_path_position(NodeIt node_it, NodeIt node_end,                            
                                         Vector2f search_position, float offset, float max_distance,
                                         std::uint32_t step_count = 6, float precision = 1.0f)
     {
+      PathPoint<NodeIt> result;
+      result.node_it = node_end;
+      result.time_point = 0.0f;
+
+      auto max_distance_sq = max_distance * max_distance;
+      auto best_distance = max_distance_sq;
+      
       if (node_it != node_end)
       {
-        auto max_distance_sq = max_distance * max_distance;
+        
         const auto step = 1.0f / step_count;
 
         // Loop through all path segments
@@ -208,16 +232,19 @@ namespace ts
             }     
           }
 
-          // If we have found a match, there's no sense lingering around here
-          // and we can just return the thing.
-          if (best_d < max_distance_sq)
+          // If we have found a match, and it's a better match than the one we previously found,
+          // update the result variable.
+          if (best_d < best_distance)
           {
-            return{ node_it, best_t, calculate_point(best_t) };
+            result.node_it = node_it;
+            result.time_point = best_t;
+            result.point = calculate_point(best_t);
+            best_distance = best_d;
           }
         }
       }
 
-      return{ node_end, 0.0f, Vector2f() };
+      return result;
     }
   }
 }

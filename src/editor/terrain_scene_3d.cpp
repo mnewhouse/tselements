@@ -465,7 +465,7 @@ namespace ts
         vertex_cache_.clear();
         index_cache_.clear();
 
-        compute_path_vertex_points(path->nodes.data(), path->nodes.data() + path->nodes.size(),
+        compute_path_vertex_points(path->nodes.begin(), path->nodes.end(),
                                    0.025f, path_vertex_point_cache_);
 
         // Then, for every stroke style, generate a render component.
@@ -510,7 +510,7 @@ namespace ts
           component.user_data = user_data;
 
           // Now, genenerate the path vertices
-          generate_path_vertices(path_vertex_point_cache_, path->nodes.data(), stroke,
+          generate_path_vertices(*path, stroke, path_vertex_point_cache_,
                                  vertex_func, std::back_inserter(vertex_cache_),
                                  vertex_cache_.size(), std::back_inserter(index_cache_));
 

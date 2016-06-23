@@ -45,6 +45,7 @@ namespace ts
         struct NodeTransformation;
         struct NodePlacement;
         struct SegmentPlacement;
+        struct SegmentTransformation;
 
         void update_path_buffer();
 
@@ -70,6 +71,10 @@ namespace ts
                                   resources_3d::SegmentedStroke& stroke,
                                   const SegmentPlacement& segment_placement,
                                   std::uint32_t end_index, float end_time);
+
+        void apply_segment_transformation(const resources_3d::TrackPath& path,
+                                          resources_3d::SegmentedStroke& stroke,
+                                          const SegmentTransformation& transformation);
      
 
         enum class Mode
@@ -107,6 +112,14 @@ namespace ts
 
         struct SegmentTransformation
         {
+          Vector2f start_point;
+
+          enum SegmentPoint
+          {
+            Start, End
+          } segment_point;
+
+          std::uint32_t segment_index;
         };
         
         struct SegmentPlacement
@@ -121,15 +134,19 @@ namespace ts
         graphics::Buffer path_vertex_buffer_;
         graphics::Buffer path_index_buffer_;
         graphics::Sampler height_map_sampler_;
+
         std::size_t element_count_ = 0;
         std::size_t line_element_count_ = 0;
         
         Mode active_mode_ = Mode::Nodes;
+        boost::optional<std::uint32_t> selected_node_index_;
         boost::optional<NodeTransformation> node_transformation_;
         boost::optional<NodePlacement> node_placement_;
 
         boost::optional<SegmentTransformation> segment_transformation_;
         boost::optional<SegmentPlacement> segment_placement_;
+
+        boost::optional<std::uint32_t> selected_segment_index_;
 
         resources_3d::TrackPath* selected_path_ = nullptr;
       };

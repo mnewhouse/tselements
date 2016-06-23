@@ -17,7 +17,7 @@ namespace ts
     HeightMap generate_height_map(std::uint32_t map_size, std::uint32_t cell_size, 
                                   float max_z, float variance)
     {
-      const std::size_t row_width = map_size + 1;
+      const std::uint32_t row_width = map_size + 1;
 
       HeightMap map(Vector2u(row_width, row_width), cell_size);
 
