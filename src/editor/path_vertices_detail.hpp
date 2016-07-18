@@ -9,13 +9,12 @@
 
 #include "path_vertices.hpp"
 
-#include <algorithm>
-#include <cstdint>
-#include <array>
-#include <cmath>
-#include <iterator>
-
 #include <boost/container/small_vector.hpp>
+#include <boost/iterator/counting_iterator.hpp>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
 
 namespace ts
 {
@@ -23,130 +22,37 @@ namespace ts
   {
     namespace detail
     {
-      inline auto make_path_vertex_point_at(PathNodeIterator first_node, 
-                                            PathNodeIterator second_node, 
-                                            float time_point)
+      struct TexCoordAccumulator
       {
-        PathVertexPoint point;
-        point.first = first_node;
-        point.second = second_node;
-        point.time_point = time_point;
-        point.normal = resources_3d::path_normal_at(*first_node, *second_node, time_point);
-        point.point = resources_3d::path_point_at(*first_node, *second_node, time_point);
-        return point;
-      }
+        float first = 0.0f;
+        float second = 0.0f;
+      };
 
-      template <typename NodeIt>
-      void divide_path_segment(std::vector<PathVertexPoint>& vertex_points,
-                               NodeIt first_node, NodeIt second_node,
-                               float min_time_point, float max_time_point,
-                               Vector2f first_point, Vector2f second_point,
-                               Vector2f first_normal, Vector2f second_normal,
-                               float tolerance)
-      {
-        if (std::abs(first_point.x - second_point.x) >= 1.0f ||
-            std::abs(first_point.y - second_point.y) >= 1.0f)
-        {
-          auto time_interval = max_time_point - min_time_point;
-          auto time_point = min_time_point + time_interval * 0.5f;
-          auto halfway_point = resources_3d::path_point_at(*first_node, *second_node, time_point);
-          auto halfway_normal = resources_3d::path_normal_at(*first_node, *second_node, time_point);
-
-          // Use the square of the dot product of the normals to
-          // determine how well they match. If 1.0 - dp² is larger than the tolerance,
-          // proceed with the recursion.
-          auto first_dp = std::abs(dot_product(first_normal, halfway_normal));
-          if (1.0 - first_dp * first_dp > tolerance)
-          {
-            divide_path_segment(vertex_points, first_node, second_node,
-                                min_time_point, time_point,
-                                first_point, halfway_point,
-                                first_normal, halfway_normal,
-                                tolerance);
-          }
-
-          vertex_points.push_back(make_path_vertex_point_at(first_node, second_node, time_point));
-
-          auto second_dp = std::abs(dot_product(halfway_normal, second_normal));
-          if (1.0 - second_dp * second_dp > tolerance)
-          {
-            divide_path_segment(vertex_points, first_node, second_node,
-                                time_point, max_time_point,
-                                halfway_point, second_point,
-                                halfway_normal, second_normal,
-                                tolerance);
-          }
-        }
-      }
-
-      // This function simply returns the vertex positions multiplied by the given scale,
+      // This function simply multiplies the vertex positions by the given scale,
       // resulting in absolute texture coordinates.
-      template <typename PositionIt, typename TexCoordOut>
-      auto make_tiled_texture_coords(PositionIt position_it, PositionIt position_end,
-                                     float scale,
-                                     TexCoordOut& tex_coord_out)
+      template <typename VertexIt>
+      auto make_tiled_texture_coords(VertexIt vertex_it, VertexIt vertex_end,
+                                     float scale, float z)
       {
-        std::transform(position_it, position_end, tex_coord_out,
-                       [=](const auto& position) { return Vector2f(position.x, position.y) / scale; });
-      }
-    }
-
-    // Precompute the points at which path vertices will be generated.
-    // This is useful when a path has more than one stroke type, 
-    // Lower tolerance values will give smoother results at the cost of more vertices.
-    // 0.0 < tolerance <= 1.0, but it should not be too close to zero.
-    // PathNodeIt must be a forward iterator that dereferences to resources_3d::TrackPathNode.
-    inline auto compute_path_vertex_points(PathNodeIterator node_it, 
-                                      PathNodeIterator node_end, 
-                                      float tolerance,
-                                      std::vector<PathVertexPoint>& result)
-    {
-      if (node_it != node_end)
-      {
-        auto next_node_it = std::next(node_it);
-        for (; next_node_it != node_end; ++next_node_it, ++node_it)
+        std::transform(vertex_it, vertex_end, vertex_it,
+                       [=](auto vertex)
         {
-          // Divide the segment into 3 sub-segments to start with.
-          // We could do just one sub-segment, but that way it won't work correctly for
-          // some more complex paths.
-          auto points =
-          {
-            detail::make_path_vertex_point_at(node_it, next_node_it, 0.0f),
-            detail::make_path_vertex_point_at(node_it, next_node_it, 1.0f / 3),
-            detail::make_path_vertex_point_at(node_it, next_node_it, 2.0f / 3),
-            detail::make_path_vertex_point_at(node_it, next_node_it, 1.0f)
-          };
+          vertex.tex_coords.x = vertex.position.x / scale;
+          vertex.tex_coords.y = vertex.position.y / scale;
+          vertex.tex_coords.z = z;
+          return vertex;
+        });
+      };
 
-          auto point_it = std::begin(points);
-          auto next_point_it = std::next(point_it);
-          for (; next_point_it != std::end(points); ++point_it, ++next_point_it)
-          {
-            result.push_back(*point_it);
-
-            // Recursively divide the segment until it's smooth enough.
-            detail::divide_path_segment(result, node_it, next_node_it,
-                                        point_it->time_point, next_point_it->time_point,
-                                        point_it->point, next_point_it->point,
-                                        point_it->normal, next_point_it->normal,
-                                        tolerance);
-          }
-
-          result.push_back(*point_it);
-        }
-      }
-    }
-
-    namespace detail
-    {
-      template <typename TexCoordAccumulator,
-        typename VertexFunc, typename VertexOut, typename IndexOut>
+      template <typename VertexType, typename VertexFunc>
       auto generate_point_vertices(const PathVertexPoint& point,
                                    const PathVertexPoint& next_point,
                                    const resources_3d::StrokeProperties& stroke_properties,
                                    resources_3d::StrokeSegment::Side stroke_side,
+                                   float texture_size, float texture_z,
                                    TexCoordAccumulator& tex_coord_x_accumulator,
-                                   VertexFunc& vertex_func, VertexOut& vertex_out,
-                                   std::uint32_t& start_index, IndexOut& index_out)
+                                   resources_3d::BasicModel<VertexType>& output_model,
+                                   VertexFunc&& vertex_func)
       {
         using resources_3d::StrokeProperties;
         using resources_3d::TrackPathNode;
@@ -156,10 +62,8 @@ namespace ts
         const TrackPathNode& second_node = *point.second;
 
         using boost::container::small_vector;
-        using position_buffer = small_vector<Vector3f, 16>;
-        using normal_buffer = small_vector<Vector3f, 16>;
-        using tex_coord_buffer = small_vector<Vector2f, 16>;
-        using index_buffer = small_vector<std::uint32_t, 32>;
+        using vertex_buffer = small_vector<PathVertex, 16>;
+        using face_buffer = small_vector<resources_3d::ModelFace, 16>;
 
         // Interpolate the width for this point
         auto width = second_node.width * point.time_point +
@@ -186,20 +90,27 @@ namespace ts
           next_stroke_offset *= next_width;
         }
 
-        auto index_func = [=](std::uint32_t index) { return index + start_index; };
-        auto copy_vertices = [&](const auto& positions, const auto& texture_coords,
-                                 const auto& normals, const auto& indices)
+        auto texture_scale = 1.0f / texture_size;
+        auto copy_vertices = [&](const auto& vertices, const auto& faces)
         {
-          for (std::size_t idx = 0; idx != positions.size(); ++idx)
+          auto& output_vertices = output_model.vertices;
+          auto& output_faces = output_model.faces;
+
+          using std::begin;
+          using std::end;
+
+          auto vertex_index = static_cast<std::uint32_t>(output_vertices.size());
+          std::transform(begin(vertices), end(vertices), std::back_inserter(output_vertices),
+                         vertex_func);
+
+          std::transform(begin(faces), end(faces), std::back_inserter(output_faces),
+                         [=](resources_3d::ModelFace face)
           {
-            Vector3f vec3 = { positions[idx].x, positions[idx].y, 0.0f };
-            *vertex_out++ = vertex_func(vec3, texture_coords[idx], normals[idx]);
-          }
-
-          index_out = std::transform(std::begin(indices), std::end(indices),
-                                     index_out, index_func);
-
-          start_index += static_cast<std::uint32_t>(positions.size());
+            face.first_index += vertex_index;
+            face.second_index += vertex_index;
+            face.third_index += vertex_index;
+            return face;
+          });
         };
 
         Vector3f normal_3d = { point.normal.x, point.normal.y, 0.0f };
@@ -214,10 +125,17 @@ namespace ts
           return normal * factor + Vector3f(0.0f, 0.0f, 1.0f) * (1.0f - std::abs(factor));
         };
 
-        position_buffer positions;
-        normal_buffer normals;
-        tex_coord_buffer tex_coords;
-        index_buffer indices;
+        auto make_vertex = [&](auto position, auto normal)
+        {
+          PathVertex vertex;
+          vertex.position = make_2d(position);
+          vertex.normal = normal;
+          vertex.color = stroke_properties.color;
+          return vertex;
+        };
+
+        vertex_buffer vertices;
+        face_buffer faces;
         if (stroke_properties.type == StrokeProperties::Border)
         {
           auto bevel_width = stroke_properties.bevel_width;
@@ -237,37 +155,32 @@ namespace ts
 
           auto add_vertices = [&](float d, std::uint32_t index)
           {
-            const Vector3f p[] =
+            auto p = point_3d + outer * d;
+            auto idx = vertices.size();
+
+            vertices.insert(vertices.end(),
             {
-              point_3d + outer * d,
-              next_point_3d + next_outer * d,
-              point_3d + inner * d,
-              next_point_3d + next_inner * d
-            };
+              make_vertex(point_3d + outer * d,
+                          calculate_normal(normal_3d * d, stroke_properties.outer_normal)),
 
-            const Vector3f n[] =
+              make_vertex(next_point_3d + next_outer * d,
+                          calculate_normal(next_normal_3d * d, stroke_properties.outer_normal)),
+
+              make_vertex(point_3d + inner * d,
+                          calculate_normal(normal_3d * d, stroke_properties.inner_normal)),
+
+              make_vertex(next_point_3d + next_inner * d,
+                          calculate_normal(next_normal_3d * d, stroke_properties.inner_normal))
+            });
+
+            faces.insert(faces.end(),
             {
-              calculate_normal(normal_3d * d, stroke_properties.outer_normal),
-              calculate_normal(next_normal_3d * d, stroke_properties.outer_normal),
-              calculate_normal(normal_3d * d, stroke_properties.inner_normal),
-              calculate_normal(next_normal_3d * d, stroke_properties.inner_normal),
-            };
-
-            const std::uint32_t i[] =
-            {
-              0 + index, 1 + index, 2 + index,
-              1 + index, 2 + index, 3 + index
-            };
-
-            using std::begin;
-            using std::end;
-
-            positions.insert(positions.end(), begin(p), end(p));
-            normals.insert(normals.end(), begin(n), end(n));
-            indices.insert(indices.begin(), begin(i), end(i));
+              { 0 + index, 1 + index, 2 + index },
+              { 1 + index, 2 + index, 3 + index }
+            });
           };
 
-          auto current_index = [&]() { return static_cast<std::uint32_t>(positions.size()); };
+          auto current_index = [&]() { return static_cast<std::uint32_t>(vertices.size()); };
 
           auto first_side_vertex_index = current_index();
           auto second_side_vertex_index = current_index();
@@ -291,30 +204,20 @@ namespace ts
           {
             auto add_bevel_vertices = [&](float d, std::uint32_t side_index, std::uint32_t new_index)
             {
-              const Vector3f p[] =
+              vertices.insert(vertices.end(),
               {
-                point_3d + bevel * d,
-                next_point_3d + next_bevel * d,
-              };
+                make_vertex(point_3d + bevel * d,
+                calculate_normal(normal_3d * d, bevel_strength)),
+                              make_vertex(next_point_3d + next_bevel * d,
+                                          calculate_normal(next_normal_3d * d, bevel_strength))
+              });
 
-              const Vector3f n[] =
+
+              faces.insert(faces.end(),
               {
-                calculate_normal(normal_3d * d, bevel_strength),
-                calculate_normal(next_normal_3d * d, bevel_strength),
-              };
-
-              using std::begin;
-              using std::end;
-
-              const std::uint32_t i[] =
-              {
-                side_index, side_index + 1, new_index,
-                side_index + 1, new_index, new_index + 1
-              };
-
-              positions.insert(positions.end(), std::begin(p), std::end(p));
-              normals.insert(normals.end(), std::begin(n), std::end(n));
-              indices.insert(indices.end(), std::begin(i), std::end(i));
+                { side_index, side_index + 1, new_index },
+                { side_index + 1, new_index, new_index + 1 }
+              });
             };
 
             if (stroke_side != StrokeSegment::Second)
@@ -337,11 +240,12 @@ namespace ts
             // We need to get the distance from the first point to the second point, so
             // the textures are mapped in a uniform manner.
 
-            auto add_tex_coords = [&](float x_accumulator, std::uint32_t pos_index, std::uint32_t bevel_pos_index)
+            auto add_tex_coords = [&](float x_accumulator, std::uint32_t vertex_index, std::uint32_t bevel_pos_index)
             {
               auto scale_inv = 1.0f / stroke_properties.texture_scale;
-              auto p = &positions[pos_index];
-              auto x_advance = ((distance(p[0], p[1]) + distance(p[2], p[3])) * 0.5f) * scale_inv;
+              auto v = &vertices[vertex_index];
+              auto x_advance = ((distance(v[0].position, v[1].position) +
+                                 distance(v[2].position, v[3].position)) * 0.5f) * scale_inv;
               auto new_accumulator = x_accumulator + x_advance;
 
               auto y_coord = (width - bevel_width) * scale_inv;
@@ -349,28 +253,40 @@ namespace ts
 
               using std::begin;
               using std::end;
-              const Vector2f coords[] =
+              const Vector3f coords[] =
               {
-                { x_accumulator, -y_coord },
-                { new_accumulator, -next_y_coord },
-                { x_accumulator, y_coord },
-                { new_accumulator, next_y_coord }
+                { x_accumulator, -y_coord, texture_z },
+                { new_accumulator, -next_y_coord, texture_z },
+                { x_accumulator, y_coord, texture_z },
+                { new_accumulator, next_y_coord, texture_z }
               };
 
-              std::copy(begin(coords), end(coords), tex_coords.begin() + pos_index);
+              {
+                std::size_t idx = vertex_index;
+                for (auto coord : coords)
+                {
+                  vertices[idx].tex_coords = coord;
+                  ++idx;
+                }
+              }
 
               if (bevel_width != 0.0f)
               {
                 auto bevel_y_coord = width * scale_inv;
                 auto bevel_next_y_coord = next_width * scale_inv;
 
-                const Vector2f bevel_coords[] =
+                const Vector3f bevel_coords[] =
                 {
-                  { x_accumulator, bevel_y_coord },
-                  { new_accumulator, bevel_next_y_coord }
+                  { x_accumulator, bevel_y_coord, texture_z },
+                  { new_accumulator, bevel_next_y_coord, texture_z }
                 };
 
-                std::copy(begin(bevel_coords), end(bevel_coords), tex_coords.begin() + bevel_pos_index);
+                std::size_t idx = vertex_index;
+                for (auto coord : bevel_coords)
+                {
+                  vertices[idx].tex_coords = coord;
+                  ++idx;
+                }
               }
 
               return new_accumulator;
@@ -387,73 +303,71 @@ namespace ts
             if (stroke_side != StrokeSegment::First)
             {
               tex_coord_x_accumulator.second = add_tex_coords(tex_coord_x_accumulator.second,
-                                                             second_side_vertex_index,
-                                                             second_side_bevel_vertex_index);
+                                                              second_side_vertex_index,
+                                                              second_side_bevel_vertex_index);
             }
           }
 
           else
           {
-            detail::make_tiled_texture_coords(positions.begin(), positions.end(),
-                                              stroke_properties.texture_scale,
-                                              std::back_inserter(tex_coords));
+            detail::make_tiled_texture_coords(vertices.begin(), vertices.end(),
+                                              stroke_properties.texture_scale, texture_z);
           }
         }
 
         else
         {
           // Normal stroke, no border
-          positions =
+          vertices =
           {
-            point_3d + normal_3d * stroke_width,
-            next_point_3d + next_normal_3d * next_stroke_width,
-            point_3d - normal_3d * stroke_width,
-            next_point_3d - next_normal_3d * next_stroke_width,
-            point_3d,
-            next_point_3d
+            make_vertex(point_3d + normal_3d * stroke_width,
+            calculate_normal(normal_3d, stroke_properties.outer_normal)),
+
+            make_vertex(next_point_3d + next_normal_3d * next_stroke_width,
+                        calculate_normal(next_normal_3d, stroke_properties.outer_normal)),
+
+            make_vertex(point_3d - normal_3d * stroke_width,
+                        calculate_normal(-normal_3d, stroke_properties.outer_normal)),
+
+            make_vertex(next_point_3d - next_normal_3d * next_stroke_width,
+                        calculate_normal(-next_normal_3d, stroke_properties.outer_normal)),
+
+            make_vertex(point_3d, calculate_normal(normal_3d, 0.0f)),
+
+            make_vertex(next_point_3d, calculate_normal(next_normal_3d, 0.0f))
           };
 
-          normals =
+          faces =
           {
-            calculate_normal(normal_3d, stroke_properties.outer_normal),
-            calculate_normal(next_normal_3d, stroke_properties.outer_normal),
-            calculate_normal(-normal_3d, stroke_properties.outer_normal),
-            calculate_normal(-next_normal_3d, stroke_properties.outer_normal),
-            calculate_normal(normal_3d, 0.0f),
-            calculate_normal(next_normal_3d, 0.0f)
-          };
-
-          indices =
-          {
-              0, 1, 4, 2, 3, 4, 4, 5, 1, 4, 5, 3
+            { 0, 1, 4 },
+            { 2, 3, 4 },
+            { 4, 5, 1 },
+            { 4, 5, 3 }
           };
 
           if (stroke_properties.texture_mode == StrokeProperties::Directional)
           {
-            // copy_vertices(positions, indices, tex_coords);
+            // TODO
           }
 
           else
           {
-            detail::make_tiled_texture_coords(positions.begin(), positions.end(),
-                                              stroke_properties.texture_scale,
-                                              std::back_inserter(tex_coords));
+            detail::make_tiled_texture_coords(vertices.begin(), vertices.end(),
+                                              stroke_properties.texture_scale, texture_z);
           }
         }
 
-        copy_vertices(positions, tex_coords, normals, indices);
+        copy_vertices(vertices, faces);
       }
-    }
 
-    namespace detail
-    {
-      template <typename VertexFunc, typename VertexOut, typename IndexOut>
+      template <typename VertexType, typename VertexFunc>
       auto generate_stroke_segment(const resources_3d::TrackPath& path,
                                    const resources_3d::StrokeSegment& segment,
                                    const resources_3d::StrokeProperties& stroke_properties,
                                    const std::vector<PathVertexPoint>& points,
-                                   VertexFunc& vertex_func, VertexOut& vertex_out,
-                                   std::uint32_t& start_index, IndexOut& index_out)
+                                   float texture_size, float texture_z,
+                                   resources_3d::BasicModel<VertexType>& output_model,
+                                   VertexFunc&& vertex_func)
       {
         using Point = PathVertexPoint;
         auto first_node = path.nodes.begin();
@@ -479,7 +393,7 @@ namespace ts
 
         if (lower != upper)
         {
-          auto tex_coord_accumulator = std::make_pair(0.0f, 0.0f);
+          TexCoordAccumulator tex_coord_accumulator;
 
           auto num_points = static_cast<std::size_t>(std::distance(lower, upper));
           auto point_it = lower, next_point_it = std::next(point_it);
@@ -529,15 +443,15 @@ namespace ts
           {
             // There's only something between the start point and end point.
             detail::generate_point_vertices(start_point, end_point, stroke_properties, segment.side,
-                                            tex_coord_accumulator,
-                                            vertex_func, vertex_out, start_index, index_out);
+                                            texture_size, texture_z, tex_coord_accumulator,
+                                            output_model, vertex_func);
           }
 
           else
           {
             detail::generate_point_vertices(start_point, *next_point_it, stroke_properties, segment.side,
-                                            tex_coord_accumulator,
-                                            vertex_func, vertex_out, start_index, index_out);
+                                            texture_size, texture_z, tex_coord_accumulator,
+                                            output_model, vertex_func);
 
             ++point_it, ++next_point_it;
 
@@ -545,24 +459,25 @@ namespace ts
             {
               detail::generate_point_vertices(*point_it, *next_point_it,
                                               stroke_properties, segment.side,
-                                              tex_coord_accumulator,
-                                              vertex_func, vertex_out, start_index, index_out);
+                                              texture_size, texture_z, tex_coord_accumulator,
+                                              output_model, vertex_func);
             }
 
             detail::generate_point_vertices(*before_end, end_point, stroke_properties, segment.side,
-                                            tex_coord_accumulator,
-                                            vertex_func, vertex_out, start_index, index_out);
+                                            texture_size, texture_z, tex_coord_accumulator,
+                                            output_model, vertex_func);
           }
         }
       }
 
-      template <typename VertexFunc, typename VertexOut, typename IndexOut>
-      auto generate_path_vertices(const resources_3d::TrackPath& path,
-                                  const resources_3d::StrokeProperties& stroke_properties,
-                                  const std::vector<resources_3d::StrokeSegment>& segments,
-                                  const std::vector<PathVertexPoint>& points,
-                                  VertexFunc&& vertex_func, VertexOut vertex_out,
-                                  std::uint32_t start_index, IndexOut index_out)
+      template <typename VertexType, typename VertexFunc>
+      void generate_path_vertices(const resources_3d::TrackPath& path,
+                                  const resources_3d::SegmentedStroke& stroke,
+                                  const std::vector<PathVertexPoint>& points,                                  
+                                  float texture_size, 
+                                  float texture_z,
+                                  resources_3d::BasicModel<VertexType>& output_model,
+                                  VertexFunc&& vertex_func)
       {
         using resources_3d::TrackPathNode;
         using resources_3d::StrokeProperties;
@@ -571,9 +486,12 @@ namespace ts
         auto first_node = path.nodes.begin();
         if (!path.nodes.empty())
         {
+          const auto& stroke_properties = stroke.properties;
+          const auto& segments = stroke.segments;
+
           // For each segment, find matching range of vertex points and use that
           // to generate the vertices.
-          for (StrokeSegment segment : segments)
+          for (StrokeSegment segment : stroke.segments)
           {
             auto max_index = static_cast<std::uint32_t>(path.nodes.size() - 1);
 
@@ -616,36 +534,461 @@ namespace ts
               second_segment.start_time_point = 0.0f;
 
               generate_stroke_segment(path, first_segment, stroke_properties, points,
-                                      vertex_func, vertex_out, start_index, index_out);
+                                      texture_size, texture_z,
+                                      output_model, vertex_func);
               generate_stroke_segment(path, second_segment, stroke_properties, points,
-                                      vertex_func, vertex_out, start_index, index_out);
+                                      texture_size, texture_z,
+                                      output_model, vertex_func);
             }
 
             else
             {
               generate_stroke_segment(path, segment, stroke_properties, points,
-                                      vertex_func, vertex_out, start_index, index_out);
+                                      texture_size, texture_z,
+                                      output_model, vertex_func);
             }
           }
         }
+      }
+    }
 
-        return std::make_pair(vertex_out, index_out);
+    namespace detail
+    {
+      void find_cell_edge_intersections(Vector2f a, Vector2f b,
+                                        std::uint32_t edge_index,
+                                        const PathCellAlignment& cell_alignment,
+                                        std::vector<EdgeIntersection>& edge_intersections);
+
+      void add_cell_corner_intersections(const std::array<Vector2f, 4>& points,
+                                         const std::array<std::pair<int, int>, 4>& edges,
+                                         const PathCellAlignment& cell_alignment,
+                                         std::vector<EdgeIntersection>& edge_intersections);
+
+      void add_quad_corner_intersections(const std::array<Vector2f, 4>& points,
+                                         const PathCellAlignment& cell_alignment,
+                                         std::vector<EdgeIntersection>& edge_intersections);
+
+      template <typename VertexType, typename VertexFunc>
+      void add_edge_intersection_vertices(std::vector<EdgeIntersection>& edge_intersections,
+                                          std::size_t start_index,
+                                          resources_3d::BasicModel<VertexType>& output_model,
+                                          VertexFunc&& make_vertex)
+      {
+        auto& output_vertices = output_model.vertices;
+        auto vertex_index = static_cast<std::uint32_t>(output_vertices.size());
+
+#if 0 // DEBUG VERTICES
+        auto o = -0.8f;
+        const Vector2f offsets[4] = { { -o, -o }, { -o, o }, { o, -o}, { o, o } };
+
+        for (auto it = edge_intersections.begin() + start_index; it != edge_intersections.end(); ++it)
+        {
+          for (auto o : offsets)
+          {
+            output_model.vertices.push_back(make_vertex(it->intersection + o));
+            output_model.vertices.back().color = { 255, 0, 0, 80 };
+          }
+
+          output_model.faces.push_back({ vertex_index, vertex_index + 1, vertex_index + 2 });
+          output_model.faces.push_back({ vertex_index + 1, vertex_index + 2, vertex_index + 3 });
+
+          vertex_index += 4;
+        }
+#else
+
+        for (auto it = edge_intersections.begin() + start_index; it != edge_intersections.end(); ++it)
+        {
+          it->vertex_index = vertex_index;
+          output_model.vertices.push_back(make_vertex(it->intersection));
+          ++vertex_index;
+        }
+#endif
+      }
+
+      template <typename VertexType, typename VertexFunc>
+      void add_edge_intersection_faces(const std::array<Vector2f, 4>& quad_points,
+                                       const std::array<std::pair<int, int>, 4>& edges,
+                                       const PathCellAlignment& cell_alignment,
+                                       const std::vector<EdgeIntersection>& intersection_buffer,
+                                       resources_3d::BasicModel<VertexType>& output_model,
+                                       VertexFunc&& make_vertex)
+      {
+        const std::array<std::pair<Vector2f, Vector2f>, 4> edge_points =
+        {{
+          { quad_points[edges[0].first], quad_points[edges[0].second] },
+          { quad_points[edges[1].first], quad_points[edges[1].second] },
+          { quad_points[edges[2].first], quad_points[edges[2].second] },
+          { quad_points[edges[3].first], quad_points[edges[3].second] },
+        }};
+
+        auto cell_size = cell_alignment.cell_size;
+        auto real_cell_size = static_cast<float>(cell_size);
+
+        auto& output_vertices = output_model.vertices;
+        auto& output_faces = output_model.faces;
+
+
+        enum CellEdge
+        {
+          Left, Top, Right, Bottom, Diagonal
+        };
+
+        auto find_adjacent_quad_edges = [=](const EdgeIntersection& e)
+        {
+          boost::container::small_vector<std::uint32_t, 4> result;
+
+          switch (e.type)
+          {
+          case EdgeIntersection::QuadCorner:
+          {
+            std::uint32_t edge_index = 0;
+            for (auto edge : edges)
+            {
+              if (edge.first == e.edge_index || edge.second == e.edge_index)
+              {
+                result.push_back(edge_index);
+              }
+
+              ++edge_index;
+            }
+
+            break;
+          }
+
+          default:
+            result.push_back(e.edge_index);
+          }
+
+          return result;
+        };
+
+        auto find_adjacent_cell_edges = [](const EdgeIntersection& e)
+          -> boost::container::small_vector<CellEdge, 4>
+        {
+          switch (e.type)
+          {
+          case EdgeIntersection::CellCorner:
+            switch (e.edge_index)
+            {
+            case EdgeIntersection::TopLeft: return{ Left, Top, Diagonal };
+            case EdgeIntersection::BottomLeft: return{ Left, Bottom };
+            case EdgeIntersection::TopRight: return{ Right, Top };
+            case EdgeIntersection::BottomRight: return{ Right, Bottom, Diagonal };
+            default: return{};
+            }
+
+          case EdgeIntersection::Horizontal:
+            if (e.cell_offset == 0) { return{ Top }; }
+            else return{ Bottom };
+
+          case EdgeIntersection::Vertical:
+            if (e.cell_offset == 0) { return{ Left }; }
+            else { return{ Right }; }
+
+          case EdgeIntersection::Diagonal:
+            return{ Diagonal };
+
+          default:
+            return{};
+          }
+        };
+
+        // Now, loop through all intersecting grid cells, starting on the left, moving over to the right,
+        // and going from top to bottom for each column.
+        for (auto it = intersection_buffer.begin(); it != intersection_buffer.end(); )
+        {
+          const auto& edge_intersection = *it;
+          auto cell = edge_intersection.cell;
+
+          // Find the first intersection entry that does not match up with our current grid cell.
+          auto range_end = std::find_if(std::next(it), intersection_buffer.end(),
+                                        [=](const EdgeIntersection& e)
+          {
+            return e.cell != cell;
+          });
+
+          auto top_left = vector2_cast<float>(cell) * real_cell_size;        
+
+          Vector2f cell_corners[4] =
+          {
+            top_left, top_left, top_left, top_left
+          };
+
+          // 0 = top left
+          cell_corners[1].x += real_cell_size; // Top right
+          cell_corners[2].y += real_cell_size; // Bottom left
+          cell_corners[3] += real_cell_size; // Bottom right
+
+          boost::optional<std::uint32_t> cell_corner_vertices[4] = {};
+          
+          // Grid cell consists of two triangles. For each triangle, add the faces that we need to.
+          auto make_triangle_faces = [&](int horizontal_edge, int vertical_edge, 
+                                         std::uint32_t excluded_corner, std::uint32_t triangle_id)
+          {
+            boost::container::small_vector<EdgeIntersection, 16> intersection_buffer;
+            std::copy_if(it, range_end, std::back_inserter(intersection_buffer),
+                         [=](const EdgeIntersection& e)
+            {
+              switch (e.type)
+              {
+              case EdgeIntersection::Diagonal: return true;
+              case EdgeIntersection::Horizontal: return e.cell_offset == horizontal_edge;
+              case EdgeIntersection::Vertical: return e.cell_offset == vertical_edge;
+              case EdgeIntersection::CellCorner: return e.edge_index != excluded_corner;
+              case EdgeIntersection::QuadCorner: return e.cell_offset == triangle_id;
+              default: return false;                
+              }
+            });
+
+            auto buffer_begin = intersection_buffer.begin();
+            auto buffer_end = intersection_buffer.end();
+
+            // Establish a "base" point that has two adjacent edges and one opposing edge.
+            // Start with the triangle these edges represent, then keep expanding by creating
+            // the triangles adjacent to the previous ones.
+
+            auto find_adjacent_edge_intersections = [=](const EdgeIntersection& e, auto begin, auto end)
+            {
+              auto quad_edges = find_adjacent_quad_edges(e);
+              auto cell_edges = find_adjacent_cell_edges(e);
+
+              using iterator_type = decltype(begin);
+              boost::container::small_vector<iterator_type, 16> result;
+              for (auto it = begin; it != end; ++it)
+              {
+                const auto& other = *it;
+                if (&e == &other) continue;
+
+                auto is_adjacent = [&]()
+                {
+                  for (auto edge : find_adjacent_cell_edges(other))
+                  {
+                    if (std::find(cell_edges.begin(), cell_edges.end(), edge) != cell_edges.end()) return true;
+                  }
+
+                  for (auto edge : find_adjacent_quad_edges(other))
+                  {
+                    if (std::find(quad_edges.begin(), quad_edges.end(), edge) != quad_edges.end()) return true;
+                  }
+
+                  return false;
+                };
+
+                if (is_adjacent())
+                {
+                  result.push_back(it);
+                }
+              }
+
+              return result;
+            };
+
+            auto find_base_point = [&]()
+            {
+              using result_type = decltype(find_adjacent_edge_intersections(*buffer_begin, buffer_begin, buffer_end));
+              for (auto it = buffer_begin; it != buffer_end; ++it)
+              {
+                auto result = find_adjacent_edge_intersections(*it, buffer_begin, buffer_end);
+                if (result.size() == 2) return std::make_pair(it, result);
+              }
+
+              return std::make_pair(buffer_end, result_type());
+            };
+
+            auto buffer_size = intersection_buffer.size();
+            if (buffer_size >= 3)
+            {
+              auto base_point = find_base_point();
+              if (base_point.first != buffer_end)
+              {
+                auto first_point = buffer_begin + 1;
+                auto second_point = buffer_begin + 2;
+
+                // Found a base point. Now, reorder the buffer such that every three consecutive points
+                // represent a path face.
+                std::iter_swap(base_point.first, buffer_begin);
+                std::iter_swap(base_point.second.front(), first_point);
+                std::iter_swap(base_point.second.back(), second_point);
+
+                // Get the location of the next intersection point, and then find a point that's adjacent
+                // to one of the ones we already have.
+                for (; std::distance(second_point, buffer_end) >= 2; ++first_point, ++second_point)
+                {
+                  auto range_start = std::next(second_point);
+                  auto adjacent_points = find_adjacent_edge_intersections(*first_point, range_start, buffer_end);
+                  if (adjacent_points.empty())
+                  {
+                    adjacent_points = find_adjacent_edge_intersections(*second_point, range_start, buffer_end);
+                  }
+
+                  if (!adjacent_points.empty())
+                  {
+                    std::iter_swap(range_start, adjacent_points.front());
+                  }
+                }
+
+                for (std::uint32_t idx = 0; idx + 2 < buffer_size; ++idx)
+                {
+                  output_faces.push_back({
+                    buffer_begin[idx].vertex_index,
+                    buffer_begin[idx + 1].vertex_index,
+                    buffer_begin[idx + 2].vertex_index
+                  });
+                }
+              }
+            }
+          };
+
+          make_triangle_faces(1, 0, EdgeIntersection::TopRight, 0);
+          make_triangle_faces(0, 1, EdgeIntersection::BottomLeft, 1);
+
+          it = range_end;
+        }
       }
     }
 
 
-    template <typename VertexFunc, typename VertexOut, typename IndexOut>
-    auto generate_path_vertices(const resources_3d::TrackPath& path,                                
-                                const resources_3d::StrokeProperties& stroke_properties,
-                                const std::vector<PathVertexPoint>& points,
-                                VertexFunc&& vertex_func, VertexOut vertex_out,
-                                std::uint32_t start_index, IndexOut index_out)
+    template <typename VertexType, typename VertexFunc>
+    void generate_path_vertices2(const resources_3d::TrackPath& path,
+                                 const resources_3d::StrokeProperties& stroke_properties,
+                                 const std::vector<PathVertexPoint>& points,
+                                 float texture_size, float texture_z,
+                                 const PathCellAlignment& cell_alignment,
+                                 resources_3d::BasicModel<VertexType>& output_model,
+                                 VertexFunc&& vertex_func)
     {
       using resources_3d::TrackPathNode;
       using resources_3d::StrokeProperties;
       using resources_3d::StrokeSegment;
 
-      auto tex_coord_x_accumulator = std::make_pair(0.0f, 0.0f);
+      std::vector<detail::EdgeIntersection> intersections;
+
+      if (stroke_properties.type == StrokeProperties::Default)
+      {
+        auto point_it = points.begin();
+        if (point_it != points.end())
+        {
+          auto texture_scale = 1.0f / (stroke_properties.texture_scale * texture_size);
+          auto width = resources_3d::path_width_at(*point_it->first, *point_it->second, 
+                                                   point_it->time_point) * 0.5f;
+
+          auto make_vertex = [&](Vector2f position)
+          {
+            PathVertex vertex;
+            vertex.position = position;
+            vertex.color = stroke_properties.color;
+            vertex.normal = { 0.0f, 0.0f, 1.0f };
+            vertex.tex_coords.x = position.x * texture_scale;
+            vertex.tex_coords.y = position.y * texture_scale;
+            vertex.tex_coords.z = texture_z;
+            return vertex;
+          };
+
+          auto make_transformed_vertex = [&](Vector2f position)
+          {
+            return vertex_func(make_vertex(position));
+          };
+
+          auto intersection_cmp = [](const auto& a, const auto& b)
+          {
+            return std::tie(a.cell.x, a.cell.y) < std::tie(b.cell.x, b.cell.y);
+          };
+
+          auto& output_vertices = output_model.vertices;
+
+          std::array<Vector2f, 4> quad_points =
+          {
+            point_it->point + point_it->normal * width,
+            point_it->point - point_it->normal * width,
+            Vector2f(),
+            Vector2f()
+          };
+
+          const std::array<std::pair<int, int>, 4> edges =
+          { {
+            { 0, 1 },
+            { 0, 2 },
+            { 1, 3 },
+            { 2, 3 }
+          } };
+
+          std::uint32_t edge_index_start = 0;
+          std::uint32_t edge_index_end = 4;
+
+          for (auto next_point_it = std::next(point_it); next_point_it != points.end(); ++next_point_it, ++point_it)
+          {
+            if (distance(point_it->point, next_point_it->point) < 0.001f) continue;
+
+            const auto& next_point = *next_point_it;
+            auto next_width = resources_3d::path_width_at(*next_point.first, *next_point.second,
+                                                          next_point.time_point) * 0.5f;
+
+            quad_points[2] = next_point.point + next_point.normal * next_width;
+            quad_points[3] = next_point.point - next_point.normal * next_width;
+
+            auto vertex_offset = intersections.size();
+            for (auto edge_index = edge_index_start; edge_index != edge_index_end; ++edge_index)
+            {
+              auto edge = edges[edge_index];
+              const auto& p1 = quad_points[edge.first];
+              const auto& p2 = quad_points[edge.second];
+
+              detail::find_cell_edge_intersections(p1, p2, edge_index, cell_alignment, intersections);
+            }
+
+            detail::add_quad_corner_intersections(quad_points, cell_alignment, intersections);
+            detail::add_cell_corner_intersections(quad_points, edges, cell_alignment, intersections);
+
+            // Sort the intersections by cell. We need to do this in order to loop through the grid cells
+            // in the desired manner.
+
+            detail::add_edge_intersection_vertices(intersections, vertex_offset, output_model, make_transformed_vertex);
+
+            std::sort(intersections.begin(), intersections.end(), intersection_cmp);
+            detail::add_edge_intersection_faces(quad_points, edges,
+                                                cell_alignment, intersections,
+                                                output_model, make_transformed_vertex);
+
+            // Remove all the edge intersections except for the ones with edge index 3,
+            // because we're going to need those in the next iteration
+            intersections.erase(std::remove_if(intersections.begin(), intersections.end(),
+                                               [](const detail::EdgeIntersection& e)
+            {
+              return e.type == detail::EdgeIntersection::QuadCorner || 
+                e.type == detail::EdgeIntersection::CellCorner ||
+                e.edge_index != 3;
+            }), intersections.end());
+
+            // And transform the edge index to 0, because we the only remaining intersections
+            // will have edge index 3, which translates to 0 in the next iteration.
+            for (auto& intersection : intersections)
+            {
+              intersection.edge_index = 0;
+            }
+
+            // Make sure we don't use the first edge for all but the first iteration.
+            edge_index_start = 1;
+
+            quad_points[0] = quad_points[2];
+            quad_points[1] = quad_points[3];
+          }
+        }
+      }
+    }
+
+    template <typename VertexType, typename VertexFunc>
+    void generate_path_vertices(const resources_3d::TrackPath& path,
+                                const resources_3d::StrokeProperties& stroke_properties,
+                                const std::vector<PathVertexPoint>& points,
+                                float texture_size, float texture_z,
+                                resources_3d::BasicModel<VertexType>& output_model,
+                                VertexFunc&& vertex_func)
+    {
+      using resources_3d::TrackPathNode;
+      using resources_3d::StrokeProperties;
+      using resources_3d::StrokeSegment;
+
+      detail::TexCoordAccumulator tex_coord_x_accumulator;
 
       auto point_it = points.begin();
       if (point_it != points.end())
@@ -655,42 +998,32 @@ namespace ts
         {
           detail::generate_point_vertices(*point_it, *next_point_it,
                                           stroke_properties, StrokeSegment::Both,
-                                          tex_coord_x_accumulator,
-                                          vertex_func, vertex_out, start_index, index_out);
+                                          texture_size, texture_z, tex_coord_x_accumulator,
+                                          output_model, vertex_func);
         }
       }
-
-      return std::make_pair(vertex_out, index_out);
     }
 
-    // Generate the vertices according to the vertex points previously generated by
-    // compute_path_vertex_points. It writes the vertices and indices to the given
-    // output iterators. 
-    // The following syntax must be supported:
-    //   *vertex_out++ = vertex_func(Vector3f(position), Vector2f(tex_coord), Vector3f(normal));
-    // It also performs the operation 
-    //   *index_out++ = std::size_t(start_index + index);
-    // Note that the texture coordinates are absolute, meaning they may well have to be divided
-    // by the texture size in order to be usable.
-    template <typename VertexFunc, typename VertexOut, typename IndexOut>
-    auto generate_path_vertices(const resources_3d::TrackPath& path,
-		                            const resources_3d::SegmentedStroke& stroke,
+    template <typename VertexType, typename VertexFunc>
+    void generate_path_vertices(const resources_3d::TrackPath& path,
+                                const resources_3d::SegmentedStroke& stroke,
                                 const std::vector<PathVertexPoint>& points,
-                                VertexFunc&& vertex_func, VertexOut vertex_out,
-                                std::uint32_t start_index, IndexOut index_out)
+                                float texture_size, float texture_z,
+                                resources_3d::BasicModel<VertexType>& output_model,
+                                VertexFunc&& vertex_func)
     {
       if (stroke.properties.is_segmented)
       {
-        return detail::generate_path_vertices(path, stroke.properties, stroke.segments,
-                                              points,
-                                              vertex_func, vertex_out, start_index, index_out);
+        detail::generate_path_vertices(path, stroke, points,
+                                       texture_size, texture_z,
+                                       output_model, vertex_func);
       }
 
       else
       {
-        return generate_path_vertices(path, stroke.properties, points,
-                                      vertex_func, vertex_out,
-                                      start_index, index_out);
+        generate_path_vertices(path, stroke.properties, points,
+                               texture_size, texture_z,
+                               output_model, vertex_func);
       }
     }
   }

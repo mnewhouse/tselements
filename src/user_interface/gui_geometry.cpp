@@ -23,6 +23,8 @@ namespace ts
 
       glViewport(0, 0, static_cast<GLsizei>(screen_size.x), static_cast<GLsizei>(screen_size.y));
 
+      glDisable(GL_DEPTH_TEST);
+
       renderer.geometry_renderer().draw(geometry.geometry, view_matrix);
       renderer.font_renderer().draw(geometry.text, view_matrix);
     }

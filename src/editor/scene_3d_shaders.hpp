@@ -19,15 +19,16 @@ uniform mat4 u_viewMatrix;
 layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec3 in_texCoord;
 layout(location = 2) in vec3 in_normal;
+layout(location = 3) in vec4 in_color;
 out vec3 frag_texCoord;
 out vec3 frag_normal;
 out vec4 frag_color;
 void main()
 {
-  float z = heightAt(in_position.xy) + in_position.z;
-  frag_texCoord = in_texCoord;  
-  frag_color = vec4(1.0, 1.0, 1.0, 1.0);
-  frag_normal = (calculateNormal(in_position.xy, z) + in_normal) * 0.5;
+  float z = heightAt(in_position.xy);
+  frag_texCoord = in_texCoord;
+  frag_color = in_color;
+  frag_normal = calculateNormal(in_position.xy, z);
   gl_Position = u_projectionMatrix * u_viewMatrix * vec4(in_position.xy, z, 1.0);
 }
 )";
@@ -42,8 +43,7 @@ void main()
 {
   float cosTheta = clamp(dot(frag_normal, normalize(vec3(-1, -1, 3.0))), 0.0, 1.0);
   vec4 tex_color = texture(u_textureSampler, frag_texCoord);
-  float alpha = tex_color.a;
-  out_fragColor = vec4(tex_color.rgb * cosTheta * cosTheta, alpha) * frag_color;
+  out_fragColor = vec4(tex_color.rgb * cosTheta, tex_color.a);
 }
 )";
   }

@@ -46,6 +46,12 @@ namespace ts
       EditorScene* editor_scene() { return editor_scene_; }
       const EditorScene* editor_scene() const { return editor_scene_; }
 
+      virtual bool update_gui(bool has_focus, const gui::InputState& input_state,
+                              gui::Geometry& geometry) 
+      {
+        return has_focus;
+      }
+
     private:
       EditorScene* editor_scene_;
     };

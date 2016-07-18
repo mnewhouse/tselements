@@ -1,15 +1,17 @@
 /*
-
 * TS Elements
 * Copyright 2015-2016 M. Newhouse
 * Released under the MIT license.
 */
+
+#include "stdinc.hpp"
 
 #include "editor_path_tool.hpp"
 #include "editor/editor_scene.hpp"
 #include "editor/render_scene_3d.hpp"
 #include "editor/terrain_scene_3d.hpp"
 #include "editor/height_map_shaders.hpp"
+#include "editor/terrain_interface_shaders.hpp"
 #include "editor/path_vertices_detail.hpp"
 
 #include "graphics/gl_check.hpp"
@@ -36,35 +38,6 @@ namespace ts
   {
     namespace tools
     {
-      static const char* const path_vertex_shader = R"(
-uniform mat4 u_projectionMatrix;
-uniform mat4 u_viewMatrix;
-layout(location = 0) in vec2 in_position;
-layout(location = 1) in vec4 in_color;
-out vec4 frag_color;
-void main()
-{
-    float z = heightAt(in_position);
-    gl_Position = u_projectionMatrix * u_viewMatrix * vec4(in_position, z, 1.0);
-    frag_color = in_color;
-}
-)";
-
-      static const char* const path_fragment_shader = R"(
-in vec4 frag_color;
-out vec4 out_fragColor;
-void main()
-{
-  out_fragColor = frag_color;
-}
-)";
-
-      struct PathVertex
-      {
-        Vector2f position;
-        Colorb color;
-      };
-
       static auto create_path_shader_program()
       {
         const auto version_string = "#version 330\n";
@@ -73,13 +46,13 @@ void main()
         {
           version_string,
           scene_3d::height_map_vertex_shader_functions,
-          path_vertex_shader
+          terrain_interface_vertex_shader
         };
 
         const char* const fragment_shaders[] =
         {
           version_string,
-          path_fragment_shader
+          terrain_interface_fragment_shader
         };
 
         return graphics::create_shader_program(vertex_shaders, fragment_shaders);
@@ -116,7 +89,7 @@ void main()
         return static_cast<std::size_t>(active_mode_);
       }
 
-      void PathTool::update_gui(bool has_focus, const gui::InputState& input_state,
+      bool PathTool::update_gui(bool has_focus, const gui::InputState& input_state,
                                 gui::Geometry& geometry)
       {
         // Depending on the current mode, render different GUI components.
@@ -130,6 +103,8 @@ void main()
           update_gui_stroke_segments(has_focus, input_state, geometry);
           break;
         }
+
+        return has_focus;
       }
 
       void PathTool::update_gui_path_nodes(bool& has_focus, const gui::InputState& input_state,
@@ -139,7 +114,7 @@ void main()
         auto scene = editor_scene();
         auto view_port = scene->view_port();
 
-        auto world_pos = scene->screen_to_terrain_position(input_state.mouse_position);
+        auto world_pos = scene->terrain_position_at(input_state.mouse_position);
 
         auto selected_path = scene->selected_track_path();
         if (selected_path == nullptr) return;
@@ -268,7 +243,7 @@ void main()
           auto state = gui::widget_state(rect_cast<float>(view_port), input_state);
           if (click_state(state))
           {
-            if (auto world_pos = scene->screen_to_terrain_position(input_state.mouse_position))
+            if (auto world_pos = scene->terrain_position_at(input_state.mouse_position))
             {
               node_placement_.emplace();
               node_placement_->end_point = { world_pos->x, world_pos->y };
@@ -312,7 +287,7 @@ void main()
 
         const auto& nodes = path.nodes;
 
-        auto world_pos = scene->screen_to_terrain_position(input_state.mouse_position);
+        auto world_pos = scene->terrain_position_at(input_state.mouse_position);
         if (stroke_properties.is_segmented)
         {
           auto handle_widget_size = Vector2i(5, 5);
@@ -401,7 +376,7 @@ void main()
 
             // Find a matching path point where distance to the mouse position is
             // smaller than a specified tolerance value.
-            auto world_pos = scene->screen_to_terrain_position(input_state.mouse_position);
+            auto world_pos = scene->terrain_position_at(input_state.mouse_position);
             if (world_pos)
             {
               auto pos_2d = make_vector2(world_pos->x, world_pos->y);
@@ -761,18 +736,9 @@ void main()
           // TODO: make it so that not everything has to be recalculated every time,
           // particularly when adding or modifying a node at the end of the path.
           std::vector<scene_3d::PathVertexPoint> vertex_points;
-          scene_3d::compute_path_vertex_points(path.nodes.begin(), path.nodes.end(),
-                                               0.025f, vertex_points);
-
-          std::vector<PathVertex> vertices;
-          std::vector<GLuint> indices;
+          scene_3d::compute_path_vertex_points(path.nodes.begin(), path.nodes.end(), 0.025f, vertex_points);
 
           const Colorb color = { 0, 200, 255, 50 };
-          auto vertex_func = [=](Vector3f position, Vector2f tex_coord, Vector3f normal)
-          {
-            Vector2f pos_2d = { position.x, position.y };
-            return PathVertex{ pos_2d, color };
-          };
 
           // Generate a track outline
           resources_3d::StrokeProperties stroke;
@@ -781,38 +747,60 @@ void main()
           stroke.offset = -1.5f;
           stroke.width = 3.0f;
           stroke.color = color;
-          scene_3d::generate_path_vertices(path, stroke, vertex_points,
-                                           vertex_func, std::back_inserter(vertices),
-                                           0, std::back_inserter(indices));
 
+          path_model_.lines.clear();
+          path_model_.faces.clear();
+          path_model_.vertices.clear();
+
+          scene_3d::generate_path_vertices(path, stroke, vertex_points, 0.0f, 0.0f, 
+                                           path_model_, [](const scene_3d::PathVertex& path_vertex)
+          {
+            Vertex vertex;
+            vertex.position = path_vertex.position;
+            vertex.color = path_vertex.color;
+            return vertex;
+          });
+
+          auto& vertices = path_model_.vertices;
+          auto& faces = path_model_.faces;
+          auto& lines = path_model_.lines;
 
           Colorb line_color = { 100, 255, 255, 150 };
-          element_count_ = indices.size();
-          auto line_vertex = [=](Vector2f position) { return PathVertex{ position, line_color }; };
+          element_count_ = faces.size() * 3;
+
+          auto line_vertex = [=](Vector2f position, Colorb color)
+          {
+            Vertex vertex;
+            vertex.position = position;
+            vertex.color = color;
+            return vertex;
+          };
 
           line_element_count_ = 0;
           if (active_mode_ == Mode::Nodes)
           {
             // When editing nodes, draw lines between all nodes and their control points.
-            auto line_index = static_cast<GLuint>(vertices.size());
+            auto line_index = static_cast<std::uint32_t>(vertices.size());
+
             for (const auto& node : path.nodes)
             {
-              vertices.push_back(line_vertex(node.first_control));
-              vertices.push_back(line_vertex(node.position));
-              vertices.push_back(line_vertex(node.second_control));
+              vertices.insert(vertices.end(),
+              {
+                line_vertex(node.first_control, line_color),
+                line_vertex(node.position, line_color),
+                line_vertex(node.second_control, line_color)
+              });
 
-              indices.insert(indices.end(), 
+              lines.insert(lines.end(), 
               { 
-                line_index, 
-                line_index + 1, 
-                line_index + 1, 
-                line_index + 2 
+                { line_index, line_index + 1 },
+                { line_index + 1, line_index + 2 }
               });
 
               line_index += 3;
               line_element_count_ += 4;
             }
-          }
+          }          
 
           else if (active_mode_ == Mode::StrokeSegments && stroke_index < path.strokes.size() &&
                    path.strokes[stroke_index].properties.is_segmented)
@@ -823,17 +811,15 @@ void main()
           }
 
           // Also draw a line for the path itself.
-          if (vertex_points.size() >= 2) 
+          if (vertex_points.size() >= 2)
           {
             auto path_color = Colorb(255, 255, 255, 100);
-            auto path_line_vertex = [=](Vector2f position) { return PathVertex{ position, path_color }; };
-
-            auto line_index = static_cast<GLuint>(vertices.size());
+            auto line_index = static_cast<std::uint32_t>(vertices.size());
 
             // For all vertex points, add a line vertex
             for (const auto& point : vertex_points)
             {
-              vertices.push_back(path_line_vertex(point.point));
+              vertices.push_back(line_vertex(point.point, path_color));
             }            
 
             // And for every point segment, add two line indices.
@@ -841,7 +827,7 @@ void main()
             auto next_point_it = std::next(point_it);
             for (; next_point_it != vertex_points.end(); ++point_it, ++next_point_it)
             {
-              indices.insert(indices.end(), { line_index, line_index + 1 });
+              lines.insert(lines.end(), { line_index, line_index + 1 });
 
               line_element_count_ += 2;
               ++line_index;
@@ -849,17 +835,26 @@ void main()
           }
 
           glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, path_index_buffer_.get()));
-          glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint),
-                               indices.data(), GL_STATIC_DRAW));
+
+          auto faces_size = faces.size() * sizeof(resources_3d::ModelFace);
+          auto lines_size = lines.size() * sizeof(resources_3d::ModelLine);
+
+          glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces_size + lines_size,
+                               nullptr, GL_STATIC_DRAW));
+          glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, faces_size,
+                                  faces.data()));
+          glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, faces_size,
+                                  lines_size, lines.data()));
 
           glCheck(glBindBuffer(GL_ARRAY_BUFFER, path_vertex_buffer_.get()));
-          glCheck(glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(PathVertex), 
+          glCheck(glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), 
                                vertices.data(), GL_STATIC_DRAW));          
         }
       }
 
       void PathTool::render() const
       {
+        glCheck(glDisable(GL_DEPTH_TEST));
         graphics::scissor_box(editor_scene()->screen_size(), editor_scene()->view_port());
 
         glCheck(glUseProgram(path_shader_.get()));
@@ -873,9 +868,17 @@ void main()
 
         const auto& render_scene = editor_scene()->render_scene();
         const auto& terrain_scene = render_scene.terrain_scene();
-        const auto& height_map = terrain_scene.height_map_texture();
+
         glCheck(glActiveTexture(GL_TEXTURE1));
-        glCheck(glBindTexture(GL_TEXTURE_2D, height_map.get()));
+        glCheck(glBindTexture(GL_TEXTURE_2D, terrain_scene.height_map_texture().get()));
+
+        const auto height_map_cell_size = terrain_scene.height_map_cell_size();
+
+        auto uniform_locations = scene_3d::get_height_map_uniform_locations(path_shader_);
+        glCheck(glUniform1i(uniform_locations.height_map_sampler, 1));
+        glCheck(glUniform1f(uniform_locations.height_map_max_z, terrain_scene.height_map_max_z()));
+        glCheck(glUniform2f(uniform_locations.height_map_cell_size,
+                    height_map_cell_size.x, height_map_cell_size.y));
 
         auto projection_matrix = render_scene.projection_matrix();
         auto view_matrix = render_scene.view_matrix();
@@ -886,25 +889,17 @@ void main()
         glCheck(glUniformMatrix4fv(glGetUniformLocation(path_shader_.get(), "u_viewMatrix"), 
                                    1, GL_FALSE, glm::value_ptr(view_matrix)));
 
-        glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(PathVertex),
-                                      reinterpret_cast<const void*>(offsetof(PathVertex, position))));
+        glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                                      reinterpret_cast<const void*>(offsetof(Vertex, position))));
 
-        glCheck(glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(PathVertex),
-                                      reinterpret_cast<const void*>(offsetof(PathVertex, color))));
-
-        auto cell_size = terrain_scene.height_map_cell_size();
-        auto max_z = terrain_scene.height_map_max_z();
-
-        auto uniform_locations = scene_3d::get_height_map_uniform_locations(path_shader_);
-        glCheck(glUniform1i(uniform_locations.height_map_sampler, 1));
-        glCheck(glUniform1f(uniform_locations.height_map_max_z, max_z));
-        glCheck(glUniform2f(uniform_locations.height_map_cell_size, cell_size.x, cell_size.y));
+        glCheck(glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex),
+                                      reinterpret_cast<const void*>(offsetof(Vertex, color))));
 
         glCheck(glDrawElements(GL_TRIANGLES, element_count_, GL_UNSIGNED_INT,
                                reinterpret_cast<const void*>(0)));
 
         glCheck(glDrawElements(GL_LINES, line_element_count_, GL_UNSIGNED_INT,
-                               reinterpret_cast<const void*>(element_count_ * sizeof(GLuint))));
+                               reinterpret_cast<const void*>(element_count_ * sizeof(std::uint32_t))));
 
         glCheck(glDisableVertexAttribArray(0));
         glCheck(glDisableVertexAttribArray(1));

@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "track_editor_menu.hpp"
 #include "track_editor_interface_state.hpp"
 

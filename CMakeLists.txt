@@ -68,12 +68,15 @@ set(LIB_SOURCES
 	src/cup/cup_synchronizer.cpp
 	src/cup/cup_messages.cpp
 
+	src/editor/tools/editor_elevation_tool.cpp
 	src/editor/tools/editor_path_tool.cpp
 	src/editor/tools/editor_terrain_tool.cpp
 	src/editor/editor_scene.cpp
 	src/editor/height_map.cpp
+	src/editor/path_vertices.cpp
 	src/editor/render_scene_3d.cpp
 	src/editor/texture_library_3d.cpp
+	src/editor/terrain_model_3d.cpp
 	src/editor/terrain_scene_3d.cpp
 	src/editor/track_3d.cpp
 	src/editor/track_edit_state.cpp

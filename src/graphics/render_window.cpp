@@ -29,6 +29,8 @@ namespace ts
         context_settings.majorVersion = gl_version::major;
         context_settings.minorVersion = gl_version::minor;
         context_settings.antialiasingLevel = 4;
+        context_settings.depthBits = 24;
+        context_settings.stencilBits = 8;
 
         std::uint32_t style = sf::Style::Titlebar;
         if (window_mode == WindowMode::FullScreen)

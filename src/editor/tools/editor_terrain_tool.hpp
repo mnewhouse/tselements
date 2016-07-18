@@ -23,8 +23,8 @@ namespace ts
 
         virtual void process_event(const event_type& event) override;
 
-        void update_gui(bool has_focus, const gui::InputState& input_state,
-                        gui::Geometry& geometry);
+        virtual bool update_gui(bool has_focus, const gui::InputState& input_state,
+                                gui::Geometry& geometry) override;
 
       private:
         

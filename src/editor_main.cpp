@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 {
   try
   {
-    int screen_width = 1280, screen_height = 800;
+    int screen_width = 1440, screen_height = 900;
     graphics::RenderWindow window("Project \"Free Like Bird\" - Editor",
                                   screen_width, screen_height, graphics::WindowMode::Windowed);
     window.set_framerate_limit(120);

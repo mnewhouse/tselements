@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "height_map.hpp"
 
 #include "utility/random.hpp"
@@ -92,25 +94,55 @@ namespace ts
 
     float interpolate_height_at(const HeightMap& height_map, Vector2f position)
     {
-      auto coords = position / static_cast<float>(height_map.cell_size());
-
+      auto cell_size = height_map.cell_size();
       auto map_size = height_map.size();
 
-      auto x = std::min(static_cast<std::uint32_t>(coords.x), map_size.x - 1);
-      auto y = std::min(static_cast<std::uint32_t>(coords.y), map_size.y - 1);      
+      auto real_cell_size = static_cast<float>(cell_size);
+      auto coords = position / real_cell_size;      
 
-      auto right_weight = coords.x - std::floor(coords.x);
-      auto bottom_weight = coords.y - std::floor(coords.y);
-      auto left_weight = 1.0f - right_weight;
-      auto top_weight = 1.0f - bottom_weight;
-        
-      auto right = x != map_size.x - 1 ? x : x + 1;
-      auto bottom = y != map_size.y - 1 ? y : y + 1;
+      std::uint32_t x = 0;
+      std::uint32_t y = 0;
 
-      return height_map(x, y) * left_weight * top_weight +
-        height_map(right, y) * right_weight * top_weight +
-        height_map(right, bottom) * right_weight * bottom_weight +
-        height_map(x, bottom) * left_weight * bottom_weight;
+      if (coords.x >= 0.0f) x = std::min(static_cast<std::uint32_t>(coords.x), map_size.x - 1);
+      if (coords.y >= 0.0f) y = std::min(static_cast<std::uint32_t>(coords.y), map_size.y - 1);
+
+      auto offset = make_vector2(coords.x - std::floor(coords.x), coords.y - std::floor(coords.y));
+
+      auto right = (x == map_size.x - 1 ? x : x + 1);
+      auto bottom = (y == map_size.y - 1 ? y : y + 1);
+
+      float weights[3] =
+      {
+        1.0f - offset.x,
+        offset.y,
+        offset.x - offset.y
+      };
+
+      std::pair<std::uint32_t, std::uint32_t> points[3] =
+      {
+        { x, y },
+        { right, bottom },
+        { right, y }
+      };
+
+      if (offset.y >= offset.x)
+      {
+        weights[2] = offset.y - offset.x;
+        points[2] = { x, bottom };
+      }     
+
+      auto total_height = 0.0f;
+      auto total_weight = 0.0f;
+      auto idx = 0;
+      for (const auto& point : points)
+      {
+        total_height += height_map(point.first, point.second) * weights[idx];
+        total_weight += weights[idx];
+
+        ++idx;
+      }
+
+      return total_height / total_weight;
     }
   }
 }

@@ -46,7 +46,7 @@ vec3 calculateNormal(vec2 position, float z)
                 triangleNormal(vec3(1.0, 0.0, z - rightZ), vec3(0.0, -1.0, z - topZ)) +
                 triangleNormal(vec3(1.0, 0.0, z - rightZ), vec3(0.0, 1.0, z - bottomZ)) +
                 triangleNormal(vec3(-1.0, 0.0, z - leftZ), vec3(0.0, 1.0, z - bottomZ));
-  return normalize(normal * vec3(1.4, 1.4, 1.0));
+  return normalize(normal);
 })";
 
     struct HeightMapUniformLocations

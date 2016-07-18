@@ -30,10 +30,13 @@ namespace ts
       Vector2u size_2d() const;
       void resize(Vector3u new_size);
 
-      void update_height_map(HeightMap height_map);
-      const HeightMap& height_map() const;
-
       const TextureLibrary& texture_library() const;
+
+      const HeightMap& height_map() const;
+      void adopt_height_map(HeightMap height_map);
+
+      void raise_elevation_at(Vector2u map_coord, float amount);
+      void set_elevation_at(Vector2u map_coord, float z);
 
       void define_texture(std::uint16_t texture_id, std::string image_file,
                           IntRect image_rect);
@@ -50,6 +53,8 @@ namespace ts
       const_path_range paths() const;
 
     private:
+      void ensure_height_map_size();
+
       Vector3u size_ = {};
       HeightMap height_map_;
       TextureLibrary texture_library_;

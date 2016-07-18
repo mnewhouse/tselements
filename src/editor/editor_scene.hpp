@@ -27,6 +27,7 @@ namespace ts
       void load_scene();
 
       const resources_3d::Track& track() const;
+      resources_3d::Track& track();
 
       Vector2u screen_size() const;
       IntRect view_port() const;
@@ -39,7 +40,10 @@ namespace ts
 
       const scene_3d::RenderScene& render_scene() const;
 
-      boost::optional<Vector3f> screen_to_terrain_position(Vector2i pos) const;
+      void rebuild_height_map(IntRect updated_area);
+      void rebuild_height_map();
+
+      boost::optional<Vector3f> terrain_position_at(Vector2i screen_position) const;
 
       Vector2i world_to_screen_position(Vector2f position) const;
       Vector2i world_to_screen_position(Vector3f world_position) const;
@@ -55,6 +59,8 @@ namespace ts
       void commit(const resources_3d::TrackPath* track_path);
       void commit(const resources_3d::TrackPath* track_path,
                   std::size_t node_index, std::size_t node_count);
+
+      Vector3f camera_position() const;
 
     private:
       resources_3d::Track track_;

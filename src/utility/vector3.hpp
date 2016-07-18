@@ -7,9 +7,10 @@
 #ifndef VECTOR3_HPP_8192384128934
 #define VECTOR3_HPP_8192384128934
 
+#include "vector2.hpp"
+
 #include <cstdint>
 #include <type_traits>
-
 
 namespace ts
 {
@@ -141,6 +142,18 @@ namespace ts
   auto make_vector3(T x, T y, T z)
   {
     return Vector3<T>(x, y, z);
+  }
+
+  template <typename T>
+  auto make_2d(Vector3<T> vec)
+  {
+    return Vector2<T>(vec.x, vec.y);
+  }
+
+  template <typename T>
+  auto make_3d(Vector3<T> vec)
+  {
+    return vec;
   }
 
   template <typename To, typename From>

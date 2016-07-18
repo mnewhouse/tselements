@@ -41,11 +41,10 @@ namespace ts
 
       void load_track_visuals(const resources_3d::Track& track);
       
-      void set_camera_position(Vector2f position, float height_above_ground,
-                               const resources_3d::HeightMap& height_map);
+      void set_camera_position(Vector2f position, float height_above_ground);
 
       void move_camera(Vector3f offset);
-      void move_camera_2d(Vector2f offset, const resources_3d::HeightMap& height_map);
+      void move_camera_2d(Vector2f offset);
       Vector3f camera_position() const;
 
       static float max_drawing_distance();
@@ -55,11 +54,7 @@ namespace ts
       glm::mat4 view_matrix() const;
 
       const TerrainScene& terrain_scene() const;
-      void register_track_path(const resources_3d::TrackPath* path_path);
-
-      void update(const resources_3d::TrackPath* track_path);
-      void update(const resources_3d::TrackPath* track_path,
-                  std::size_t node_index, std::size_t node_count);
+      TerrainScene& terrain_scene();
 
     private:
       TerrainScene terrain_scene_;

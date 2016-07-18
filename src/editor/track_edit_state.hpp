@@ -18,6 +18,7 @@
 
 #include "tools/editor_path_tool.hpp"
 #include "tools/editor_terrain_tool.hpp"
+#include "tools/editor_elevation_tool.hpp"
 
 namespace ts
 {
@@ -44,6 +45,7 @@ namespace ts
         // Tools
         tools::PathTool path_tool_;
         tools::TerrainTool terrain_tool_;
+        tools::ElevationTool elevation_tool_;
 
         EditorTool* active_tool_ = nullptr;
 

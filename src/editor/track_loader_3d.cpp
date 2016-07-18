@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "track_loader_3d.hpp"
 
 #include "resources/include_path.hpp"
@@ -172,8 +174,6 @@ return line_data.directive;
           data[idx] = z;
         }
       }
-
-      track.update_height_map(HeightMap(size, cell_size, std::move(data)));
     }
 
     boost::filesystem::path detail::resolve_asset_path(boost::string_ref file_name,

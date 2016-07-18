@@ -4,7 +4,10 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "track_edit_state.hpp"
+#include "height_map.hpp"
 
 #include "graphics/render_window.hpp"
 
@@ -26,11 +29,12 @@ namespace ts
       {
         auto load_track()
         {
-          resources_3d::Track track;
-          auto height_map = resources_3d::generate_height_map(128, 16, 32.0f, 0.5f);
+          auto height_map = resources_3d::generate_height_map(128, 16, 32.0f, 1.0f);
 
-          track.update_height_map(std::move(height_map));
-          track.resize({ 1280, 800, 128 });
+          resources_3d::Track track;
+          track.adopt_height_map(std::move(height_map));
+
+          track.resize({ 2048, 2048, 64 });
 
           track.define_texture(0, "editor/grass.png", IntRect(0, 0, 512, 512));
           track.define_texture(1, "editor/tarmac.png", IntRect(0, 0, 512, 512));
@@ -44,12 +48,11 @@ namespace ts
           auto path = track.create_path();
           Stroke tarmac;
           tarmac.texture_id = 1;
-          tarmac.outer_normal = -0.4f;
 
           Stroke track_edge;
           track_edge.type = Stroke::Border;
           track_edge.use_relative_size = false;
-          track_edge.width = 2.5f;
+          track_edge.width = 2.0f;
           track_edge.offset = -2.0f;
           track_edge.texture_id = 2;
 
@@ -67,7 +70,7 @@ namespace ts
           kerb.is_segmented = true;
           kerb.use_relative_size = false;
           kerb.width = 5.0f;
-          kerb.offset = -7.0f;
+          kerb.offset = -5.0f;
           kerb.texture_id = 27;
           kerb.texture_scale = 0.5f;
           kerb.color = { 255, 0, 0, 255 };
@@ -77,7 +80,7 @@ namespace ts
           kerb.bevel_strength = 0.5f;
 
           path->strokes.push_back(kerb);
-          path->strokes.push_back(tarmac_edge);
+          //path->strokes.push_back(tarmac_edge);
           path->strokes.push_back(track_edge);
           path->strokes.push_back(tarmac);
 
@@ -95,6 +98,7 @@ namespace ts
           track_editor_menu_(&ctx.resource_store->font_library()),
           path_tool_(&editor_scene_),
           terrain_tool_(&editor_scene_),
+          elevation_tool_(&editor_scene_),
           active_tool_(&path_tool_)
       {
         editor_scene_.load_scene();
@@ -132,14 +136,9 @@ namespace ts
         editor_scene_.set_view_port(screen_size, view_port);
 
         bool has_focus = !menu_update_state.focus_state;
-        if (active_tool_ == &path_tool_)
+        if (active_tool_)
         {
-          path_tool_.update_gui(has_focus, input_state_, gui_geometry_);
-        }
-
-        else if (active_tool_ == &terrain_tool_)
-        {
-          terrain_tool_.update_gui(has_focus, input_state_, gui_geometry_);
+          has_focus = active_tool_->update_gui(has_focus, input_state_, gui_geometry_);
         }
 
         // If our focus wasn't stolen by some other component, forward the events over to
@@ -149,6 +148,51 @@ namespace ts
           for (auto& event : event_queue_)
           {
             active_tool_->process_event(event);
+          }
+        }
+        
+        if (has_focus)
+        {
+          // If the mouse is being dragged with the right mouse button down...
+          if (click_state(input_state_, gui::MouseButton::Right) &&
+              old_click_state(input_state_, gui::MouseButton::Right) &&
+              input_state_.mouse_position != input_state_.old_mouse_position &&
+              contains(editor_scene_.view_port(), input_state_.old_mouse_position))
+          {
+            auto old_pos = editor_scene_.terrain_position_at(input_state_.old_mouse_position);
+            auto new_pos = editor_scene_.terrain_position_at(input_state_.mouse_position);
+            if (old_pos && new_pos)
+            {
+              auto offset = *old_pos - *new_pos;
+              editor_scene_.move_camera_2d({ offset.x, offset.y });
+            }
+          }
+
+          if (input_state_.mouse_wheel_delta != 0 && 
+              contains(editor_scene_.view_port(), input_state_.mouse_position))
+          {
+            // If they scrolled the mouse while the editor canvas has focus, zoom in, or out.
+            // We need to take the camera height into account, and use multiply that height
+            // by some fixed amount.
+            auto camera_pos = editor_scene_.camera_position();
+            //auto terrain_height = interpolate_height_at(editor_scene_.track().height_map(),
+            //                                            Vector2f(camera_pos.x, camera_pos.y));
+
+            auto camera_height = camera_pos.z;
+            auto new_camera_height = camera_height;
+            
+            // Zoom in 
+            auto num_steps = std::abs(input_state_.mouse_wheel_delta);
+            auto zoom_multiplier = input_state_.mouse_wheel_delta < 0 ? 1.1f : 1.0f / 1.1f;
+            for (auto step = 0; step != num_steps; ++step)
+            {
+              new_camera_height *= zoom_multiplier;
+            }
+
+            new_camera_height = std::min(new_camera_height, 300.f);
+            new_camera_height = std::max(new_camera_height, 10.0f);
+
+            editor_scene_.move_camera(Vector3f(0.0f, 0.0f, new_camera_height - camera_height));
           }
         }
 
@@ -206,6 +250,9 @@ namespace ts
 
           case Tool::Terrain:
             return &terrain_tool_;
+
+          case Tool::Elevation:
+            return &elevation_tool_;
 
           default:
             return nullptr;

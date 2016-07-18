@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "editor_terrain_tool.hpp"
 
 namespace ts
@@ -17,10 +19,10 @@ namespace ts
       {
       }
 
-      void TerrainTool::update_gui(bool has_focus, const gui::InputState& input_state,
+      bool TerrainTool::update_gui(bool has_focus, const gui::InputState& input_state,
                                    gui::Geometry& geometry)
       {
-
+        return has_focus;
       }
 
       void TerrainTool::process_event(const event_type& event)

@@ -7,6 +7,8 @@
 #ifndef VECTOR2_HPP_129009
 #define VECTOR2_HPP_129009
 
+#include "vector3.hpp"
+
 #include <cstdint>
 #include <cmath>
 #include <iosfwd>
@@ -248,6 +250,18 @@ namespace ts
   Vector2<T> make_vector2(T x, T y)
   {
     return Vector2<T>(x, y);
+  }
+
+  template <typename T>
+  auto make_3d(Vector2<T> vec, T z = {})
+  {
+    return Vector3<T>(vec.x, vec.y, z);
+  }
+
+  template <typename T>
+  auto make_2d(Vector2<T> vec)
+  {
+    return vec;
   }
 
   template <typename T>

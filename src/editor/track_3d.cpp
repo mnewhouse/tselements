@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "track_3d.hpp"
 
 namespace ts
@@ -24,17 +26,7 @@ namespace ts
     {
       size_ = new_size;
 
-      auto map_size = height_map_.size();
-      auto cell_size = height_map_.cell_size();
-
-      // If there are not enough cells in the height map to represent the entire track dsize...
-      if (size_.x > map_size.x * cell_size || size_.y > map_size.y * cell_size)
-      {
-        map_size.x = (size_.x + cell_size + 1) / cell_size;
-        map_size.y = (size_.y + cell_size + 1) / cell_size;
-
-        height_map_.resize(map_size);
-      }
+      ensure_height_map_size();
     }
 
     const TextureLibrary& Track::texture_library() const
@@ -42,24 +34,39 @@ namespace ts
       return texture_library_;
     }
 
-    void Track::update_height_map(HeightMap height_map)
+    void Track::ensure_height_map_size()
+    {
+      auto map_size = height_map_.size();
+      auto cell_size = height_map_.cell_size();
+      if (map_size.x * cell_size < size_.x || map_size.y * cell_size < size_.y)
+      {
+        height_map_.resize(Vector2u((size_.x + cell_size - 1) / cell_size,
+                                    (size_.y + cell_size - 1) / cell_size));
+      }
+    }
+
+    void Track::adopt_height_map(HeightMap height_map)
     {
       height_map_ = std::move(height_map);
 
-      auto cell_size = height_map_.cell_size();
-      auto map_size = height_map_.size() * cell_size;
-      if (size_.x > map_size.x || size_.y > map_size.y)
-      {
-        map_size.x = (size_.x + 1 + cell_size) / cell_size;
-        map_size.y = (size_.y + 1 + cell_size) / cell_size;
-
-        height_map_.resize(map_size);
-      }
+      ensure_height_map_size();
     }
 
     const HeightMap& Track::height_map() const
     {
       return height_map_;
+    }
+
+    void Track::raise_elevation_at(Vector2u map_coord, float amount)
+    {
+      auto new_z = height_map_(map_coord.x, map_coord.y) + amount;
+      set_elevation_at(map_coord, new_z);
+    }
+
+    void Track::set_elevation_at(Vector2u map_coord, float z)
+    {
+      auto new_z = std::max(std::min(z, static_cast<float>(size_.z)), 0.0f);
+      height_map_(map_coord.x, map_coord.y) = new_z;
     }
 
     void Track::define_texture(std::uint16_t id, std::string image_file, IntRect image_rect)

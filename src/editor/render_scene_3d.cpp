@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "render_scene_3d.hpp"
 #include "scene_3d_shaders.hpp"
 #include "track_3d.hpp"
@@ -32,12 +34,14 @@ namespace ts
     {
       terrain_scene_.load_track_terrains(track);
 
-      set_camera_position(make_vector2(640.0f, 400.0f), 80.0f, track.height_map());
+      set_camera_position(make_vector2(640.0f, 400.0f), 80.0f);
     }
 
     void RenderScene::render(Vector2u screen_size, IntRect view_port) const
     {
       graphics::scissor_box(screen_size, view_port);
+      glEnable(GL_DEPTH_TEST);
+      glDepthFunc(GL_LEQUAL);
 
       auto size = vector2_cast<std::int32_t>(screen_size);
       // If we use unsigned arithmentic, it might come to bite us in the ass when we 
@@ -57,13 +61,15 @@ namespace ts
     glm::mat4x4 RenderScene::view_matrix() const
     {
       return glm::lookAt(glm::vec3(camera_position_.x, camera_position_.y, camera_position_.z),
-                         glm::vec3(camera_position_.x, camera_position_.y, 0.0f),
+                         glm::vec3(camera_position_.x, camera_position_.y - 10.0f, 0.0f),
                          glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
     glm::mat4x4 RenderScene::projection_matrix() const
     {
-      return glm::perspective(2.5f, 640.0f / 400.0f, min_drawing_distance(), max_drawing_distance());
+      auto mat = glm::perspective(2.5f, 640.0f / 400.0f, min_drawing_distance(), max_drawing_distance());
+
+      return glm::scale(mat, glm::vec3(1.0f, -1.0f, 1.0f));
     }
 
     void RenderScene::move_camera(Vector3f offset)
@@ -78,7 +84,7 @@ namespace ts
 
     float RenderScene::min_drawing_distance()
     {
-      return max_drawing_distance() / 250.0f;
+      return max_drawing_distance() / 500.0f;
     }
 
     Vector3f RenderScene::camera_position() const
@@ -91,31 +97,20 @@ namespace ts
       return terrain_scene_;
     }
 
-    void RenderScene::register_track_path(const resources_3d::TrackPath* track_path)
+    TerrainScene& RenderScene::terrain_scene()
     {
-      terrain_scene_.register_track_path(track_path);
-    }
-    
-    void RenderScene::update(const resources_3d::TrackPath* track_path)
-    {
-      terrain_scene_.update(track_path);
+      return terrain_scene_;
     }
 
-    void RenderScene::update(const resources_3d::TrackPath* track_path,
-                             std::size_t node_index, std::size_t node_count)
-    {
-      terrain_scene_.update(track_path, node_index, node_count);
-    }
-
-    void RenderScene::set_camera_position(Vector2f position, float height_above_ground,
-                                          const resources_3d::HeightMap& height_map)
+    void RenderScene::set_camera_position(Vector2f position, float height_above_ground)
     {
       camera_position_.x = position.x;
       camera_position_.y = position.y;
-      camera_position_.z = interpolate_height_at(height_map, position) + height_above_ground;
+      camera_position_.z = height_above_ground;
     }
 
-    void RenderScene::move_camera_2d(Vector2f offset, const resources_3d::HeightMap& height_map)
+    /*
+    void RenderScene::move_camera_2d(Vector2f offset)
     {
       // Move the camera according to a two-dimensional offset, maintaining the same height above
       // the terrain as before.
@@ -130,5 +125,6 @@ namespace ts
 
       camera_position_.z += new_height - old_height;
     }
+    */
   }
 }

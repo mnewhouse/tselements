@@ -64,7 +64,7 @@ namespace ts
 
       case sf::Event::MouseWheelScrolled:
       {
-        input_state.mouse_wheel_delta += event.mouseWheel.delta;
+        input_state.mouse_wheel_delta += event.mouseWheelScroll.delta;
         break;
       }
 
@@ -77,6 +77,7 @@ namespace ts
     {
       input_state.old_mouse_button_state = input_state.mouse_button_state;
       input_state.old_mouse_position = input_state.mouse_position;
+      input_state.mouse_wheel_delta = 0;
     }
   }
 }

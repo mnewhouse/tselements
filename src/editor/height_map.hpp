@@ -43,6 +43,7 @@ namespace ts
       void resize(Vector2u new_size)
       {
         size_ = new_size;
+
         // TODO: Resize algorithm
         data_.resize(size_.x * size_.y);
       }
@@ -69,7 +70,7 @@ namespace ts
 
     private:
       Vector2u size_ = { 0, 0 };
-      std::uint32_t cell_size_ = 0;
+      std::uint32_t cell_size_ = 16;
       std::vector<float> data_;
     };
 

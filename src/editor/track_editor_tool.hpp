@@ -27,8 +27,15 @@ namespace ts
       {
         const char* const path_tool_mode_names[] =
         {
-          "Edit Nodes",
+          "Path Nodes",
           "Stroke Segments",
+        };
+
+        const char* const elevation_tool_mode_names[] =
+        {
+          "Heighten",
+          "Lower",
+          "Equalize"
         };
       }
 
@@ -44,6 +51,10 @@ namespace ts
         {
         case Tool::Path:
           return make_range(detail::path_tool_mode_names);
+
+        case Tool::Elevation:
+          return make_range(detail::elevation_tool_mode_names);
+
         default:
           return{};
         }

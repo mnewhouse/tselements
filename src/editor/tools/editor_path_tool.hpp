@@ -14,8 +14,10 @@
 #include "graphics/sampler.hpp"
 
 #include "editor/track_path.hpp"
+#include "editor/model_3d.hpp"
 
 #include "utility/vector3.hpp"
+#include "utility/color.hpp"
 
 #include <boost/optional.hpp>
 
@@ -35,8 +37,8 @@ namespace ts
 
         virtual void process_event(const event_type& event) override;
 
-        void update_gui(bool has_focus, const gui::InputState& input_state,
-                        gui::Geometry& geometry);
+        virtual bool update_gui(bool has_focus, const gui::InputState& input_state,
+                                gui::Geometry& geometry) override;
 
         virtual void set_active_mode(std::size_t id) override;
         virtual std::size_t active_mode() const override;
@@ -75,6 +77,12 @@ namespace ts
         void apply_segment_transformation(const resources_3d::TrackPath& path,
                                           resources_3d::SegmentedStroke& stroke,
                                           const SegmentTransformation& transformation);
+
+        struct Vertex
+        {
+          Vector2f position;
+          Colorb color;
+        };
      
 
         enum class Mode
@@ -137,6 +145,8 @@ namespace ts
 
         std::size_t element_count_ = 0;
         std::size_t line_element_count_ = 0;
+
+        resources_3d::BasicModel<Vertex> path_model_;
         
         Mode active_mode_ = Mode::Nodes;
         boost::optional<std::uint32_t> selected_node_index_;

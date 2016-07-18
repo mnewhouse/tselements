@@ -66,11 +66,35 @@ namespace ts
     return Rect<result_type>(min_x, min_y, width, height);
   }
 
+  template <typename T, typename U>
+  auto combine(Rect<T> a, Vector2<U> p)
+  {
+    using result_type = typename std::common_type<T, U>::type;
+
+    auto min_x = std::min<result_type>(a.left, p.x);
+    auto max_x = std::max<result_type>(a.right(), p.x);
+
+    auto min_y = std::min<result_type>(a.top, p.y);
+    auto max_y = std::max<result_type>(a.bottom(), p.y);
+
+    auto width = max_x - min_x;
+    auto height = max_y - min_y;
+
+    return Rect<result_type>(min_x, min_y, width, height);
+  }
+
   template <typename T>
   bool contains(const Rect<T>& rect, const Vector2<T>& point)
   {
     return point.x >= rect.left && point.y >= rect.top &&
       point.x < rect.right() && point.y < rect.bottom();
+  }
+
+  template <typename T>
+  bool contains_inclusive(const Rect<T>& rect, const Vector2<T>& point)
+  {
+    return point.x >= rect.left && point.y >= rect.top &&
+      point.x <= rect.right() && point.y <= rect.bottom();
   }
 
   template <typename T>
@@ -93,6 +117,24 @@ namespace ts
     auto x = std::minmax(a.x, b.x);
     auto y = std::minmax(a.y, b.y);
     return Rect<T>(x.first, y.first, x.second - x.first, y.second - y.first);
+  }
+
+  template <typename T>
+  auto make_rect_from_points(std::initializer_list<Vector2<T>> points)
+  {
+    auto x = std::minmax_element(points.begin(), points.end(),
+                                 [](const Vector2<T>& a, const Vector2<T>& b)
+    {
+      return a.x < b.x;
+    });
+
+    auto y = std::minmax_element(points.begin(), points.end(),
+                                 [](const Vector2<T>& a, const Vector2<T>& b)
+    {
+      return a.y < b.y;
+    });
+
+    return Rect<T>(x.first->x, y.first->y, x.second->x - x.first->x, y.second->y - y.first->y);
   }
 
 
