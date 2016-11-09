@@ -24,6 +24,9 @@ namespace ts
       key_mapping.define_control(Keyboard::RControl, Control::Fire, 0);
       key_mapping.define_control(Keyboard::RAlt, Control::AltFire, 0);
 
+      key_settings.zoom_in_key = sf::Keyboard::Add;
+      key_settings.zoom_out_key = sf::Keyboard::Subtract;
+
       return key_settings;
     }
   }

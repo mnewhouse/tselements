@@ -18,29 +18,26 @@ namespace ts
 {
   namespace game
   {
-    namespace detail
+    struct LoadingTaskBase
     {
-      struct TaskBase
-      {
-        virtual ~TaskBase() = default;
+      virtual ~LoadingTaskBase() = default;
 
-        virtual void operator()() = 0;
-      };
+      virtual void operator()() = 0;
+    };
 
-      template <typename FuncType>
-      struct GenericTask
-        : TaskBase
-      {
-        using result_type = decltype(std::declval<FuncType>()());
+    template <typename FuncType>
+    struct LoadingTaskModel
+      : LoadingTaskBase
+    {
+      using result_type = decltype(std::declval<FuncType>()());
 
-        explicit GenericTask(FuncType&& func);
+      explicit LoadingTaskModel(FuncType&& func);
 
-        virtual void operator()() override;
-
-        std::promise<result_type> promise_;
-        FuncType func_;
-      };
-    }
+      virtual void operator()() override;
+      
+      std::promise<result_type> promise_;
+      FuncType func_;
+    };
 
     // The LoadingThread wraps a single thread that can be used to execute various tasks
     // asynchronously. This worker thread has an internal OpenGL context that can be
@@ -67,7 +64,7 @@ namespace ts
       std::atomic<bool> is_finished_ = false;
       std::atomic<std::uint32_t> task_count_ = 0;
 
-      std::deque<std::unique_ptr<detail::TaskBase>> task_list_;
+      std::deque<std::unique_ptr<LoadingTaskBase>> task_list_;
     };
   }
 }

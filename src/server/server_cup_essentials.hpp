@@ -65,7 +65,7 @@ namespace ts
       InteractionHost interaction_host_;
 
       stage::StageLoader stage_loader_;  
-      boost::optional<StageEssentials> stage_essentials_;
+      boost::optional<DefaultStageEssentials> stage_essentials_;
     };
 
     template <typename MessageType>

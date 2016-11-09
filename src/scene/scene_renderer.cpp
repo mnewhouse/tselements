@@ -8,12 +8,12 @@
 #include "track_scene.hpp"
 #include "dynamic_scene.hpp"
 #include "particle_generator.hpp"
-#include "shader_code.hpp"
+#include "scene_shaders.hpp"
 #include "viewport.hpp"
 
 #include "graphics/shader.hpp"
 #include "graphics/sampler.hpp"
-#include "graphics/vertex_buffer.hpp"
+#include "graphics/buffer.hpp"
 
 #include "world/world_limits.hpp"
 
@@ -96,8 +96,6 @@ namespace ts
 
       static ShaderType entity_type_to_shader_type(world::EntityType entity_type);
       static void generate_entity_indices(GLuint* index_ptr, GLuint entity_count, GLuint vertex_index);
-      static void generate_entity_vertices(const DrawableEntity& drawable_entity, EntityVertex* vertices,
-                                           Vector2<float> frame_movement);
 
       static void generate_particle_vertices(const ParticleGenerator::ParticleInfo& particle_info,
                                              ParticleVertex* vertices);
@@ -213,6 +211,7 @@ namespace ts
         glBindBuffer(GL_ARRAY_BUFFER, buffer);
         track_vertex_buffer = Buffer(buffer);
 
+        /*
         using Vertex = TrackScene::vertex_type;
         std::size_t buffer_size = 0;
         for (const auto& component : track_scene->components())
@@ -230,6 +229,8 @@ namespace ts
           glBufferSubData(GL_ARRAY_BUFFER, offset, size, component.vertices);
           offset += size;
         }
+
+        */
       }
 
       glUseProgram(0);
@@ -378,8 +379,8 @@ namespace ts
       using graphics::Shader;
       using graphics::ShaderProgram;
 
-      Shader particle_vertex_shader(glCreateShader(GL_VERTEX_SHADER));
-      Shader particle_fragment_shader(glCreateShader(GL_FRAGMENT_SHADER));
+      glCheck(Shader particle_vertex_shader(glCreateShader(GL_VERTEX_SHADER)));
+      glCheck(Shader particle_fragment_shader(glCreateShader(GL_FRAGMENT_SHADER)));
       particle_shader_program = ShaderProgram(glCreateProgram());
 
       graphics::compile_shader(particle_vertex_shader, shaders::particle_vertex_shader);
@@ -570,6 +571,7 @@ namespace ts
         glUseProgram(impl_->track_shader_program.get());
         glUniformMatrix4fv(impl_->track_view_matrix_location, 1, GL_FALSE, glm::value_ptr(view_mat));
 
+        /*
         const auto& components = impl_->track_scene->components();
 
         auto draw_entity_groups = [=](auto group_begin, auto group_end)
@@ -684,6 +686,7 @@ namespace ts
 
           entity_group_it = group_end;
         }
+        */
 
         glBindSampler(0, 0);
         glBindSampler(1, 0);
@@ -793,7 +796,7 @@ namespace ts
             // Generate all the vertices for this "group"
             for (; group_start != group_end; ++group_start)
             {
-              detail::generate_entity_vertices(*group_start, entity_vertex_ptr, group_start->frame_offset);
+              //detail::generate_entity_vertices(*group_start, entity_vertex_ptr, group_start->frame_offset);
 
               entity_vertex_ptr += detail::vertices_per_entity;
             }
@@ -825,6 +828,12 @@ namespace ts
       for (std::size_t level = 0; level != particle_generator->level_count(); ++level)
       {
         particle_count += particle_generator->particle_count(level);
+      }
+
+      for (auto& range : particle_ranges)
+      {
+        range.element_count = 0;
+        range.element_index = 0;
       }
 
       if (particle_count != 0)
@@ -959,6 +968,7 @@ namespace ts
         }
       }
 
+      /*
       static void generate_entity_vertices(const DrawableEntity& drawable_entity, EntityVertex* vertices,
                                            Vector2<float> frame_offset)
       {
@@ -1033,6 +1043,7 @@ namespace ts
           vertex.hover_distance = drawable_entity.hover_distance;
         }
       }
+      */
 
       static ShaderType entity_type_to_shader_type(world::EntityType entity_type)
       {

@@ -20,7 +20,7 @@ namespace ts
   {
     class DynamicScene;
 
-    std::unique_ptr<DynamicScene> generate_dynamic_scene(const stage::Stage& stage_object);
+    DynamicScene generate_dynamic_scene(const stage::Stage& stage_object);
   }
 }
 

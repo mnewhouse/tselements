@@ -7,41 +7,111 @@
 #ifndef TRACK_SCENE_HPP_88859312
 #define TRACK_SCENE_HPP_88859312
 
+#include "resources/track_geometry.hpp"
+
 #include "graphics/texture.hpp"
 
-#include "utility/vertex.hpp"
-#include "utility/vertex_interface.hpp"
-
-#include "resources/geometry.hpp"
-
-#include <boost/iterator/transform_iterator.hpp>
+#include <boost/iterator/indirect_iterator.hpp>
+#include <boost/range/iterator_range.hpp>
 
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 namespace ts
 {
+  namespace resources
+  {
+    struct TrackLayer;
+  }
+
   namespace scene
   {
-    // TrackScene represents the drawable portion of the track.
-    // It keeps the textures that are to be used, and a list of vertices
-    // in the order that they must be drawn.
-    class TrackScene
-      : public utility::VertexInterface<const graphics::Texture*, resources::Vertex>
+    class TrackSceneLayer
     {
     public:
-      explicit TrackScene(Vector2u track_size);
-
       using texture_type = graphics::Texture;
-      const texture_type* register_texture(std::unique_ptr<texture_type> texture);
+      explicit TrackSceneLayer(std::uint32_t level);
 
-      const texture_type* texture(std::size_t index) const;
-      std::size_t texture_count() const;
+      using vertex_type = resources::TrackVertex;
+      using face_type = resources::TrackFace;
+
+      struct Component
+      {
+        const texture_type* texture;
+
+        std::uint32_t vertex_index;
+        std::uint32_t vertex_count;
+        std::uint32_t face_index;
+        std::uint32_t face_count;
+      };
+
+      const std::vector<Component>& components() const;
+
+      const std::vector<vertex_type>& vertices() const;
+      const std::vector<face_type>& faces() const;
+
+      std::uint32_t level() const;
+
+      std::size_t append_item();
+
+      void append_item_geometry(std::size_t item_index, const texture_type* texture,
+                                const vertex_type* vertices, std::uint32_t vertex_count,
+                                const face_type* faces, std::uint32_t face_count);
+
+      void append_last_item_geometry(const texture_type* texture,
+                                     const vertex_type* vertices, std::uint32_t vertex_count,
+                                     const face_type* faces, std::uint32_t face_count);
+
+    private:
+      struct ItemInfo
+      {
+        std::uint32_t vertex_index;
+        std::uint32_t vertex_count;
+        std::uint32_t face_index;
+        std::uint32_t face_count;
+      };
+
+      std::vector<Component> components_;
+      std::vector<ItemInfo> items_;
+
+      std::vector<vertex_type> vertices_; 
+      std::vector<face_type> faces_;
+
+      std::uint32_t level_;
+    };
+
+    // TrackScene represents the drawable portion of the track.
+    // It stores the texture handles, and keeps a list of vertices in the
+    // order they must be drawn, grouped by layer.
+    class TrackScene
+    {
+    public:
+      using LayerHandle = const resources::TrackLayer*;
+
+      TrackScene() = default;
+      explicit TrackScene(Vector2u track_size);
 
       Vector2u track_size() const;
 
+      using texture_type = TrackSceneLayer::texture_type;
+      using vertex_type = TrackSceneLayer::vertex_type;
+
+      const texture_type* register_texture(std::unique_ptr<texture_type> texture);
+
+      TrackSceneLayer* create_layer(LayerHandle track_layer);
+
+      TrackSceneLayer* find_layer(LayerHandle track_layer);
+      const TrackSceneLayer* find_layer(LayerHandle track_layer) const;
+
+      using const_layer_range = boost::iterator_range<boost::indirect_iterator<const TrackSceneLayer* const*>>;
+      const_layer_range active_layers() const;
+      void deactivate_layer(LayerHandle layer_handle);
+
     private:
       std::vector<std::unique_ptr<texture_type>> textures_;
+      std::unordered_map<LayerHandle, TrackSceneLayer> layers_;
+      std::vector<TrackSceneLayer*> active_layers_;
       Vector2u track_size_;
     };
   }

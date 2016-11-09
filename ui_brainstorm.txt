@@ -1,0 +1,20 @@
+Font rendering:
+
+
+GUI System:
+* Immediate-mode
+* Bitmap fonts
+
+* update():
+ * What does a function like button() do?
+  * Determine style and placement of the button and add the vertices to the render state
+  * Process events
+ * Example:
+  * auto button_placement = layout_generator(...);
+  
+  * button("Text", button_placement(), button_style, vertex_cache, 
+        on_click([=](const auto& event) {}));
+		
+* How are events sent to a GUI component?
+
+void update_ui(const InputState& input_state, Renderer& renderer);

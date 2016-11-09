@@ -17,6 +17,7 @@ namespace ts
       : world_(std::move(world_obj)),
         stage_description_(std::move(stage_description))
     {
+      create_stage_entities();
     }
 
     void Stage::create_stage_entities()

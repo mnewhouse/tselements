@@ -43,6 +43,10 @@ namespace ts
       private:
         void show_tools_menu(FloatRect area);
         void show_modes_menu(FloatRect area);
+        void show_test_menu(FloatRect area);
+
+        void show_test_setup_window();
+        void launch_test();
 
         const fonts::FontLibrary* font_library_;
         std::vector<std::uint32_t> menu_expansion_state_;

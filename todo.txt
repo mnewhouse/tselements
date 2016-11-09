@@ -36,6 +36,7 @@
  * Skidmarks?
  * Animations?
  * Legacy renderer (GL 2.1)
+ * Rewrite renderer
  * Ghost cars.
  
 * Core game logic (1-2 weeks)

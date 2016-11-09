@@ -18,6 +18,7 @@
 #include "graphics/image_loader.hpp"
 #include "graphics/image.hpp"
 #include "graphics/texture.hpp"
+#include "graphics/gl_check.hpp"
 
 #include <algorithm>
 
@@ -239,9 +240,10 @@ namespace ts
         return surface;
       }
 
-      ResourceTextureMap generate_resource_texture_map(const resources::Track& track, const PlacementMap& placement_map)
+      TextureMapping generate_resource_texture_map(const resources::Track& track, const PlacementMap& placement_map,
+                                                   const TextureMapping::texture_type* atlas_textures)
       {
-        ResourceTextureMap texture_map;
+        TextureMapping texture_map;
         {
           // Need an enclosing scope to ensure the map_interface is destroyed before the return statement.
           auto map_interface = texture_map.create_mapping_interface();
@@ -277,19 +279,20 @@ namespace ts
                   partial_rect.width = image_rect.width;
                   partial_rect.height = image_rect.height;
 
+                  auto texture = atlas_textures[atlas_id];
                   if (placement.source_rect != placement.full_source_rect)
                   {
                     Vector2i fragment_offset(placement.source_rect.left - placement.full_source_rect.left,
                                              placement.source_rect.top - placement.full_source_rect.top);
 
-                    map_interface.map_texture_fragment(resource_id, atlas_id,
+                    map_interface.map_texture_fragment(resource_id, texture,
                                                        intersection(partial_rect, placement.atlas_rect),
                                                        fragment_offset);
                   }
 
                   else
                   {
-                    map_interface.map_texture(resource_id, atlas_id, partial_rect);
+                    map_interface.map_texture(resource_id, texture, partial_rect);
                   }
                 }
               }
@@ -388,6 +391,7 @@ namespace ts
           for (const auto& geometry : layer.geometry)
           {
             std::size_t atlas_id = atlas_list.current_atlas();
+
             if (texture_cache.is_set(atlas_id, geometry.texture_id)) continue;
 
             auto texture_it = texture_interface.find(geometry.texture_id);
@@ -405,8 +409,6 @@ namespace ts
 
             // Looking in the tile cache is a cheap operation, so we do that first.
             if (tile_cache.is_set(atlas_id, tile.id)) continue;
-
-            auto tile_id = tile.id;
 
             auto tile_it = tile_interface.find(tile.id);
 
@@ -472,10 +474,15 @@ namespace ts
       }
 
 
-      std::unique_ptr<TrackScene> generate_track_scene(const resources::Track& track, const PlacementMap& placement_map)
+      TrackScene generate_track_scene(const resources::Track& track, const PlacementMap& placement_map)
       {
         ImageLoader image_loader;
-        auto track_scene = std::make_unique<TrackScene>(track.size());
+        TrackScene track_scene(track.size());
+
+        using texture_type = TextureMapping::texture_type;
+
+        std::vector<texture_type> atlas_textures;
+        atlas_textures.reserve(placement_map.atlases.size());
 
         for (const auto& atlas : placement_map.atlases)
         {
@@ -483,25 +490,17 @@ namespace ts
 
           auto texture = std::make_unique<graphics::Texture>(graphics::create_texture_from_image(surface));
 
-          track_scene->register_texture(std::move(texture));
+          glCheck(glBindTexture(GL_TEXTURE_2D, texture->get()));
+          glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+          glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+          atlas_textures.push_back(track_scene.register_texture(std::move(texture)));
         }
 
-        auto texture_conversion = [&](std::size_t texture_index) 
-        { 
-          return track_scene->texture(texture_index);
-        };
+        glCheck(glBindTexture(GL_TEXTURE_2D, 0));
 
-        auto vertex_conversion = [&](resources::Vertex vertex, std::size_t texture_index)
-        {
-          auto atlas_size = placement_map.atlases[texture_index].size;
-
-          vertex.texture_coords /= vector2_cast<float>(atlas_size);
-          return vertex;
-        };
-
-        auto texture_mapping = generate_resource_texture_map(track, placement_map);
-        scene::build_track_vertices(*track_scene, track, texture_mapping, 
-                                    texture_conversion, vertex_conversion);
+        auto texture_mapping = generate_resource_texture_map(track, placement_map, atlas_textures.data());
+        scene::build_track_vertices(track, texture_mapping, track_scene);
 
         return track_scene;
       }

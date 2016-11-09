@@ -17,7 +17,7 @@ namespace ts
 {
   namespace scene
   {
-    struct Scene;
+    class Scene;
   }
 
   namespace controls

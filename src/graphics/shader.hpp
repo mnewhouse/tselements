@@ -7,7 +7,10 @@
 #ifndef SHADER_HPP_34189239
 #define SHADER_HPP_34189239
 
+#include "gl_check.hpp"
+
 #include <GL/glew.h>
+#include <GL/GL.h>
 
 #include <memory>
 #include <string>
@@ -25,7 +28,7 @@ namespace ts
         using pointer = GLuint;
         void operator()(pointer shader) const
         {
-          glDeleteShader(shader);
+          glCheck(glDeleteShader(shader));
         }
       };
 
@@ -34,7 +37,7 @@ namespace ts
         using pointer = GLuint;
         void operator()(pointer program) const
         {
-          glDeleteProgram(program);
+          glCheck(glDeleteProgram(program));
         }
       };
     }
@@ -45,19 +48,19 @@ namespace ts
     template <std::size_t N>
     void compile_shader(const Shader& shader, const char* const (&source)[N])
     {
-      glShaderSource(shader.get(), N, source, nullptr);
-      glCompileShader(shader.get());
+      glCheck(glShaderSource(shader.get(), N, source, nullptr));
+      glCheck(glCompileShader(shader.get()));
 
       GLint success = GL_FALSE;
-      glGetShaderiv(shader.get(), GL_COMPILE_STATUS, &success);
+      glCheck(glGetShaderiv(shader.get(), GL_COMPILE_STATUS, &success));
       if (!success)
       {
         // In the case of failure, we're going to throw an exception.
         GLint max_length = 0;
-        glGetShaderiv(shader.get(), GL_INFO_LOG_LENGTH, &max_length);
+        glCheck(glGetShaderiv(shader.get(), GL_INFO_LOG_LENGTH, &max_length));
 
         std::string error(max_length, 0);
-        glGetShaderInfoLog(shader.get(), max_length, &max_length, &error[0]);
+        glCheck(glGetShaderInfoLog(shader.get(), max_length, &max_length, &error[0]));
         throw std::runtime_error(error);
       }
     }
@@ -66,10 +69,10 @@ namespace ts
     ShaderProgram create_shader_program(const char* const (&fragment_shader_code)[N1],
                                         const char* const (&vertex_shader_code)[N2])
     {
-      ShaderProgram shader_program(glCreateProgram());
+      glCheck(ShaderProgram shader_program(glCreateProgram()));
 
-      Shader vertex_shader(glCreateShader(GL_VERTEX_SHADER));
-      Shader fragment_shader(glCreateShader(GL_FRAGMENT_SHADER));
+      glCheck(Shader vertex_shader(glCreateShader(GL_VERTEX_SHADER)));
+      glCheck(Shader fragment_shader(glCreateShader(GL_FRAGMENT_SHADER)));
 
       compile_shader(vertex_shader, fragment_shader_code);
       compile_shader(fragment_shader, vertex_shader_code);

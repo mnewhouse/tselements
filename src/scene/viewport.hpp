@@ -20,18 +20,18 @@ namespace ts
     class Viewport
     {
     public:
-      explicit Viewport(DoubleRect screen_rect);
+      explicit Viewport(IntRect screen_rect);
 
       void update_camera();
 
       Camera& camera();
       const Camera& camera() const;
 
-      void set_screen_rect(DoubleRect rect);
-      DoubleRect screen_rect() const;
+      void set_screen_rect(IntRect rect);
+      IntRect screen_rect() const;
 
     private:
-      DoubleRect screen_rect_;
+      IntRect screen_rect_;
       Camera camera_;      
     };
   }

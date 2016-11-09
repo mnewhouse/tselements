@@ -28,11 +28,11 @@ namespace ts
       {
         const Vector2f menu_item_size = { 150.0f, 20.0f };
 
-        const auto menu_bar_gradient_colors = std::make_pair(Colorb(160, 160, 160, 255),
-                                                             Colorb(120, 120, 120, 255));
+        const auto menu_bar_gradient_colors = std::make_pair(Colorb(200, 200, 200, 255),
+                                                             Colorb(150, 150, 150, 255));
 
-        const auto menu_bar_hover_gradient_colors = std::make_pair(Colorb(255, 255, 150, 255),
-                                                                   Colorb(255, 255, 180, 255));
+        const auto menu_bar_hover_gradient_colors = std::make_pair(Colorb(255, 255, 220, 255),
+                                                                   Colorb(255, 255, 150, 255));
 
         const auto menu_item_active_colors = std::make_pair(Colorb(200, 200, 200, 255),
                                                             Colorb(255, 255, 200, 255));
@@ -70,7 +70,8 @@ namespace ts
 
           return text_style + styles::fill_area(menu_bar_gradient_colors.first) +
             make_hover_style(hover_text_style +
-                             styles::fill_area(menu_bar_hover_gradient_colors.first));
+                             styles::vertical_gradient(menu_bar_hover_gradient_colors.first,
+                                                       menu_bar_hover_gradient_colors.second));
         }
 
         auto menu_active_item_style(const fonts::FontLibrary& font_library)
@@ -130,7 +131,8 @@ namespace ts
           { "File", nullptr, menu_placement() },
           { "Edit", nullptr, menu_placement() },
           { "Tools", &self::show_tools_menu, menu_placement() },
-          { "Modes", &self::show_modes_menu, menu_placement() }
+          { "Modes", &self::show_modes_menu, menu_placement() },
+          { "Test", &self::show_test_menu, menu_placement() }
         };
 
         auto menu_bar_area = [&]()
@@ -168,7 +170,7 @@ namespace ts
         }
 
         // If there was a mouse click with a menu expansion already active,
-        // hide the expansion.
+        // hide the expansion. Otherwise, just show the menu expansion.
         if (!menu_expansion_state_.empty())
         {
           const auto& item = menu_items[menu_expansion_state_.front()];
@@ -184,8 +186,6 @@ namespace ts
         {
           menu_expansion_state_.clear();
         }
-
-        // Otherwise, if there's a menu expansion active, show it.
 
         UpdateState result;
         result.bounding_box = rect_cast<std::int32_t>(menu_bar_area);
@@ -269,6 +269,54 @@ namespace ts
 
           ++mode_id;
         }
+      }
+
+      void Menu::show_test_menu(FloatRect area)
+      {
+        using namespace gui;
+
+        struct MenuItem
+        {
+          using menu_function = void (Menu::*)();
+
+          const char* label;
+          menu_function func;
+        };
+
+        MenuItem menu_items[] =
+        {
+          { "Setup...", &Menu::show_test_setup_window },
+          { "Test!", &Menu::launch_test }
+        };        
+
+        auto item_size = detail::menu_item_size;
+        auto top_left = Vector2f(area.left, area.bottom());
+
+        auto placement_generator = vertical_layout_generator(top_left, item_size);
+
+        auto item_style = detail::menu_item_style(*font_library_);
+        auto active_item_style = detail::menu_active_item_style(*font_library_);
+
+        for (auto menu_item : menu_items)
+        {
+          auto state = widgets::button(menu_item.label, placement_generator(), item_style,
+                                       *input_state_, *geometry_);
+
+          if (was_clicked(state))
+          {
+            (this->*menu_item.func)();
+          }
+        }
+      }
+
+      void Menu::launch_test()
+      {
+        interface_state_->set_active_state(StateId::Test);
+      }
+
+      void Menu::show_test_setup_window()
+      {
+
       }
     }
   }

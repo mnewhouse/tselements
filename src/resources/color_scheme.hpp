@@ -10,6 +10,7 @@
 #include "utility/color.hpp"
 
 #include <cstdint>
+#include <array>
 
 namespace ts
 {
@@ -18,7 +19,7 @@ namespace ts
     struct ColorScheme
     {
       std::uint16_t scheme_id = 0;
-      Colorb colors[3];
+      std::array<Colorb, 3> colors;
     };
   }
 }

@@ -1,0 +1,38 @@
+* EDITOR
+ * Various dialogs
+  * Track loading & creation
+  * Track properties
+  * Test setup
+   * Car selection
+   * Modules  
+ * Tools
+  * Path tool
+  * Tile placement
+  * Undo/redo
+  * Tool info dialog
+ * Test
+  * Modifying car on the fly
+  + Escape back to editor
+  
+  
+* GAME
+ * Handling
+ * Network connectivity
+ * User interface
+  * Settings
+  * Game setup
+ * Graphics
+  * Smoke, dust
+  * Shadows
+  * Color schemes  
+ * Scripting
+  * Modules
+  * V8?
+ 
+
+* SIDE
+ * Design F1 car
+
+* PRIORITY QUEUE
++++ Basic editor functionality: path tool, tile placement, control points, start points
++++ GOAL: Create track using "new" tools

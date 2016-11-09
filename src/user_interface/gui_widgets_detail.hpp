@@ -24,10 +24,10 @@ namespace ts
 
     inline WidgetState widget_state(const FloatRect& area, const InputState& input_state)
     {
-      auto contained = contains(area, vector2_cast<float>(input_state.click_position));
+      auto contained = contains(area, vector2_cast<float>(input_state.mouse_position));
 
       WidgetState result;
-      result.hover_state = contains(area, vector2_cast<float>(input_state.mouse_position));
+      result.hover_state = contained;
 
       constexpr auto left_button = static_cast<std::uint32_t>(MouseButton::Left);
       result.click_state = (input_state.mouse_button_state & left_button) != 0 && contained;

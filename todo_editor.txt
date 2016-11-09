@@ -1,0 +1,18 @@
+* EDITOR
+ * Various dialogs
+  - Test setup
+   - Car selection
+   - Modules
+  + Track loading & creation
+  - Track properties
+ * Tools
+  ++ Path tool
+  ++ Tile placement
+  + Undo/redo
+  + Tool info dialog
+ * Test
+  --- Modifying car on the fly
+  - Laptime & sector tracking
+  + Escape back to editor
+  
+  

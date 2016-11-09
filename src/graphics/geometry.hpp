@@ -7,7 +7,7 @@
 #ifndef GEOMETRY_HPP_48192384
 #define GEOMETRY_HPP_48192384
 
-#include "vertex_buffer.hpp"
+#include "buffer.hpp"
 #include "texture.hpp"
 
 #include "utility/vertex.hpp"

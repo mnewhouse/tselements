@@ -68,20 +68,12 @@ set(LIB_SOURCES
 	src/cup/cup_synchronizer.cpp
 	src/cup/cup_messages.cpp
 
-	src/editor/tools/editor_elevation_tool.cpp
-	src/editor/tools/editor_path_tool.cpp
-	src/editor/tools/editor_terrain_tool.cpp
 	src/editor/editor_scene.cpp
-	src/editor/height_map.cpp
-	src/editor/path_vertices.cpp
-	src/editor/render_scene_3d.cpp
-	src/editor/texture_library_3d.cpp
-	src/editor/terrain_model_3d.cpp
-	src/editor/terrain_scene_3d.cpp
-	src/editor/track_3d.cpp
-	src/editor/track_edit_state.cpp
+	src/editor/test_state_essentials.cpp
+	src/editor/track_editor_state.cpp
 	src/editor/track_editor_interface_state.cpp
 	src/editor/track_editor_menu.cpp
+	src/editor/track_editor_test_state.cpp
 	src/editor/track_loader_3d.cpp
 
 	src/fonts/bitmap_font.cpp
@@ -99,7 +91,6 @@ set(LIB_SOURCES
 	src/graphics/render_window.cpp
 	src/graphics/shader.cpp	
 	src/graphics/texture.cpp
-	src/graphics/vertex_buffer.cpp
 
 	src/menu/update_input_state.cpp
 	src/menu/main_menu.cpp
@@ -128,13 +119,16 @@ set(LIB_SOURCES
 	src/scene/dynamic_scene_generator.cpp
 	src/scene/car_sound_controller.cpp
 	src/scene/particle_generator.cpp
+	src/scene/render_scene.cpp
 	src/scene/scene.cpp
 	src/scene/scene_loader.cpp
 	src/scene/scene_renderer.cpp
 	src/scene/sound_effect_controller.cpp
+	src/scene/texture_mapping.cpp
 	src/scene/track_scene.cpp
 	src/scene/track_scene_generator.cpp
 	src/scene/track_scene_generator_detail.cpp
+	src/scene/track_vertices.cpp
 	src/scene/viewport.cpp
 	src/scene/viewport_arrangement.cpp
 	

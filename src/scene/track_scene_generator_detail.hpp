@@ -26,11 +26,6 @@ namespace ts
     class Track;
   }
 
-  namespace graphics
-  {
-    class TextureFactory;
-  }
-
   namespace scene
   {
     class TrackScene;
@@ -66,8 +61,9 @@ namespace ts
       using ImageMapping = std::unordered_map<boost::string_ref, std::vector<IntRect>, StringRefHasher>;
       ImageMapping generate_image_mapping(const resources::Track& track);
 
-      using ResourceTextureMap = TextureMapping<std::size_t>;
-      ResourceTextureMap generate_resource_texture_map(const resources::Track& track, const PlacementMap& placement_map);
+      TextureMapping generate_resource_texture_map(const resources::Track& track,
+                                                   const PlacementMap& placement_map,
+                                                   const TextureMapping::texture_type* atlas_textures);
 
       PlacementMap generate_atlas_placement_map(const resources::Track& track, const ImageMapping& image_mapping,
                                                 Vector2i atlas_size, bool include_all_assets = false);
@@ -78,7 +74,7 @@ namespace ts
       IntRect find_enclosing_rect(const ImageMapping& image_mapping,
                                   boost::string_ref file_name, const IntRect& rect);
 
-      std::unique_ptr<TrackScene> generate_track_scene(const resources::Track& track, const PlacementMap& placement_map);
+      TrackScene generate_track_scene(const resources::Track& track, const PlacementMap& placement_map);
 
       using ImageLoader = graphics::DefaultImageLoader;
       sf::Image build_atlas_surface(const AtlasDefinition &atlas, ImageLoader& image_loader);

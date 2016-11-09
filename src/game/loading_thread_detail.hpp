@@ -13,29 +13,24 @@ namespace ts
 {
   namespace game
   {
-    namespace detail
+    template <typename FuncType>
+    LoadingTaskModel<FuncType>::LoadingTaskModel(FuncType&& func)
+      : func_(std::move(func))
+    {}
+
+    template <typename FuncType>
+    void LoadingTaskModel<FuncType>::operator()()
     {
-      template <typename FuncType>
-      GenericTask<FuncType>::GenericTask(FuncType&& func)
-        : func_(std::move(func))
-      {}
-
-      template <typename FuncType>
-      void GenericTask<FuncType>::operator()()
+      try 
       {
-        try {
-          auto result = func_();
+        auto result = func_();
 
-          // Maybe this should be done differently.
-          glFinish();
+        promise_.set_value(std::move(result));
+      }        
 
-          promise_.set_value(std::move(result));
-        }        
-
-        catch (...)
-        {
-          promise_.set_exception(std::current_exception());
-        }
+      catch (...)
+      {
+        promise_.set_exception(std::current_exception());
       }
     }
 
@@ -43,7 +38,7 @@ namespace ts
     auto LoadingThread::async_task(FuncType&& func)
     {
       using func_type = std::remove_reference_t<FuncType>;
-      using task_type = detail::GenericTask<func_type>;
+      using task_type = LoadingTaskModel<func_type>;
 
       auto task = std::make_unique<task_type>(std::move(func));
       auto future = task->promise_.get_future();

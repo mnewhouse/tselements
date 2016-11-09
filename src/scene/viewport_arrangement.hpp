@@ -20,7 +20,7 @@ namespace ts
     class ViewportArrangement
     {
     public:
-      explicit ViewportArrangement(std::size_t max_viewports, const DoubleRect& screen_rect);
+      explicit ViewportArrangement(std::size_t max_viewports, const IntRect& screen_rect);
 
       std::size_t add_viewport(const world::Entity* entity);
 

@@ -40,11 +40,10 @@ namespace ts
     void RenderScene::render(Vector2u screen_size, IntRect view_port) const
     {
       graphics::scissor_box(screen_size, view_port);
-      glEnable(GL_DEPTH_TEST);
       glDepthFunc(GL_LEQUAL);
 
       auto size = vector2_cast<std::int32_t>(screen_size);
-      // If we use unsigned arithmentic, it might come to bite us in the ass when we 
+      // If we use unsigned arithmetic, it might come to bite us in the ass when we 
       // get negative values.
 
       glViewport(view_port.left - (size.x - view_port.width) / 2,

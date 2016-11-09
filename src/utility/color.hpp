@@ -48,6 +48,11 @@ namespace ts
 
     return Colorb(r, g, b, a);
   }
+
+  inline Colorf to_colorf(Colorb c)
+  {
+    return Colorf(c.r / 255.0f, c.g / 255.0f, c.b / 255.0f, c.a / 255.0f);
+  }
 }
 
 #endif

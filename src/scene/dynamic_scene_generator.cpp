@@ -130,12 +130,12 @@ namespace ts
       }
     }
 
-    std::unique_ptr<DynamicScene> generate_dynamic_scene(const stage::Stage& stage_object)
+    DynamicScene generate_dynamic_scene(const stage::Stage& stage_object)
     {      
       const auto& stage_desc = stage_object.stage_description();   
 
       ImageLoader image_loader;
-      auto dynamic_scene = std::make_unique<DynamicScene>();
+      DynamicScene dynamic_scene;
 
       auto atlas_size = std::min(graphics::max_texture_size(), 2048);
       utility::AtlasList atlas_list({ atlas_size, atlas_size });
@@ -190,7 +190,7 @@ namespace ts
         auto texture = std::make_unique<graphics::Texture>(graphics::create_texture_from_image(image));
         
         Vector2i image_size(image.getSize().x, image.getSize().y);
-        auto texture_id = dynamic_scene->register_texture(std::move(texture), image_size);
+        auto texture_id = dynamic_scene.register_texture(std::move(texture), image_size);
 
         texture_ids.push_back(texture_id);
       }      
@@ -218,7 +218,7 @@ namespace ts
         texture_info.scale = model.image_scale;
 
         auto texture_id = texture_ids[entry->atlas_id];
-        auto model_id = dynamic_scene->add_model(world::EntityType::Car, texture_id, texture_info);
+        auto model_id = dynamic_scene.add_model(world::EntityType::Car, texture_id, texture_info);
 
         model_ids.push_back(model_id);
       }
@@ -226,7 +226,7 @@ namespace ts
       sf::Image color_scheme;
       color_scheme.loadFromFile("data/color_scheme.png");
       IntRect scheme_rect(0, 0, 32, 32);
-      dynamic_scene->register_color_schemes(graphics::create_texture_from_image(color_scheme), { 32, 32 }, &scheme_rect, 1);
+      dynamic_scene.register_color_schemes(graphics::create_texture_from_image(color_scheme), { 32, 32 }, &scheme_rect, 1);
       
       // Now, loop through the car instances and add them to the scene one by one.
       const auto& world_object = stage_object.world();
@@ -244,7 +244,7 @@ namespace ts
           color_scheme.colors[0] = { 255, 255, 255, 255 };          
           color_scheme.colors[1] = { 255, 150, 0, 255 };
           color_scheme.colors[2] = { 180, 0, 0, 255 };
-          dynamic_scene->add_entity(car, model_id, color_scheme);
+          dynamic_scene.add_entity(car, model_id, color_scheme);
         }
       }
 

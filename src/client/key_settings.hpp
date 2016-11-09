@@ -20,6 +20,9 @@ namespace ts
     struct KeySettings
     {
       KeyMapping key_mapping;
+
+      sf::Keyboard::Key zoom_in_key;
+      sf::Keyboard::Key zoom_out_key;
     };
 
     KeySettings default_key_settings();

@@ -49,6 +49,16 @@ namespace ts
       {
         return active_mode_id_;
       }
+
+      void InterfaceState::set_active_state(StateId state_id)
+      {
+        state_id_ = state_id;
+      }
+
+      StateId InterfaceState::active_state() const
+      {
+        return state_id_;
+      }
     }
   }
 }

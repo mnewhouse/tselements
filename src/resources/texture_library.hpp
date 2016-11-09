@@ -7,7 +7,7 @@
 #ifndef TEXTURE_LIBRARY_HPP_182994
 #define TEXTURE_LIBRARY_HPP_182994
 
-#include "texture.hpp"
+#include "track_texture.hpp"
 #include "resource_library_interface.hpp"
 
 #include "utility/rect.hpp"

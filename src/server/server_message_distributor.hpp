@@ -7,6 +7,8 @@
 #ifndef SERVER_MESSAGE_DISTRIBUTOR_HPP_49308950893
 #define SERVER_MESSAGE_DISTRIBUTOR_HPP_49308950893
 
+#include <utility>
+
 #include "server_message_dispatcher.hpp"
 #include "server_message_conveyor.hpp"
 
@@ -14,6 +16,7 @@ namespace ts
 {
   namespace server
   {
+    template <typename MessageDispatcher, typename MessageConveyor>
     class MessageDistributor
     {
     public:
@@ -35,6 +38,8 @@ namespace ts
       const MessageDispatcher* dispatcher_;
       const MessageConveyor* conveyor_;
     };
+
+    using DefaultMessageDistributor = MessageDistributor<MessageDispatcher, MessageConveyor>;
   }
 }
 

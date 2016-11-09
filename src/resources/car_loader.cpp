@@ -200,14 +200,15 @@ namespace ts
 
         else if (read_property("torque", handling.torque)) { handling.torque *= 1000.0; }
         else if (read_property("braking", handling.braking)) { handling.braking *= 1000.0; }
-        else if (read_property("steering", handling.steering)) {}
-        else if (read_property("grip", handling.grip)) {}
-        else if (read_property("turnin", handling.turn_in)) {}
+        else if (read_property("grip", handling.grip)) { handling.grip *= 1000.0; }
+        else if (read_property("steering", handling.steering)) {}        
         else if (read_property("antislide", handling.antislide)) {}
         else if (read_property("tractionlimit", handling.traction_limit)) { handling.traction_limit *= 1000.0; }
         else if (read_property("dragcoefficient", handling.drag_coefficient)) {}
         else if (read_property("rollingcoefficient", handling.rolling_coefficient)) {}
         else if (read_property("downforcecoefficient", handling.downforce_coefficient)) {}
+        else if (read_property("downforcebrakeeffect", handling.downforce_brake_effect)) {}
+        else if (read_property("slidefriction", handling.slide_friction)) {}
         else if (read_property("mass", handling.mass)) {}
         else if (read_property("maxenginerevs", handling.max_engine_revs)) {}
         else if (read_property("torquemultiplier", handling.torque_multiplier)) {}

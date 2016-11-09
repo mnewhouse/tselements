@@ -22,7 +22,7 @@ namespace ts
   {
     static const std::int32_t desired_atlas_size = 2048;
     
-    std::unique_ptr<TrackScene> generate_track_scene(const resources::Track& track)
+    TrackScene generate_track_scene(const resources::Track& track)
     {
       /* In order to generate a track scene, we must:
          * Generate one or more texture atlases so that the track can be rendered efficiently.

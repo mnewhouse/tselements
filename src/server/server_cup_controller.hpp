@@ -20,10 +20,10 @@ namespace ts
     class MessageConveyor;
 
     class CupController
-      : public cup::CupController<MessageDistributor>
+      : public cup::CupController<DefaultMessageDistributor>
     {
     public:
-      using cup::CupController<MessageDistributor>::CupController;
+      using cup::CupController<DefaultMessageDistributor>::CupController;
     };
   }
 }

@@ -10,17 +10,17 @@ namespace ts
 {
   namespace scene
   {
-    Viewport::Viewport(DoubleRect screen_rect)
+    Viewport::Viewport(IntRect screen_rect)
       : screen_rect_(screen_rect)
     {
     }
 
-    void Viewport::set_screen_rect(DoubleRect rect)
+    void Viewport::set_screen_rect(IntRect rect)
     {
       screen_rect_ = rect;
     }
 
-    DoubleRect Viewport::screen_rect() const
+    IntRect Viewport::screen_rect() const
     {
       return screen_rect_;
     }

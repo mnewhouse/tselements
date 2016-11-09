@@ -8,6 +8,8 @@
 #define SERVER_STAGE_ESSENTIALS_HPP_761981345
 
 #include "server_stage_essentials.hpp"
+#include "server_message_dispatcher.hpp"
+#include "server_message_conveyor.hpp"
 #include "client_message.hpp"
 
 #include "stage/stage_regulator.hpp"
@@ -16,15 +18,15 @@
 
 #include "world/world_message_fwd.hpp"
 
+#include "client/update_message.hpp"
+
 namespace ts
 {
   namespace server
   {
-    class MessageConveyor;
-    class MessageDispatcher;
-
     // This class wraps the essential components that we need
     // for the server-sided part of a stage.
+    template <typename MessageDispatcher, typename MessageConveyor>
     class StageEssentials
     {
     public:
@@ -34,6 +36,7 @@ namespace ts
 
       void update(std::uint32_t frame_duration);
       
+      void handle_message(const ClientMessage<client::messages::Update>& update_request);
       void handle_message(const ClientMessage<stage::messages::ControlUpdate>& update_message);
       void handle_message(const world::messages::ControlPointHit& cp_hit);
 
@@ -48,6 +51,7 @@ namespace ts
       const MessageConveyor* message_conveyor_;
     };
 
+    using DefaultStageEssentials = StageEssentials<MessageDispatcher, MessageConveyor>;
   }
 }
 

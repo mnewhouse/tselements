@@ -14,6 +14,27 @@ namespace ts
 {
   namespace race
   {
+    std::string format_lap_time(std::uint32_t lap_time)
+    {
+      std::string result(24, 0);
+
+      auto minutes = lap_time / 60000;
+      auto seconds = (lap_time % 60000) / 1000;
+      auto milliseconds = lap_time % 1000;
+
+      if (minutes != 0)
+      {
+        result.resize(std::sprintf(&result[0], "%d:%02d.%03d", minutes, seconds, milliseconds));
+      }
+
+      else
+      {
+        result.resize(std::sprintf(&result[0], "%02d.%03d", seconds, milliseconds));
+      }      
+
+      return result;
+    }
+
     LapTracker::LapTracker(std::uint16_t lap_count, std::uint16_t control_point_count)
       : lap_count_(lap_count),
         control_point_count_(control_point_count),
@@ -48,6 +69,8 @@ namespace ts
 
             // Lap completed
             lap_event_handler.on_lap_complete(event);
+
+            printf("%d: %s\n", car_info.laps_done, format_lap_time(lap_time).c_str());
           }
 
           ++car_info.current_control_point;

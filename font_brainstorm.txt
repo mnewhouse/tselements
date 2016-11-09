@@ -1,0 +1,14 @@
+What's needed for font rendering?
+* Font face
+ * Glyph information
+* GL state
+ * Shader programs
+ * Buffers
+* Rendering algorithm
+ * Generating vertices
+
+ 
+* Font renderer
+ * update() -> store vertices in buffer
+ * render() -> draw vertices to the screen with the appropriate shaders
+ 

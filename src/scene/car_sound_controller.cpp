@@ -41,6 +41,7 @@ namespace ts
 
       audio::PlaybackProperties playback_properties;
       playback_properties.pitch = 0.5f;
+      playback_properties.volume = 0.0f;
       auto sound = engine_playback_controller_.play_looped_sound_effect(*sound_sample, playback_properties, 1);
 
       Car car_info;
@@ -74,8 +75,9 @@ namespace ts
         if (car_info.engine_sound)
         {
           auto pitch = static_cast<float>(0.25 + car_info.car->engine_rev_speed() * 0.75);
+          auto volume = pitch * pitch;
 
-          car_info.engine_sound.set_volume(std::min(pitch * pitch, 1.0f));
+          car_info.engine_sound.set_volume(std::min(volume, 1.0f));
           car_info.engine_sound.set_pitch(std::min(pitch, 1.1f));
         }
 

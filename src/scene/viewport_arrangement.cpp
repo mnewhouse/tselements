@@ -10,7 +10,7 @@ namespace ts
 {
   namespace scene
   {
-    ViewportArrangement::ViewportArrangement(std::size_t max_viewports, const DoubleRect& screen_rect)
+    ViewportArrangement::ViewportArrangement(std::size_t max_viewports, const IntRect& screen_rect)
       : default_viewport_(screen_rect)
     {
       viewports_.reserve(max_viewports);

@@ -9,7 +9,7 @@
 
 #include "editor/editor_tool.hpp"
 
-#include "graphics/vertex_buffer.hpp"
+#include "graphics/buffer.hpp"
 #include "graphics/shader.hpp"
 #include "graphics/sampler.hpp"
 

@@ -8,6 +8,7 @@
 #define VERTEX_ARRAY_HPP_3312950
 
 #include <GL/glew.h>
+#include <GL/GL.h>
 
 #include "graphics/gl_check.hpp"
 

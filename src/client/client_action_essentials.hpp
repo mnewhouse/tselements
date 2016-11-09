@@ -31,9 +31,6 @@ namespace ts
     template <typename MessageDispatcher>
     class ActionState;
 
-    template <typename MessageDispatcher>
-    class CupEssentials;
-
     namespace detail
     {
       // This deleter class simply has the state machine destroy the currently active
@@ -60,7 +57,8 @@ namespace ts
     class ActionEssentials
     {
     public:
-      ActionEssentials(CupEssentials<MessageDispatcher>* cup_essentials, scene::Scene scene_obj);
+      ActionEssentials(game::GameContext game_context, const MessageDispatcher* message_dispatcher,
+                       scene::Scene scene_obj, const LocalPlayerRoster& local_players);
 
       void render(const game::RenderContext& render_context) const;
       void update(std::uint32_t frame_duration);
@@ -74,7 +72,10 @@ namespace ts
       void collision_event(const world::messages::EntityCollision& collision);
 
     private:
-      CupEssentials<MessageDispatcher>* cup_essentials_;
+      game::GameContext game_context_;
+      const MessageDispatcher* message_dispatcher_;
+
+      KeySettings key_settings_;
 
       scene::Scene scene_;
       controls::ControlCenter control_center_;

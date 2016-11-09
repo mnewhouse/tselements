@@ -9,10 +9,10 @@
 
 #include "client_message_forwarder.hpp"
 #include "client_cup_essentials.hpp"
+#include "client_action_message_forwarder_detail.hpp"
 
 #include "cup/cup_messages.hpp"
 #include "stage/stage_messages.hpp"
-#include "world/world_messages.hpp"
 
 namespace ts
 {
@@ -43,15 +43,9 @@ namespace ts
     }
 
     template <typename MessageDispatcher>
-    void MessageForwarder<MessageDispatcher>::forward(const world::messages::SceneryCollision& collision)
+    ActionMessageForwarder<MessageDispatcher> MessageForwarder<MessageDispatcher>::action_message_forwarder() const
     {
-      cup_essentials->action_essentials()->collision_event(collision);
-    }
-
-    template <typename MessageDispatcher>
-    void MessageForwarder<MessageDispatcher>::forward(const world::messages::EntityCollision& collision)
-    {
-      cup_essentials->action_essentials()->collision_event(collision);
+      return{ cup_essentials->action_essentials() };
     }
   }
 }

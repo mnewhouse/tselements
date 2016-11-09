@@ -112,7 +112,7 @@ namespace ts
     {
       std::size_t start_line = context.line_index;
 
-      Geometry geometry;
+      TrackGeometry geometry;
       geometry.texture_id = texture_id;
       geometry.level = level;
 
@@ -132,7 +132,7 @@ namespace ts
         primitive_tolower(directive);
         if (directive == "v")
         {
-          Vertex vertex;
+          TrackVertex vertex;
           ArrayStream stream(remainder);
           if (stream >> vertex.position.x >> vertex.position.y >>
               vertex.texture_coords.x >> vertex.texture_coords.y)

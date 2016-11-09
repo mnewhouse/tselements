@@ -17,6 +17,13 @@ namespace ts
   {
     namespace track
     {
+      enum class StateId
+      {
+        None,
+        Editor,
+        Test
+      };
+
       class InterfaceState
       {
       public:
@@ -28,12 +35,17 @@ namespace ts
         Tool active_tool() const;
         std::size_t active_mode() const;
 
+        void set_active_state(StateId state_id);
+        StateId active_state() const;
+
       private:
         virtual void active_tool_changed(Tool previous, Tool current) {}
         virtual void active_mode_changed(std::size_t previous, std::size_t current) {}
 
         Tool active_tool_ = Tool::None;
         std::size_t active_mode_id_ = 0;
+
+        StateId state_id_ = StateId::None;
       };
     }
   }

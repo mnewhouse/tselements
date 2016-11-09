@@ -83,7 +83,8 @@ namespace ts
         {
           // When scene loading is finished, send ready message
           using action_type = ActionEssentials<MessageDispatcher>;
-          action_essentials_ = std::make_unique<action_type>(this, scene_loader_.get_result());
+          action_essentials_ = std::make_unique<action_type>(game_context_, &message_dispatcher_,
+                                                             scene_loader_.get_result(), local_player_roster_);
         }
 
         catch (const std::exception& e)

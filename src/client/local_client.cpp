@@ -10,6 +10,7 @@
 #include "client_action_essentials_detail.hpp"
 #include "client_action_interface_detail.hpp"
 #include "client_message_forwarder_detail.hpp"
+#include "control_event_translator_detail.hpp"
 #include "local_player_roster.hpp"
 
 namespace ts
@@ -25,6 +26,9 @@ namespace ts
 
     template class ActionInterface<LocalMessageDispatcher>;
     template class MessageForwarder<LocalMessageDispatcher>;
+    template class ActionMessageForwarder<LocalMessageDispatcher>;
+
+    template void ControlEventTranslator::translate_event(const game::Event& event, const LocalMessageDispatcher& message_dispatcher) const;
 
     LocalClient::LocalClient(const game::GameContext& game_context)
       : server::Server(game_context.resource_store),

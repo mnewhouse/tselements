@@ -34,7 +34,6 @@ namespace ts
     public:
       explicit Stage(world::World world, StageDescription stage_description);
 
-      void create_stage_entities();
       const StageDescription& stage_description() const;
 
       const world::World& world() const;
@@ -46,6 +45,8 @@ namespace ts
       void set_controllable_state(std::uint16_t controllable_id, std::uint16_t controls_mask);
 
     private:
+      void create_stage_entities();
+
       world::World world_;
       StageDescription stage_description_;
       std::uint32_t stage_time_;

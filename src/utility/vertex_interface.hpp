@@ -30,7 +30,7 @@ namespace ts
 
       template <typename VertexIt>
       component_iterator insert_vertices(component_iterator pos, TextureType texture,
-                                VertexIt vertices, VertexIt vertices_end);
+                                         VertexIt vertices, VertexIt vertices_end);
 
       template <typename VertexIt>
       component_iterator insert_vertices(component_iterator pos, std::size_t vertex_index, 

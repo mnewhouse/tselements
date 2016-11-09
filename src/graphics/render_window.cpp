@@ -28,8 +28,8 @@ namespace ts
         sf::ContextSettings context_settings;
         context_settings.majorVersion = gl_version::major;
         context_settings.minorVersion = gl_version::minor;
-        context_settings.antialiasingLevel = 4;
-        context_settings.depthBits = 24;
+        context_settings.antialiasingLevel = 0;
+        context_settings.depthBits = 0;
         context_settings.stencilBits = 8;
 
         std::uint32_t style = sf::Style::Titlebar;
@@ -47,6 +47,8 @@ namespace ts
         }
         
         sf::Window::create(sf::VideoMode(width, height, 32U), title, style, context_settings);
+
+        setVerticalSyncEnabled(true);
       }
     };
 
@@ -74,7 +76,6 @@ namespace ts
     void RenderWindow::display()
     {
       impl_->display();
-      glFinish();
     }
 
     void RenderWindow::activate()

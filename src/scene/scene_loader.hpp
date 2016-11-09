@@ -25,7 +25,8 @@ namespace ts
 
   namespace scene
   {
-    struct Scene;
+    class Scene;
+    struct SceneComponents;
 
     enum class LoadingState
     {
@@ -39,6 +40,7 @@ namespace ts
         : public utility::LoadingInterface<LoadingState>
     {
     public:
+
       SceneLoader(game::LoadingThread* loading_thread);
 
       void async_load_scene(const stage::Stage* stage_ptr);
@@ -50,8 +52,10 @@ namespace ts
 
     private:
       boost::optional<std::future<scene::Scene>> scene_future_ = boost::none;
-      game::LoadingThread* loading_thread_;
+      game::LoadingThread* loading_thread_ = nullptr;
     };
+
+    SceneComponents load_scene_components(const stage::Stage* stage_ptr);
   }
 }
 

@@ -1,0 +1,28 @@
+# Experimental track format
+Size 1280 800 64
+HeightMap test_track.hmp
+Include basic_textures.dat
+
+* Set up in-memory representation
+* Then track saving
+* Followed by track loading.
+
+* Textures
+* Texture size must be a power of two between 32 and 1024
+* Textures are stored in a texture array grouped by size, and every array gets its own texture unit.
+
+
+* Set up editor scene
+* The editor has a set of tools, one of which is active
+
+
+* EditorState
+  * Has track scene, which has track and an interface to modify said track
+  * Has a set of tools which can modify the track scene
+  * The tools themselves must be renderable
+
+* RenderScene
+  * Must be loaded from a track
+  
+* Track paths
+ * Paths have nodes

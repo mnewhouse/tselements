@@ -6,12 +6,11 @@
 
 #include "scene_loader.hpp"
 #include "scene.hpp"
-#include "dynamic_scene.hpp"
+#include "scene_components.hpp"
+#include "render_scene.hpp"
+
 #include "track_scene_generator.hpp"
 #include "dynamic_scene_generator.hpp"
-#include "particle_generator.hpp"
-#include "sound_effect_controller.hpp"
-#include "car_sound_controller.hpp"
 
 #include "stage/stage.hpp"
 
@@ -21,21 +20,25 @@ namespace ts
 {
   namespace scene
   {
+    static auto create_particle_generator(const stage::Stage& stage)
+    {
+      return ParticleGenerator(&stage.world(), ParticleSettings());
+    }
+
     static auto make_sound_effect_controller()
     {
-      auto sound_effect_controller = std::make_unique<SoundEffectController>(12);
-      return sound_effect_controller;
+      return SoundEffectController(12);
     }
 
     static auto make_car_sound_controller(const stage::Stage& stage)
     {
       const auto& stage_desc = stage.stage_description();
-      auto car_sound_controller = std::make_unique<CarSoundController>();
+      CarSoundController car_sound_controller;
 
       for (const auto& model : stage_desc.car_models)
       {
         // Register all the models
-        car_sound_controller->register_car_model(model);
+        car_sound_controller.register_car_model(model);
       }
 
       for (const auto& instance : stage_desc.car_instances)
@@ -43,7 +46,7 @@ namespace ts
         // And all the instances.
         if (auto car = stage.world().find_car(instance.instance_id))
         {
-          car_sound_controller->register_car(instance.model_id, car);
+          car_sound_controller.register_car(instance.model_id, car);
         }        
       }
 
@@ -64,22 +67,10 @@ namespace ts
       set_loading(true);
       scene_future_ = loading_thread_->async_task(loading_func);
     }
-
+  
     Scene SceneLoader::load(const stage::Stage* stage_ptr)
     {
-      Scene scene_obj;
-      scene_obj.stage_ptr = stage_ptr;
-      scene_obj.track_scene = generate_track_scene(stage_ptr->track());
-      scene_obj.dynamic_scene = generate_dynamic_scene(*stage_ptr);
-
-      scene_obj.particle_generator = std::make_unique<ParticleGenerator>(&stage_ptr->world(), ParticleSettings());
-      scene_obj.scene_renderer = SceneRenderer(scene_obj.track_scene.get(), scene_obj.dynamic_scene.get(),
-                                               scene_obj.particle_generator.get());
-
-      scene_obj.car_sound_controller = make_car_sound_controller(*stage_ptr);
-      scene_obj.sound_effect_controller = make_sound_effect_controller();
-      
-      return scene_obj;
+      return Scene(load_scene_components(stage_ptr), RenderScene(generate_track_scene(stage_ptr->track())));
     }
 
     bool SceneLoader::is_ready() const
@@ -92,6 +83,18 @@ namespace ts
     {
       set_loading(false);
       return scene_future_->get();
+    }
+
+    SceneComponents load_scene_components(const stage::Stage* stage_ptr)
+    {
+      return SceneComponents
+      {
+        stage_ptr,
+        generate_dynamic_scene(*stage_ptr),
+        create_particle_generator(*stage_ptr),
+        make_car_sound_controller(*stage_ptr),
+        make_sound_effect_controller()
+      };
     }
   }
 }

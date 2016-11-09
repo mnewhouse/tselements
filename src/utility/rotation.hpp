@@ -29,13 +29,13 @@ namespace ts
 
     void normalize();
 
-  private:
-    T radians_ = T();
-
     static constexpr T pi = static_cast<T>(3.14159265358979323846264338327950L);
     static constexpr T double_pi = static_cast<T>(3.14159265358979323846264338327950L * 2);
     static constexpr T inverse_pi = static_cast<T>(1 / 3.14159265358979323846264338327950L);
     static constexpr T inverse_180 = static_cast<T>(1 / 180.0L);
+
+  private:
+    T radians_ = T();
   };
 
   template <typename T>

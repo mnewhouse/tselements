@@ -49,6 +49,9 @@ namespace ts
       DynamicScene();
       ~DynamicScene();
 
+      DynamicScene(DynamicScene&&);
+      DynamicScene& operator=(DynamicScene&&);
+
       // Register a texture
       std::size_t register_texture(std::unique_ptr<graphics::Texture> texture, Vector2i texture_size);
 

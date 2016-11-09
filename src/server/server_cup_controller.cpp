@@ -12,6 +12,6 @@ namespace ts
 {
   namespace cup
   {
-    template class CupController<server::MessageDistributor>;
+    template class CupController<server::DefaultMessageDistributor>;
   }
 }

@@ -9,7 +9,7 @@
 
 #include <memory>
 
-#include "scene_renderer.hpp"
+#include "utility/vector2.hpp"
 
 #include "world/world_message_fwd.hpp"
 
@@ -22,39 +22,37 @@ namespace ts
 
   namespace scene
   {
-    class TrackScene;
-    class DynamicScene;
-    class ParticleGenerator;
-    class CarSoundController;
-    class SoundEffectController;
+    struct SceneComponents;
+    class RenderScene;
+    class ViewportArrangement;
 
     // The Scene represents all objects that are needed to deliver the client-sided
     // part of the game experience. This basically just means video and audio.
-    struct Scene
+    class Scene
     {
+    public:
       Scene();
+      Scene(SceneComponents scene_components, RenderScene render_scene);
       ~Scene();
 
       Scene(Scene&&);
       Scene& operator=(Scene&&);
 
-      const stage::Stage* stage_ptr;
+      const stage::Stage& stage() const;
 
-      std::unique_ptr<TrackScene> track_scene;
-      std::unique_ptr<DynamicScene> dynamic_scene;
-      std::unique_ptr<ParticleGenerator> particle_generator;
+      void update_stored_state();
+      void update(std::uint32_t frame_duration);
 
-      std::unique_ptr<CarSoundController> car_sound_controller;
-      std::unique_ptr<SoundEffectController> sound_effect_controller;
+      void render(const ViewportArrangement& viewport_arrangement, Vector2u screen_size,
+                  double frame_progress) const;
 
-      SceneRenderer scene_renderer;
+      void handle_collision(const world::messages::SceneryCollision& collision);
+      void handle_collision(const world::messages::EntityCollision& collision);
+
+    private:
+      struct Impl;
+      std::unique_ptr<Impl> impl_;
     };
-
-    void update_stored_state(Scene& scene_obj);
-    void update_scene(Scene& scene_obj, std::uint32_t frame_duration);
-
-    void handle_collision(Scene& scene_obj, const world::messages::SceneryCollision& collision);
-    void handle_collision(Scene& scene_obj, const world::messages::EntityCollision& collision);
   }
 }
 

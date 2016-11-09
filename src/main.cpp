@@ -77,7 +77,7 @@ int main(int argc, char** argv)
     }
 
     resources::TrackReference track_ref;
-    track_ref.path = "tracks/banaring.trk";
+    track_ref.path = "tracks/TSE_Sandyshore.trk";
     track_ref.name = "Sc_Clarityre";
 
     auto& player_settings = resource_store.settings().player_settings();
@@ -104,7 +104,7 @@ int main(int argc, char** argv)
     context.resource_store = &resource_store;
     context.loading_thread = &loading_thread;
 
-    state_machine.create_state<menu::MainMenuState>(context);
+    state_machine.create_state<client::LocalCupState>(context);
 
     game::UpdateContext update_context;
     update_context.frame_duration = 20;
@@ -158,7 +158,7 @@ int main(int argc, char** argv)
 
         frame_progress = duration;
         state_machine->update(update_context);
-      }      
+      }
 
       game::RenderContext render_context;
       render_context.screen_size = window.size();

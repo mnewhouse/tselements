@@ -10,6 +10,8 @@
 #include <string>
 #include <cstdint>
 
+#include "resources/color_scheme.hpp"
+
 namespace ts
 {
   namespace cup
@@ -19,6 +21,8 @@ namespace ts
       std::string name;
       std::uint64_t id;
       std::uint16_t control_slot;
+
+      resources::ColorScheme color_scheme;
     };
   }
 }

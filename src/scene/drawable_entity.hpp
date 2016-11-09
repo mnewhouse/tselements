@@ -17,6 +17,9 @@
 
 #include <glm/mat4x4.hpp>
 #include <glm/mat2x2.hpp>
+#include <glm/vec3.hpp>
+
+#include <array>
 
 namespace ts
 {
@@ -24,20 +27,27 @@ namespace ts
   {
     struct DrawableEntity
     {
+      struct Vertex
+      {
+        glm::vec2 position;
+        glm::vec2 texture_coords;
+        glm::vec3 colorizer_coords;
+      };
+
       const world::Entity* entity = nullptr;
       const graphics::Texture* texture = nullptr;
 
-      FloatRect texture_coords;
-      FloatRect colorizer_coords;
-      FloatRect frame_bounds;
+      std::uint32_t z_level = 0;
 
-      Vector2f frame_offset;
-      float hover_distance = 0.0;
+      std::array<Colorf, 3> colors = {};
+      std::array<Vertex, 4> vertices;
 
-      glm::mat4 transformation;
-      glm::mat2 colorizer_transformation;      
+      glm::mat4 model_matrix;
+      glm::mat4 new_model_matrix;
+      glm::mat4 colorizer_matrix;
 
-      Colorb colors[3];
+      float shadow_offset = 0.0f;
+      float new_shadow_offset = 0.0f;
     };
   }
 }

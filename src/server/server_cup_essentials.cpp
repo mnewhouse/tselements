@@ -22,7 +22,7 @@ namespace ts
       message_conveyor_(MessageContext{ this }),
       message_dispatcher_(),
       cup_controller_(resource_store->settings().cup_settings(),
-                      MessageDistributor(&message_dispatcher_, &message_conveyor_)),
+                      DefaultMessageDistributor(&message_dispatcher_, &message_conveyor_)),
       interaction_host_(&cup_controller_, &message_dispatcher_),
       stage_loader_(),
       stage_essentials_()

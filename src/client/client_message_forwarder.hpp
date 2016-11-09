@@ -7,9 +7,10 @@
 #ifndef CLIENT_MESSAGE_FORWARDER_HPP_242418581915
 #define CLIENT_MESSAGE_FORWARDER_HPP_242418581915
 
+#include "client_action_message_forwarder.hpp"
+
 #include "cup/cup_message_fwd.hpp"
 #include "stage/stage_message_fwd.hpp"
-#include "world/world_message_fwd.hpp"
 #include "race/race_messages.hpp"
 
 namespace ts
@@ -35,14 +36,18 @@ namespace ts
       void forward(const cup::messages::StageBegin&);
       void forward(const cup::messages::StageEnd&);
 
-      void forward(const world::messages::SceneryCollision&);
-      void forward(const world::messages::EntityCollision&);
-
       // Have a fallback implementation for unlisted messages that simply does nothing.
       template <typename MessageType>
-      void forward(const MessageType&) {}
+      void forward(const MessageType& message)
+      {
+        auto forwarder = action_message_forwarder();
+
+        forwarder.forward(message);
+      }
 
     private:
+      ActionMessageForwarder<MessageDispatcher> action_message_forwarder() const;
+
       CupEssentials<MessageDispatcher>* cup_essentials;
     };
   }

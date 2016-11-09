@@ -17,13 +17,16 @@ namespace ts
       double braking = 0.0;
       double steering = 0.0;
       double grip = 0.0;
-      double turn_in = 0.0;
       double antislide = 0.0;
       double traction_limit = 0.0;
+      double traction_recovery = 1.0;
       
       double drag_coefficient = 1.0;
-      double rolling_coefficient = 1.0;
+      double rolling_coefficient = 50.0;
       double downforce_coefficient = 0.0;
+      double downforce_brake_effect = 0.0;
+      double downforce_grip_effect = 0.0;
+      double slide_friction = 10.0;
 
       double mass = 500.0;
       double max_engine_revs = 250.0;

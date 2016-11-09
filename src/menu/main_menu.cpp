@@ -60,9 +60,8 @@ namespace ts
       auto button_style = text_style + make_hover_style(hover_text_style +
                                                         styles::fill_area(Colorb(0, 100, 0, 255)));
 
-      widgets::button("crap", button_placement(), button_style, input_state, geometry,
-                      events::on_click([]() { printf("cunt 1\n"); }));
-      widgets::button("major crap", button_placement(), button_style, input_state, geometry);
+      widgets::button("began", button_placement(), button_style, input_state, geometry,
+                      events::on_click([]() {}));
     }
 
     void MainMenu::render(const gui::Renderer& renderer, const gui::RenderState& render_state) const

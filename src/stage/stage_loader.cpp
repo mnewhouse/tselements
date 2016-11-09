@@ -45,7 +45,6 @@ namespace ts
       world::World world_obj(std::move(track), std::move(pattern));
 
       auto stage_ptr = std::make_unique<stage::Stage>(std::move(world_obj), std::move(stage_desc));
-      stage_ptr->create_stage_entities();      
 
       return stage_ptr;
     }

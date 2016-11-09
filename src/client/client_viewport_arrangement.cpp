@@ -16,7 +16,7 @@ namespace ts
 {
   namespace client
   {
-    scene::ViewportArrangement make_viewport_arrangement(DoubleRect screen_rect,
+    scene::ViewportArrangement make_viewport_arrangement(IntRect screen_rect,
                                                          const controls::ControlCenter& control_center,
                                                          const stage::Stage& stage_obj)
     {

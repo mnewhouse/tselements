@@ -22,7 +22,7 @@ namespace ts
 
   namespace scene
   {
-    std::unique_ptr<TrackScene> generate_track_scene(const resources::Track& track);
+    TrackScene generate_track_scene(const resources::Track& track);
   }
 }
 
