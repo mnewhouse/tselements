@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_VIEWPORT_ARRANGEMENT_HPP_5891829812
-#define CLIENT_VIEWPORT_ARRANGEMENT_HPP_5891829812
+#pragma once
 
 #include "scene/viewport_arrangement.hpp"
 
@@ -33,5 +32,3 @@ namespace ts
                                                          const stage::Stage& stage_obj);
   }
 }
-
-#endif

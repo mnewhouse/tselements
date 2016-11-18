@@ -4,6 +4,7 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
 #include "local_cup_state.hpp"
 #include "cup_state_detail.hpp"
 

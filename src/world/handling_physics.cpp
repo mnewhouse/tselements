@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "handling_physics.hpp"
 #include "car.hpp"
 
@@ -35,6 +37,12 @@ namespace ts
       auto heading = normalize(velocity);
       auto speed = magnitude(velocity);
 
+      const auto& handling = car.handling();
+      const auto mass = car.mass();
+      auto load_balance = car.load_balance();
+
+      auto engine_rev_speed = car.engine_rev_speed();
+
       auto is_moving = std::abs(speed) >= 0.00001;
 
       auto traction = is_moving ? 1.0 : car.traction();
@@ -46,14 +54,23 @@ namespace ts
 
         auto diff = std::min(std::abs(oversteer_angle.degrees()), std::abs(reverse_oversteer_angle.degrees()));
         auto oversteer_traction = std::max((90.0 - diff) / 90.0, 0.0);
-        oversteer_ratio = 1.0 - oversteer_traction;
+        oversteer_ratio = 1.0 - oversteer_traction;       
 
-        traction = std::min(traction, oversteer_traction);
+        if (std::abs(engine_rev_speed) >= 0.0001)
+        {
+          // See how well the car's velocity matches up with the engine revs.
+          auto rev_speed_traction = speed / (engine_rev_speed * handling.max_engine_revs);
+          traction = std::min(traction, rev_speed_traction * oversteer_traction);
+        }
+
+        if (is_moving)
+        {
+          // Do the same here, except that we go the other way by flipping the division's operands.
+          // We work out the minimum traction value that way.
+          auto rev_speed_traction = (engine_rev_speed * handling.max_engine_revs) / speed;
+          traction = std::min(traction, rev_speed_traction * oversteer_traction);
+        }
       }
-
-      const auto& handling = car.handling();
-      const auto mass = car.mass();
-      auto load_balance = car.load_balance();
 
       auto stress_multiplier = [=](resources::Handling::StressFactor stress)
       {
@@ -64,7 +81,7 @@ namespace ts
 
         else
         {
-          return stress.back * load_balance + stress.neutral * 1.0 - load_balance;
+          return stress.rear * load_balance + stress.neutral * 1.0 - load_balance;
         }
       };
 
@@ -73,8 +90,8 @@ namespace ts
       auto terrain_resistance = -velocity * terrain.roughness * mass;
       auto slide_friction = -velocity * oversteer_ratio * handling.slide_friction;
 
-      auto downforce_traction = (speed * speed * (1.0 - oversteer_ratio) * handling.downforce_coefficient);
-      auto traction_limit = handling.traction_limit + downforce_traction;
+      auto downforce_traction = (speed * speed * (1.0 - oversteer_ratio) * handling.downforce_coefficient) * terrain.traction;
+      auto traction_limit = handling.traction_limit * terrain.traction + downforce_traction;
       auto applied_force = 0.0;
 
       Vector2<double> acceleration_force;
@@ -90,11 +107,13 @@ namespace ts
       Vector2<double> braking_force;
       if (is_braking)
       {
-        // TODO: Think of way to detect reversing
+        // TODO: Think of better way to detect reversing
         if (speed != 0.0 && dot_product(heading, facing_vector) >= 0.0)
         {
-          braking_force -= handling.braking * terrain.braking * heading;
-          applied_force += handling.braking * stress_multiplier(handling.braking_stress);
+          auto braking = (handling.braking + downforce_traction * handling.downforce_brake_effect) * terrain.braking;
+
+          braking_force -= braking * heading;
+          applied_force += braking * stress_multiplier(handling.braking_stress);
         }
 
         else
@@ -104,30 +123,50 @@ namespace ts
         }
       }
 
-      auto actual_steering = handling.steering * terrain.steering;
-      auto antislide_steering_reduction = 0.0;
-      
-      auto available_grip = handling.grip + downforce_traction * handling.downforce_grip_effect;
-      auto traction_available_for_steering = std::max(available_grip - applied_force,
-                                                      available_grip * 0.5);
-      if (speed != 0.0)
-      {        
-        auto current_steering = std::min(traction_available_for_steering *
-                                         terrain.steering / (mass * speed), actual_steering);
-        
-        antislide_steering_reduction = (actual_steering - current_steering) * (handling.antislide * terrain.grip);
-        actual_steering -= antislide_steering_reduction;
+      auto base_steering = handling.steering * terrain.steering;
+
+      auto turning_stress = stress_multiplier(handling.turning_stress);
+      auto turning_stress_root = std::sqrt(turning_stress);
+
+      auto supported_turning_force = (handling.grip + downforce_traction * handling.downforce_turning_effect);
+      auto supported_turning_speed = base_steering;
+
+      if (is_moving)
+      {
+        auto force_divisor = mass * speed * turning_stress_root;
+        if (std::abs(force_divisor) >= 0.00001)
+        {
+          supported_turning_speed = std::min(supported_turning_force / force_divisor, supported_turning_speed);
+        }        
       }
 
-      double turning_speed = 0.0;
-      if (is_turning_left)
-      {
-        turning_speed -= actual_steering;
-      }
+      auto antislide_turning_reduction = (base_steering - supported_turning_speed) * 
+        std::max(handling.antislide * terrain.antislide, 1.0);
+      auto absolute_turning_speed = base_steering - antislide_turning_reduction;     
 
-      if (is_turning_right)
+      auto turning_speed = 0.0;
+      if (is_turning_left) turning_speed -= absolute_turning_speed;
+      if (is_turning_right) turning_speed += absolute_turning_speed;
+
+      auto turning_force = 0.0;
+      if (is_turning_left || is_turning_right) turning_force = supported_turning_force;
+
+      auto normalized_force = applied_force / traction_limit;
+      auto normalized_turning_force = turning_force * turning_stress_root / traction_limit;
+
+      auto traction_loss = std::hypot(normalized_force, normalized_turning_force);
+      auto traction_ratio = 1.0;
+      if (traction_loss > 1.0)
       {
-        turning_speed += actual_steering;
+        traction_ratio = 1.0 / traction_loss;
+
+        if (is_turning_left) turning_speed += antislide_turning_reduction * (1.0 - traction_ratio);
+        if (is_turning_right) turning_speed -= antislide_turning_reduction * (1.0 - traction_ratio);
+
+        acceleration_force *= traction_ratio;
+        braking_force *= traction_ratio;
+
+        traction = std::min(traction, traction_ratio);
       }
 
       auto net_force = acceleration_force + braking_force + drag_resistance +
@@ -137,16 +176,10 @@ namespace ts
 
       auto new_rotation = rotation + radians(turning_speed * frame_duration);
 
-      Vector2<double> adjustment_force, redirect_force;
-      double steering_adjustment = 0.0;
-
       auto new_facing_vector = transform_point({ 0.0, -1.0 }, new_rotation);
       auto new_speed = magnitude(new_velocity);
 
-      auto turning_force = 0.0;
-      if (is_turning_left != is_turning_right) turning_force = traction_available_for_steering;
-      applied_force += turning_force * handling.antislide;
-
+      auto redirect_force = make_vector2(0.0, 0.0);
       if (std::abs(new_speed) > 0.00001)
       {
         // Adjust the car's velocity according to its new rotation.
@@ -170,68 +203,60 @@ namespace ts
           redirect_magnitude = reverse_redirect_magnitude;
         }
 
-        auto max_redirect_force = available_grip * terrain.grip;
+        // Redirect the movement based on the available grip, downforce, and turning stress level.
+        auto max_redirect_force = (handling.grip + downforce_traction * handling.downforce_grip_effect) *
+          terrain.grip / turning_stress_root;
+
         auto redirect_force_magnitude = std::min(max_redirect_force, redirect_magnitude / frame_duration * mass);
         auto redirect_direction = normalize(redirect_vector);
-        redirect_force = redirect_direction * redirect_force_magnitude;
 
-        // Now, use all the available traction force to change the car's direction.
-        // So how much traction is available for steering?
-
-        adjustment_force += redirect_force;
+        redirect_force = redirect_direction * redirect_force_magnitude * traction_ratio;
       }
 
-      if (applied_force > traction_limit)
+      auto adjustment_force = redirect_force;
+      auto turning_speed_adjustment = 0.0;
+      if (traction_loss > 1.0)
       {
-        auto ratio = traction_limit / applied_force;
-        ratio *= ratio;
-
-        if (ratio < traction) traction = ratio;
-        auto inverse_ratio = 1.0 - traction;
-
-        //steering_adjustment -= turning_speed * inverse_ratio;
-        adjustment_force -= (acceleration_force + braking_force) * inverse_ratio;
-
-        redirect_force *= ratio;
-        turning_speed *= ratio;
-        acceleration_force *= ratio;
-        braking_force *= ratio;
+        auto inverse_traction = 1.0 - traction_ratio;
 
         using resources::Handling;
         auto apply_behavior = [&](const Handling::TractionLossBehavior& behavior)
         {
-          const double reduction[] =
-          {
-            std::max(std::min(behavior.antislide_reduction * inverse_ratio, 2.0), 0.0),
-            std::max(std::min(behavior.steering_reduction * inverse_ratio, 1.0), 0.0),
-            std::max(std::min(behavior.turn_in_reduction * inverse_ratio, 1.0), 0.0),
-            std::max(std::min(behavior.torque_reduction * inverse_ratio, 1.0), 0.0),
-            std::max(std::min(behavior.braking_reduction * inverse_ratio, 1.0), 0.0)
-          };
+          auto antislide_reduction = std::max(std::min(behavior.antislide_reduction * inverse_traction, 2.0), 0.0);
+          auto turning_reduction = std::max(std::min(behavior.turning_reduction * inverse_traction, 1.0), 0.0);
+          auto grip_reduction = std::max(std::min(behavior.grip_reduction * inverse_traction, 1.0), 0.0);
+          auto torque_reduction = std::max(std::min(behavior.torque_reduction * inverse_traction, 1.0), 0.0);
+          auto braking_reduction = std::max(std::min(behavior.braking_reduction * inverse_traction, 1.0), 0.0);
 
-          if (is_turning_left) steering_adjustment -= reduction[0] * antislide_steering_reduction;
-          if (is_turning_right) steering_adjustment += reduction[0] * antislide_steering_reduction;
+          if (is_turning_left) turning_speed_adjustment -= antislide_reduction * antislide_turning_reduction;
+          if (is_turning_right) turning_speed_adjustment += antislide_reduction * antislide_turning_reduction;
               
-          steering_adjustment -= reduction[1] * turning_speed;
-          adjustment_force -= reduction[2] * redirect_force;
-          adjustment_force -= reduction[3] * acceleration_force;
-          adjustment_force -= reduction[4] * braking_force;
+          turning_speed_adjustment -= turning_reduction * turning_speed;
+          adjustment_force -= grip_reduction * redirect_force;
+          adjustment_force -= torque_reduction * acceleration_force;
+          adjustment_force -= braking_reduction * braking_force;
         };
 
+        auto behavior = handling.slide_behavior;
         if (is_braking)
         {
-          apply_behavior(handling.lock_up_behavior);
+          behavior = handling.lock_up_behavior;
         }
 
-        else if (is_accelerating)
+        if (is_accelerating)
         {
-          apply_behavior(handling.wheel_spin_behavior);
+          auto& wheel_spin_behavior = handling.wheel_spin_behavior;
+          if (!is_braking) behavior = wheel_spin_behavior;
+
+          // When braking *and* accelerating, make the effects accumulative.          
+          behavior.antislide_reduction += wheel_spin_behavior.antislide_reduction;
+          behavior.braking_reduction += wheel_spin_behavior.braking_reduction;
+          behavior.grip_reduction += wheel_spin_behavior.grip_reduction;
+          behavior.turning_reduction += wheel_spin_behavior.turning_reduction;
+          behavior.torque_reduction += wheel_spin_behavior.torque_reduction;
         }
 
-        else
-        {
-          apply_behavior(handling.slide_behavior);
-        }
+        apply_behavior(behavior);
       }
 
       {
@@ -268,12 +293,11 @@ namespace ts
         rotating_speed = std::max(rotating_speed - spin_recovery * frame_duration, 0.0);
       }
 
-      auto engine_rev_speed = car.engine_rev_speed();
       const auto rev_recovery = 0.5;
       {
         auto frame_recovery = rev_recovery * frame_duration;
-        auto target_revs = magnitude(new_velocity) / handling.max_engine_revs;
-        if (is_accelerating) target_revs /= std::max(traction, 0.5);
+        auto target_revs = new_speed / handling.max_engine_revs;
+        if (is_accelerating) target_revs /= std::max(std::sqrt(traction), 0.25);
 
         target_revs = std::min(target_revs, 1.1);
 
@@ -290,7 +314,7 @@ namespace ts
 
       CarUpdateState update_state;
       update_state.velocity = new_velocity + (adjustment_force / mass) * frame_duration;
-      update_state.rotation = new_rotation + radians(steering_adjustment * frame_duration);
+      update_state.rotation = new_rotation + radians(turning_speed_adjustment * frame_duration);
       update_state.rotating_speed = rotating_speed;
       update_state.engine_rev_speed = engine_rev_speed;
       update_state.traction = traction;

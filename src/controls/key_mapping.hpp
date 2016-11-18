@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef KEY_MAPPING_HPP_815298125
-#define KEY_MAPPING_HPP_815298125
+#pragma once
 
 #include "control.hpp"
 
@@ -55,5 +54,3 @@ namespace ts
     }
   }
 }
-
-#endif

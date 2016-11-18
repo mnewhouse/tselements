@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "stage.hpp"
 #include "stage_creation.hpp"
 
@@ -15,7 +17,8 @@ namespace ts
   {
     Stage::Stage(world::World world_obj, StageDescription stage_description)
       : world_(std::move(world_obj)),
-        stage_description_(std::move(stage_description))
+        stage_description_(std::move(stage_description)),
+        race_tracker_(100, world_.track().control_points().size())
     {
       create_stage_entities();
     }
@@ -40,15 +43,28 @@ namespace ts
       return world_.track();
     }
 
-    void Stage::update(world::EventInterface& event_interface, std::uint32_t frame_duration)
+    void Stage::update(std::uint32_t frame_duration, world::EventInterface& event_interface)
     {
-      world_.update(event_interface, frame_duration);
+      world_.update(frame_duration, event_interface);
+
+      race_tracker_.advance_race_time(frame_duration);
       stage_time_ += frame_duration;
     }
 
     std::uint32_t Stage::stage_time() const
     {
       return stage_time_;
+    }
+
+    const RaceTracker* Stage::race_tracker() const
+    {
+      return &race_tracker_;
+    }
+
+    void Stage::control_point_hit(const world::Entity* entity, std::uint16_t point_id, std::uint32_t point_flags,
+                                  std::uint32_t frame_offset, RaceEventInterface& event_interface)
+    {
+      race_tracker_.control_point_hit(entity, point_id, point_flags, frame_offset, event_interface);
     }
 
     void Stage::set_controllable_state(std::uint16_t controllable_id, std::uint16_t controls_mask)

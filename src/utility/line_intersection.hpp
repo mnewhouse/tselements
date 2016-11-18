@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef LINE_INTERSECTION_578111845_HPP
-#define LINE_INTERSECTION_578111845_HPP
+#pragma once
 
 #include "vector2.hpp"
 
@@ -44,5 +43,3 @@ namespace ts
     return result;
   }
 }
-
-#endif

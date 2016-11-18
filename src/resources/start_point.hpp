@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef START_POINT_HPP_58912835
-#define START_POINT_HPP_58912835
+#pragma once
 
 #include "utility/vector2.hpp"
 
@@ -21,5 +20,3 @@ namespace ts
     };
   }
 }
-
-#endif

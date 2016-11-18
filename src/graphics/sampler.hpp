@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SAMPLER_HPP_182591825
-#define SAMPLER_HPP_182591825
+#pragma once
 
 #include <GL/glew.h>
 
@@ -30,5 +29,3 @@ namespace ts
     using Sampler = std::unique_ptr<GLuint, detail::SamplerDeleter>;
   }
 }
-
-#endif

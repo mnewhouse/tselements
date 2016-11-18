@@ -4,8 +4,7 @@
 // see http://create.stephan-brumme.com/disclaimer.html
 //
 
-#ifndef SHA256_HPP_159812598
-#define SHA256_HPP_159812598
+#pragma once
 
 #include <cstdint>
 #include <array>
@@ -68,5 +67,3 @@ namespace hash
     std::uint32_t m_hash[8];
   };
 }
-
-#endif

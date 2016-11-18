@@ -4,11 +4,11 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_ACTION_COMPONENTS_HPP_3859189123
-#define CLIENT_ACTION_COMPONENTS_HPP_3859189123
+#pragma once
 
 #include "control_event_translator.hpp"
 #include "client_viewport_arrangement.hpp"
+#include "client_race_hud.hpp"
 
 #include "controls/control_center.hpp"
 
@@ -18,12 +18,15 @@
 
 #include "world/world_message_fwd.hpp"
 
-#include "race/race_messages.hpp"
-
 #include <memory>
 
 namespace ts
 {
+  namespace race
+  {
+    class LapTracker;
+  }
+
   namespace client
   {
     class LocalPlayerRoster;
@@ -58,7 +61,7 @@ namespace ts
     {
     public:
       ActionEssentials(game::GameContext game_context, const MessageDispatcher* message_dispatcher,
-                       scene::Scene scene_obj, const LocalPlayerRoster& local_players);
+                       scene::Scene scene_obj, const LocalPlayerRoster& local_player);
 
       void render(const game::RenderContext& render_context) const;
       void update(std::uint32_t frame_duration);
@@ -67,9 +70,15 @@ namespace ts
       void process_event(const game::Event& event);
 
       void launch_action();
+      void end_action();
 
       void collision_event(const world::messages::SceneryCollision& collision);
       void collision_event(const world::messages::EntityCollision& collision);
+
+      void register_lap_tracker(const race::LapTracker* lap_tracker);
+
+      scene::Scene& scene_object();
+      const scene::Scene& scene_object() const;
 
     private:
       game::GameContext game_context_;
@@ -82,11 +91,10 @@ namespace ts
       ControlEventTranslator control_event_translator_;
       scene::ViewportArrangement viewport_arrangement_;
 
+      const race::LapTracker* lap_tracker_;
+      RaceHUD race_hud_;
+
       detail::ActionStateGuard<MessageDispatcher> action_state_;
     };
   }
 }
-
-
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef COLOR_SCHEME_HPP_559059102
-#define COLOR_SCHEME_HPP_559059102
+#pragma once
 
 #include "utility/color.hpp"
 
@@ -23,5 +22,3 @@ namespace ts
     };
   }
 }
-
-#endif

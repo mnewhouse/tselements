@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CAR_HPP_812918923
-#define CAR_HPP_812918923
+#pragma once
 
 #include "entity.hpp"
 
@@ -56,5 +55,3 @@ namespace ts
     };
   }
 }
-
-#endif

@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "geometry.hpp"
 
 namespace ts

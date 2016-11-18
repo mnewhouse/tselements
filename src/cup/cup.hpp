@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CUP_HPP_342347891
-#define CUP_HPP_342347891
+#pragma once
 
 #include "car_mode.hpp"
 #include "cup_state.hpp"
@@ -120,5 +119,3 @@ namespace ts
     };
   }
 }
-
-#endif

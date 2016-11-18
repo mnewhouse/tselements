@@ -4,6 +4,7 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
 #include "logger.hpp"
 
 ts::logger::LogFileDispatcher::LogFileDispatcher(const std::string& output_file)

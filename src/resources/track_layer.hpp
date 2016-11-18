@@ -4,11 +4,11 @@
 * Released under the MIT license.
 */
 
-#ifndef TRACK_LAYER_HPP_544189
-#define TRACK_LAYER_HPP_544189
+#pragma once
 
 #include "tiles.hpp"
-#include "track_geometry.hpp"
+#include "geometry.hpp"
+#include "track_path.hpp"
 
 #include <vector>
 
@@ -16,17 +16,23 @@ namespace ts
 {
   namespace resources
   {
+    enum class TrackLayerType
+    {
+      Tiles, Geometry, Paths
+    };
+
     struct TrackLayer
     {
       using Id = std::uint32_t;
 
       Id id;
+      TrackLayerType type;
       std::uint32_t level;
       std::string name;
-      std::vector<TrackGeometry> geometry;
+
       std::vector<Tile> tiles;
+      std::vector<Geometry> geometry;      
+      std::vector<TrackPath> paths;
     };
   }
 }
-
-#endif

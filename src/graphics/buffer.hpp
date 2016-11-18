@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef VERTEX_ARRAY_HPP_3312950
-#define VERTEX_ARRAY_HPP_3312950
+#pragma once
 
 #include <GL/glew.h>
 #include <GL/GL.h>
@@ -97,7 +96,12 @@ namespace ts
       glCheck(glGenBuffers(1, &buffer));
       return Buffer(buffer);
     }
+
+    inline VertexArray create_vertex_array()
+    {
+      GLuint vao;
+      glCheck(glGenVertexArrays(1, &vao));
+      return VertexArray(vao);
+    }
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SERVER_HPP_38951835
-#define SERVER_HPP_38951835
+#pragma once
 
 #include <memory>
 #include <cstdint>
@@ -55,5 +54,3 @@ namespace ts
     };
   }
 }
-
-#endif

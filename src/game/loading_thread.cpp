@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "loading_thread.hpp"
 
 #include "graphics/gl_context.hpp"

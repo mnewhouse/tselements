@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef UPDATE_MESSAGE_HPP_48192818923
-#define UPDATE_MESSAGE_HPP_48192818923
+#pragma once
 
 #include <cstdint>
 
@@ -23,5 +22,3 @@ namespace ts
     }
   }
 }
-
-#endif

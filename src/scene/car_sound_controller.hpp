@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef ENGINE_SOUND_CONTROLLER_HPP_8548921891283
-#define ENGINE_SOUND_CONTROLLER_HPP_8548921891283
+#pragma once
 
 #include "audio/sound_sample.hpp"
 #include "audio/sound_sample_loader.hpp"
@@ -68,5 +67,3 @@ namespace ts
     };
   }
 }
-
-#endif

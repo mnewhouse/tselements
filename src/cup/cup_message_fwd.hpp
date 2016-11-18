@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CUP_MESSAGE_FWD_HPP_54392859109891
-#define CUP_MESSAGE_FWD_HPP_54392859109891
+#pragma once
 
 namespace ts
 {
@@ -33,5 +32,3 @@ namespace ts
     }
   }
 }
-
-#endif

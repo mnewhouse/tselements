@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef LOCAL_MESSAGE_DISPATCHER_HPP_821398123
-#define LOCAL_MESSAGE_DISPATCHER_HPP_821398123
+#pragma once
 
 #include "server/server_message_conveyor.hpp"
 #include "server/client_message.hpp"
@@ -40,5 +39,3 @@ namespace ts
     };
   }
 }
-
-#endif

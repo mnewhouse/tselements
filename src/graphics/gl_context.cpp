@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "gl_context.hpp"
 #include "render_window.hpp"
 
@@ -45,6 +47,7 @@ namespace ts
       settings.majorVersion = gl_version::major;
       settings.minorVersion = gl_version::minor;
       settings.antialiasingLevel = 4;
+      settings.stencilBits = 8;
 
       auto context = new sf::Context(settings, 0, 0);      
       return GLContextHandle(context);

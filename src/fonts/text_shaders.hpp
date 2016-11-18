@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TEXT_SHADERS_HPP_54918734589
-#define TEXT_SHADERS_HPP_54918734589
+#pragma once
 
 namespace ts
 {
@@ -41,7 +40,3 @@ void main()
 )";
   }
 }
-
-
-
-#endif

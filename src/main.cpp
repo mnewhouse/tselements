@@ -7,10 +7,6 @@
 #include "graphics/render_window.hpp"
 #include "graphics/gl_context.hpp"
 
-#include "user_interface/gui_context.hpp"
-
-#include "menu/main_menu_state.hpp"
-
 #include "fonts/builtin_fonts.hpp"
 #include "fonts/font_library.hpp"
 
@@ -31,8 +27,6 @@
 #include "utility/debug_log.hpp"
 #include "utility/random.hpp"
 #include "utility/stream_utilities.hpp"
-
-#include <SFML/System/Clock.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -66,7 +60,6 @@ int main(int argc, char** argv)
     window.display();
 
     game::LoadingThread loading_thread;
-    gui::Context gui_context;
 
     resources::ResourceStore resource_store;
     resource_store.car_store().load_car_directory("cars");
@@ -99,7 +92,6 @@ int main(int argc, char** argv)
 
     game::GameContext context;
     context.state_machine = &state_machine;
-    context.gui_context = &gui_context;
     context.render_window = &window;
     context.resource_store = &resource_store;
     context.loading_thread = &loading_thread;

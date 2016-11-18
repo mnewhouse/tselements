@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SERVER_CUP_CONTROLLER_HPP_2289128359
-#define SERVER_CUP_CONTROLLER_HPP_2289128359
+#pragma once
 
 #include "server_message_distributor.hpp"
 
@@ -27,5 +26,3 @@ namespace ts
     };
   }
 }
-
-#endif

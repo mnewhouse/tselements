@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef COLOR_HPP_49821
-#define COLOR_HPP_49821
+#pragma once
 
 #include <cstdint>
 
@@ -54,5 +53,3 @@ namespace ts
     return Colorf(c.r / 255.0f, c.g / 255.0f, c.b / 255.0f, c.a / 255.0f);
   }
 }
-
-#endif

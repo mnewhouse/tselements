@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "viewport_arrangement.hpp"
 
 namespace ts
@@ -70,6 +72,16 @@ namespace ts
           viewport.update_camera();
         }
       }
+    }
+
+    boost::iterator_range<const Viewport*> ViewportArrangement::viewports() const
+    {
+      if (viewports_.empty())
+      {
+        return boost::make_iterator_range(&default_viewport_, &default_viewport_ + 1);
+      }
+
+      return boost::make_iterator_range(viewports_.data(), viewports_.data() + viewports_.size());
     }
   }
 }

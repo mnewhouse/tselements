@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TRACK_REFERENCE_HPP_972135
-#define TRACK_REFERENCE_HPP_972135
+#pragma once
 
 #include "track_hash.hpp"
 
@@ -50,5 +49,3 @@ namespace ts
     };
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef RESOURCES_PATTERN_HPP_218981925
-#define RESOURCES_PATTERN_HPP_218981925
+#pragma once
 
 #include "utility/vector2.hpp"
 #include "utility/rect.hpp"
@@ -18,29 +17,29 @@ namespace ts
     class Pattern
     {
     public:
-      explicit Pattern(Vector2u size = {});
+      explicit Pattern(Vector2i size = {});
 
-      const std::uint8_t& operator()(std::uint32_t x, std::uint32_t y) const;
-      std::uint8_t& operator()(std::uint32_t x, std::uint32_t y);
+      const std::uint8_t& operator()(std::int32_t x, std::int32_t y) const;
+      std::uint8_t& operator()(std::int32_t x, std::int32_t y);
 
-      Vector2u size() const;
-      void resize(Vector2u new_size);
-      void resize(std::uint32_t x, std::uint32_t y);
+      Vector2i size() const;
+      void resize(Vector2i new_size);
+      void resize(std::int32_t x, std::int32_t y);
 
       using iterator = std::uint8_t*;
       iterator begin();
       iterator end();
-      iterator row_begin(std::uint32_t row_id);
-      iterator row_end(std::uint32_t row_id);
+      iterator row_begin(std::int32_t row_id);
+      iterator row_end(std::int32_t row_id);
 
       using const_iterator = const std::uint8_t*;
       const_iterator begin() const;
       const_iterator end() const;
-      const_iterator row_begin(std::uint32_t row_id) const;
-      const_iterator row_end(std::uint32_t row_id) const;
+      const_iterator row_begin(std::int32_t row_id) const;
+      const_iterator row_end(std::int32_t row_id) const;
 
     private:
-      Vector2u size_;
+      Vector2i size_;
       std::vector<std::uint8_t> bytes_;
     };
 
@@ -53,37 +52,34 @@ namespace ts
 
     Pattern copy_pattern(const Pattern& pattern, IntRect source_rect);
 
-    inline Pattern::const_iterator ts::resources::Pattern::row_begin(std::uint32_t y) const
+    inline Pattern::const_iterator ts::resources::Pattern::row_begin(std::int32_t y) const
     {
       return bytes_.data() + y * size_.x;
     }
 
-    inline Pattern::const_iterator ts::resources::Pattern::row_end(std::uint32_t y) const
+    inline Pattern::const_iterator ts::resources::Pattern::row_end(std::int32_t y) const
     {
       return bytes_.data() + y * size_.x + size_.x;
     }
 
-    inline Pattern::iterator ts::resources::Pattern::row_begin(std::uint32_t y)
+    inline Pattern::iterator ts::resources::Pattern::row_begin(std::int32_t y)
     {
       return bytes_.data() + y * size_.x;
     }
 
-    inline Pattern::iterator ts::resources::Pattern::row_end(std::uint32_t y)
+    inline Pattern::iterator ts::resources::Pattern::row_end(std::int32_t y)
     {
       return bytes_.data() + y * size_.x + size_.x;
     }
 
-    inline const std::uint8_t& ts::resources::Pattern::operator()(std::uint32_t x, std::uint32_t y) const
+    inline const std::uint8_t& ts::resources::Pattern::operator()(std::int32_t x, std::int32_t y) const
     {
       return bytes_[x + y * size_.x];
     }
 
-    inline std::uint8_t& ts::resources::Pattern::operator()(std::uint32_t x, std::uint32_t y)
+    inline std::uint8_t& ts::resources::Pattern::operator()(std::int32_t x, std::int32_t y)
     {
       return bytes_[x + y * size_.x];
     }
   }
 }
-
-
-#endif

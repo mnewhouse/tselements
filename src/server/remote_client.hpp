@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef REMOTE_CLIENT_HPP_578235487234
-#define REMOTE_CLIENT_HPP_578235487234
+#pragma once
 
 namespace ts
 {
@@ -50,5 +49,3 @@ namespace ts
     }
   }
 }
-
-#endif

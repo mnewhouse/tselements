@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "server_message_forwarder.hpp"
 #include "server_cup_essentials.hpp"
 
@@ -34,11 +36,6 @@ namespace ts
     void MessageForwarder::forward(const ClientMessage<stage::messages::ControlUpdate>& message)
     {
       cup_essentials->forward_stage_message(message);
-    }
-
-    void MessageForwarder::forward(const world::messages::ControlPointHit& cp_hit)
-    {
-      cup_essentials->forward_stage_message(cp_hit);
     }
   }
 }

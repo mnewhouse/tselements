@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef GAME_STATE_HPP_183952
-#define GAME_STATE_HPP_183952
+#pragma once
 
 #include "game_context.hpp"
 #include "game_events.hpp"
@@ -35,7 +34,7 @@ namespace ts
     struct RenderContext
     {
       double frame_progress;
-      Vector2u screen_size;
+      Vector2i screen_size;
     };
     
     struct StateTraits
@@ -56,7 +55,8 @@ namespace ts
     public:
       using GenericState::GenericState;
     };
+
+    using components::activate;
+    using components::deactivate;
   }
 }
-
-#endif

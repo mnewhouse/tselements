@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef STAGE_DESCRIPTION_HPP_3344676
-#define STAGE_DESCRIPTION_HPP_3344676
+#pragma once
 
 #include "resources/car_definition.hpp"
 #include "resources/track_reference.hpp"
@@ -43,5 +42,3 @@ namespace ts
     };
   }
 }
-
-#endif

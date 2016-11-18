@@ -4,12 +4,13 @@
 * Released under the MIT license.
 */
 
-#ifndef STAGE_REGULATOR_HPP_41829358
-#define STAGE_REGULATOR_HPP_41829358
+#pragma once
 
 #include "stage.hpp"
 #include "stage_messages.hpp"
 #include "stage_loader.hpp"
+
+#include "world/world_message_fwd.hpp"
 
 #include <memory>
 
@@ -17,6 +18,8 @@ namespace ts
 {
   namespace stage
   {
+    struct RaceEventInterface;
+
     // The stage regulator class is responsible for translating any stage-related events
     // into actual things that happen in the game world.
     class StageRegulator
@@ -26,12 +29,15 @@ namespace ts
 
       const Stage* stage() const;
 
-      void update(world::EventInterface& event_interface, std::uint32_t frame_duration);
+      void update(std::uint32_t frame_duration, world::EventInterface& event_interface);
+
       void handle_message(const messages::ControlUpdate& control_message);
 
+      void control_point_hit(const world::messages::ControlPointHit& cp_hit,
+                             RaceEventInterface& event_interface);
+
+    private:
       std::unique_ptr<Stage> stage_;
     };
   }
 }
-
-#endif

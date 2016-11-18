@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CAR_LOADER_HPP_891284
-#define CAR_LOADER_HPP_891284
+#pragma once
 
 #include "car_definition.hpp"
 #include "pattern_loader.hpp"
@@ -42,5 +41,3 @@ namespace ts
     };
   }
 }
-
-#endif

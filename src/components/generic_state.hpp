@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef GENERIC_STATE_HPP_6678
-#define GENERIC_STATE_HPP_6678
+#pragma once
 
 namespace ts
 {
@@ -30,16 +29,29 @@ namespace ts
 
       virtual ~GenericState() = default;
 
-      virtual void process_event(const event_type& event) {};
-      virtual void update(const update_context& context) {};
-      virtual void render(const render_context& context) const {};
+      virtual void process_event(const event_type& event) {}
+      virtual void update(const update_context& context) {}
+      virtual void render(const render_context& context) const {}
+
+      virtual void on_activate() {}
+      virtual void on_deactivate() {}
 
       const game_context& context() const { return game_context_; }
 
     private:
       game_context game_context_;
     };
+
+    template <typename StateType>
+    void activate(GenericState<StateType>& state)
+    {
+      state.on_activate();
+    }
+
+    template <typename StateType>
+    void deactivate(GenericState<StateType>& state)
+    {
+      state.on_deactivate();
+    }
   }
 }
-
-#endif

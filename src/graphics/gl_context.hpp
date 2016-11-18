@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef GL_CONTEXT_HPP_665510129352
-#define GL_CONTEXT_HPP_665510129352
+#pragma once
 
 #include <memory>
 
@@ -39,5 +38,3 @@ namespace ts
     void initialize_glew();
   }
 }
-
-#endif

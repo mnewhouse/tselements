@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "server_cup_controller.hpp"
 
 #include "cup/cup_controller_detail.hpp"

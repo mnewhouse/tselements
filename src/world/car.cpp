@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "car.hpp"
 #include "handling_physics.hpp"
 

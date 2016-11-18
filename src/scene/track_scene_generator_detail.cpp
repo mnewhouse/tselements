@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "track_scene_generator_detail.hpp"
 #include "track_scene.hpp"
 #include "track_vertices.hpp"
@@ -329,6 +331,11 @@ namespace ts
         AssetCache<resources::max_texture_id> texture_cache;
 
         utility::AtlasList atlas_list(atlas_size);
+
+        // Make sure that fragmented entries have one pixel of overlap space, to make
+        // sure we can draw them without artifacts.
+        atlas_list.set_fragment_overlap(1);
+
         PlacementMap placement_map;
         placement_map.atlases.resize(atlas_list.atlas_count());
         auto max_atlas_rect_size = atlas_size / 2;
@@ -380,7 +387,7 @@ namespace ts
           }
         };
 
-        // This algorithm goes as followss
+        // This algorithm goes as follows
         // * Iterate through the track layers and attempt to fit as many sub-images 
         // * into the current texture atlas as possible.
         // * This will use the image rects that we got from the image_mapping.

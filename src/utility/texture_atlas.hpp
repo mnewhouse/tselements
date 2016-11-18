@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TEXTURE_ATLAS_HPP_3331902
-#define TEXTURE_ATLAS_HPP_3331902
+#pragma once
 
 #include "utility/rect.hpp"
 #include "utility/vector2.hpp"
@@ -67,12 +66,16 @@ namespace ts
       void set_padding(std::int32_t padding);
       std::int32_t padding() const;
 
+      void set_fragment_overlap(std::int32_t overlap);
+      std::int32_t fragment_overlap() const;
+
     private:
       std::size_t create_atlas(Vector2i size);
 
       std::size_t current_atlas_ = 0;
       Vector2i atlas_size_;
       std::int32_t padding_ = 1;
+      std::int32_t fragment_overlap_ = 0;
       std::vector<utility::TextureAtlas> atlas_list_;
     };
 
@@ -83,9 +86,9 @@ namespace ts
       std::size_t active_atlas = current_atlas_;
 
       // Divide the rect into atlas-sized sub-rectangles
-      for (auto y = 0; y < source_rect.height; y += atlas_size_.y)
+      for (auto y = 0; y < source_rect.height; y += atlas_size_.y - fragment_overlap_)
       {
-        for (auto x = 0; x < source_rect.width; x += atlas_size_.x)
+        for (auto x = 0; x < source_rect.width; x += atlas_size_.x - fragment_overlap_)
         {
           Vector2i size =
           {
@@ -139,6 +142,3 @@ namespace ts
     }
   }
 }
-
-
-#endif

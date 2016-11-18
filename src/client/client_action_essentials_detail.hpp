@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_ACTION_ESSENTIALS_DETAIL_HPP_28958189234
-#define CLIENT_ACTION_ESSENTIALS_DETAIL_HPP_28958189234
+#pragma once
 
 #include "client_action_essentials.hpp"
 #include "local_player_roster.hpp"
@@ -110,6 +109,11 @@ namespace ts
         {
           do_zoom(1.0 / zoom_factor);
         }
+
+        else if (event.key.code == sf::Keyboard::Escape)
+        {
+          end_action();
+        }
       }
     }
 
@@ -144,6 +148,11 @@ namespace ts
 
       // Now, update the scene with the new game state.
       scene_.update(frame_duration);
+
+      if (auto race_tracker = scene_.stage().race_tracker())
+      {
+        race_hud_.update(viewport_arrangement_, *race_tracker);
+      }
     }
 
     template <typename MessageDispatcher>
@@ -151,6 +160,12 @@ namespace ts
     {
       // Activate the action state by its type.
       game_context_.state_machine->activate_state<ActionState<MessageDispatcher>>();
+    }
+
+    template <typename MessageDispatcher>
+    void ActionEssentials<MessageDispatcher>::end_action()
+    {
+      game_context_.state_machine->destroy_state<ActionState<MessageDispatcher>>();
     }
 
     template <typename MessageDispatcher>
@@ -164,7 +179,23 @@ namespace ts
     {
       scene_.handle_collision(event);
     }
+
+    template <typename MessageDispatcher>
+    void ActionEssentials<MessageDispatcher>::register_lap_tracker(const race::LapTracker* lap_tracker)
+    {
+      lap_tracker_ = lap_tracker;
+    }
+
+    template <typename MessageDispatcher>
+    scene::Scene& ActionEssentials<MessageDispatcher>::scene_object()
+    {
+      return scene_;
+    }
+
+    template <typename MessageDispatcher>
+    const scene::Scene& ActionEssentials<MessageDispatcher>::scene_object() const
+    {
+      return scene_;
+    }
   }
 }
-
-#endif

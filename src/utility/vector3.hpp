@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef VECTOR3_HPP_8192384128934
-#define VECTOR3_HPP_8192384128934
+#pragma once
 
 #include "vector2.hpp"
 
@@ -165,5 +164,3 @@ namespace ts
   using Vector3f = Vector3<float>;
   using Vector3u = Vector3<std::uint32_t>;
 }
-
-#endif

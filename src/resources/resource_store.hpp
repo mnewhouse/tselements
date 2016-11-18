@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef RESOURCE_STORE_HPP_22559283
-#define RESOURCE_STORE_HPP_22559283
+#pragma once
 
 #include <memory>
 
@@ -48,5 +47,3 @@ namespace ts
     };
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef WORLD_MESSAGE_FWD_HPP_88191898213
-#define WORLD_MESSAGE_FWD_HPP_88191898213
+#pragma once
 
 namespace ts
 {
@@ -19,5 +18,3 @@ namespace ts
     }
   }
 }
-
-#endif

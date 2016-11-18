@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TRACK_DESCRIPTION_HPP_4481928
-#define TRACK_DESCRIPTION_HPP_4481928
+#pragma once
 
 #include "track_hash.hpp"
 
@@ -62,5 +61,3 @@ namespace std
     }
   };
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TEST_STATE_ESSENTIALS_HPP_583745783
-#define TEST_STATE_ESSENTIALS_HPP_583745783
+#pragma once
 
 #include "messages/message_conveyor.hpp"
 
@@ -115,5 +114,3 @@ namespace ts
     }
   }
 }
-
-#endif

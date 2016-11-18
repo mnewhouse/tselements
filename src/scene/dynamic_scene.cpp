@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "dynamic_scene.hpp"
 #include "drawable_entity.hpp"
 

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CONFIG_HPP_128389
-#define CONFIG_HPP_128389
+#pragma once
 
 namespace ts
 {
@@ -15,5 +14,3 @@ namespace ts
     extern const char* const audio_directory;
   }
 }
-
-#endif

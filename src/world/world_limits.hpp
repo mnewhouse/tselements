@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef WORLD_LIMITS_HPP_589518
-#define WORLD_LIMITS_HPP_589518
+#pragma once
 
 #include <cstddef>
 
@@ -19,5 +18,3 @@ namespace ts
     }
   }
 }
-
-#endif

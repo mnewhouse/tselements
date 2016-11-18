@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CAMERA_HPP_2930192309340659
-#define CAMERA_HPP_2930192309340659
+#pragma once
 
 #include <cstddef>
 
@@ -52,9 +51,7 @@ namespace ts
     // the great void outside the game world, the view will be clamped to the edge.
     // Additionally, if the view area is larger than the game world in any dimension, the view will
     // be centered.
-    Vector2<double> compute_camera_center(const Camera& camera, Vector2<double> world_size, 
-                                          Vector2<double> screen_size, double frame_progress);
+    Vector2<double> compute_camera_center(const Camera& camera, Vector2d world_size, 
+                                          Vector2d screen_size, double frame_progress);
   }
 }
-
-#endif

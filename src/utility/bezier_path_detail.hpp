@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef BEZIER_PATH_DETAIL_HPP_384192834
-#define BEZIER_PATH_DETAIL_HPP_384192834
+#pragma once
 
 #include "bezier_path.hpp"
 
@@ -197,4 +196,4 @@ namespace ts
   }
 }
 
-#endif
+#pragma once

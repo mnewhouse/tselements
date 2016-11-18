@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TERRAIN_DEFINITION_HPP_581918291823
-#define TERRAIN_DEFINITION_HPP_581918291823
+#pragma once
 
 #include "utility/color.hpp"
 
@@ -25,6 +24,7 @@ namespace ts
       double braking = 1.0;
       double steering = 1.0;
       double grip = 1.0;
+      double antislide = 1.0;
       double traction = 1.0;
       double roughness = 0.0;
       double jump = 0.0;
@@ -45,5 +45,3 @@ namespace ts
     };
   }
 }
-
-#endif

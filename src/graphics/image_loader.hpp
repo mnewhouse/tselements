@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef IMAGE_LOADER_HPP_58198491284
-#define IMAGE_LOADER_HPP_58198491284
+#pragma once
 
 #include "image.hpp"
 
@@ -55,5 +54,3 @@ namespace ts
     using DefaultImageLoader = ImageLoader<sf::Image, LoadImage>;
   }
 }
-
-#endif

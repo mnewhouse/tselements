@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#pragma once
+
 #include "cup_controller.hpp"
 #include "cup.hpp"
 #include "cup_messages.hpp"

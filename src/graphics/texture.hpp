@@ -4,12 +4,13 @@
 * Released under the MIT license.
 */
 
-#ifndef TEXTURE_HPP_58391285
-#define TEXTURE_HPP_58391285
+#pragma once
 
 #include "utility/vector2.hpp"
 #include "utility/vector3.hpp"
 #include "utility/rect.hpp"
+
+#include "gl_check.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -69,7 +70,12 @@ namespace ts
 
     Texture create_texture_from_image(const sf::Image& image);
     GLint max_texture_size();
+
+    inline Texture create_texture()
+    {
+      GLuint texture{};
+      glCheck(glGenTextures(1, &texture));
+      return Texture(texture, { 0, 0 });
+    }
   }
 }
-
-#endif

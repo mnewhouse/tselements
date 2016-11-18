@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#pragma once
+
 namespace ts
 {
   namespace graphics

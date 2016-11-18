@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CAR_DESCRIPTION_HPP_23901395
-#define CAR_DESCRIPTION_HPP_23901395
+#pragma once
 
 #include "car_hash.hpp"
 
@@ -59,5 +58,3 @@ namespace ts
     }
   }
 }
-
-#endif

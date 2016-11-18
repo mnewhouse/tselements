@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SERVER_MESSAGES_HPP_68963412
-#define SERVER_MESSAGES_HPP_68963412
+#pragma once
 
 #include "remote_client.hpp"
 
@@ -37,5 +36,3 @@ namespace ts
       make_client_message(MessageType&& message, RemoteClient client) = delete;
   }
 }
-
-#endif

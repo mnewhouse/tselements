@@ -4,10 +4,11 @@
 * Released under the MIT license.
 */
 
-#ifndef CONTROL_POINT_HPP_112039581298
-#define CONTROL_POINT_HPP_112039581298
+#pragma once
 
 #include "utility/vector2.hpp"
+
+#include <cstdint>
 
 namespace ts
 {
@@ -20,11 +21,17 @@ namespace ts
         FinishLine, HorizontalLine, VerticalLine, Area,
       };
 
+      enum Flags : std::uint32_t
+      {
+        None = 0,
+        Sector = 1,
+        SpeedTest = 2
+      };
+
       Vector2i start;
       Vector2i end;
       Type type;
+      std::uint32_t flags;
     };
   }
 }
-
-#endif

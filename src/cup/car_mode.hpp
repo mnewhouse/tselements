@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CAR_MODE_HPP_7118394856
-#define CAR_MODE_HPP_7118394856
+#pragma once
 
 namespace ts
 {
@@ -19,5 +18,3 @@ namespace ts
     };
   }
 }
-
-#endif

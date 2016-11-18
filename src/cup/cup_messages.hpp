@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CUP_MESSAGES_HPP_991329858
-#define CUP_MESSAGES_HPP_991329858
+#pragma once
 
 #include "cup_state.hpp"
 #include "player_definition.hpp"
@@ -113,5 +112,3 @@ namespace ts
     }
   }
 }
-
-#endif

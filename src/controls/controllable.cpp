@@ -4,6 +4,7 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
 #include "controllable.hpp"
 
 namespace ts

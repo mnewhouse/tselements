@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_ACTION_MESSAGE_FORWARDER_DETAIL_HPP_845691238746
-#define CLIENT_ACTION_MESSAGE_FORWARDER_DETAIL_HPP_845691238746
+#pragma once
 
 #include "client_action_essentials.hpp"
 
@@ -26,5 +25,3 @@ namespace ts
     }
   }
 }
-
-#endif

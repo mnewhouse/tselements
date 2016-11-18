@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CONFIG_DEFINITIONS_HPP_358938
-#define CONFIG_DEFINITIONS_HPP_358938
+#pragma once
 
 #include "config.hpp"
 
@@ -26,5 +25,3 @@
 // The data directory is where the game looks for default track assets.
 const char* const ts::config::data_directory = TS_DATA_DIRECTORY;
 const char* const ts::config::audio_directory = TS_AUDIO_DIRECTORY;
-
-#endif

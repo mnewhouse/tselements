@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TEXT_GEOMETRY_HPP_289013891
-#define TEXT_GEOMETRY_HPP_289013891
+#pragma once
 
 #include "graphics/geometry.hpp"
 
@@ -54,5 +53,3 @@ namespace ts
     };
   }
 }
-
-#endif

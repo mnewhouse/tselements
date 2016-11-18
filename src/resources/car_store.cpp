@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CAR_STORE_HPP_6960123
-#define CAR_STORE_HPP_6960123
+#include "stdinc.hpp"
 
 #include "car_store.hpp"
 #include "car_loader.hpp"
@@ -101,5 +100,3 @@ namespace ts
     }
   }
 }
-
-#endif

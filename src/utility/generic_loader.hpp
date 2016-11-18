@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef GENERIC_LOADER_HPP_8859812835
-#define GENERIC_LOADER_HPP_8859812835
+#pragma once
 
 #include <string>
 #include <atomic>
@@ -105,5 +104,3 @@ namespace ts
     }
   }
 }
-
-#endif

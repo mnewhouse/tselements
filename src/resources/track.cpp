@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "track.hpp"
 #include "default_start_points.hpp"
 
@@ -41,22 +43,22 @@ namespace ts
       return author_;
     }
 
-    Vector2u Track::size() const
+    Vector2i Track::size() const
     {
       return size_;
     }
 
-    void Track::set_size(const Vector2u& size)
+    void Track::set_size(const Vector2i& size)
     {
       size_ = size;
     }
 
-    std::uint32_t Track::height_level_count() const noexcept
+    std::int32_t Track::height_level_count() const noexcept
     {
       return height_level_count_;
     }
 
-    void Track::set_height_level_count(std::uint32_t height_levels) noexcept
+    void Track::set_height_level_count(std::int32_t height_levels) noexcept
     {
       height_level_count_ = height_levels;
     }    
@@ -123,13 +125,14 @@ namespace ts
       return ImmutableLayerOrderInterface(boost::make_indirect_iterator(begin), boost::make_indirect_iterator(end));
     }
 
-    TrackLayer* Track::create_layer(std::string layer_name, std::uint32_t level)
+    TrackLayer* Track::create_layer(std::string layer_name, std::uint32_t level, TrackLayerType type)
     {
       LayerId layer_id = 0;
       if (!layers_.empty()) layer_id = layers_.crbegin()->first + 1;
 
       TrackLayer layer;
       layer.id = layer_id;
+      layer.type = type;
       layer.name = std::move(layer_name);
       layer.level = level;
 

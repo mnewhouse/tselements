@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SETTINGS_HPP_58198519825
-#define SETTINGS_HPP_58198519825
+#pragma once
 
 #include <memory>
 
@@ -47,5 +46,3 @@ namespace ts
     };
   }
 }
-
-#endif

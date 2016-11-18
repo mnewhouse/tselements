@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "texture.hpp"
 
 #include <SFML/Graphics/Image.hpp>

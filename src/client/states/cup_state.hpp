@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CUP_STATE_BASE_HPP_34131892734
-#define CUP_STATE_BASE_HPP_34131892734
+#pragma once
 
 #include "client/client_base.hpp"
 
@@ -48,5 +47,3 @@ namespace ts
     };
   }
 }
-
-#endif

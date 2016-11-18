@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef FONT_LIBRARY_HPP_4123986692
-#define FONT_LIBRARY_HPP_4123986692
+#pragma once
 
 #include "bitmap_font.hpp"
 
@@ -27,5 +26,3 @@ namespace ts
     };
   }
 }
-
-#endif

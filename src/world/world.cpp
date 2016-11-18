@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "world.hpp"
 #include "car.hpp"
 #include "world_limits.hpp"
@@ -400,7 +402,7 @@ namespace ts
       return car_ptr;
     }
 
-    void World::update(world::EventInterface& event_interface, std::uint32_t frame_duration)
+    void World::update(std::uint32_t frame_duration, world::EventInterface& event_interface)
     {
       double fd = frame_duration * 0.001;
 

@@ -35,14 +35,13 @@ source_group(editor REGULAR_EXPRESSION src/editor/[^/])
 source_group(fonts REGULAR_EXPRESSION src/fonts/[^/]+)
 source_group(game REGULAR_EXPRESSION src/game/[^/]+)
 source_group(graphics REGULAR_EXPRESSION src/graphics/[^/]+)
+source_group(imgui REGULAR_EXPRESSION src/imgui/[^/]+)
 source_group(menu REGULAR_EXPRESSION src/menu/[^/]+)
 source_group(messages REGULAR_EXPRESSION src/messages/[^/]+)
 source_group(resources REGULAR_EXPRESSION src/resources/[^/]+)
 source_group(scene REGULAR_EXPRESSION src/scene/[^/]+)
-source_group(race REGULAR_EXPRESSION src/race/[^/]+)
 source_group(server REGULAR_EXPRESSION src/server/[^/]+)
 source_group(stage REGULAR_EXPRESSION src/stage/[^/]+)
-source_group(user_interface REGULAR_EXPRESSION src/user_interface/[^/]+)
 source_group(utility REGULAR_EXPRESSION src/utility/[^/]+)
 source_group(world REGULAR_EXPRESSION src/world/[^/]+)
 
@@ -54,12 +53,14 @@ set(LIB_SOURCES
 	src/client/states/local_cup_state.cpp
 	src/client/states/local_action_state.cpp
 
+	src/client/client_race_hud.cpp
 	src/client/client_viewport_arrangement.cpp
+
 	src/client/key_settings.cpp
 	src/client/local_client.cpp
 	src/client/local_message_dispatcher.cpp
 	src/client/local_player_roster.cpp
-	src/client/control_event_translator.cpp
+	src/client/control_event_translator.cpp	
 
 	src/controls/control_center.cpp
 	src/controls/controllable.cpp
@@ -68,13 +69,16 @@ set(LIB_SOURCES
 	src/cup/cup_synchronizer.cpp
 	src/cup/cup_messages.cpp
 
+	src/editor/editor_action_history.cpp
+	src/editor/editor_context.cpp
 	src/editor/editor_scene.cpp
 	src/editor/test_state_essentials.cpp
-	src/editor/track_editor_state.cpp
-	src/editor/track_editor_interface_state.cpp
-	src/editor/track_editor_menu.cpp
-	src/editor/track_editor_test_state.cpp
-	src/editor/track_loader_3d.cpp
+	src/editor/editor_state.cpp
+	src/editor/editor_interface_state.cpp
+	src/editor/editor_test_state.cpp
+	src/editor/editor_working_state.cpp
+
+	src/editor/tools/editor_path_tool.cpp
 
 	src/fonts/bitmap_font.cpp
 	src/fonts/font_library.cpp
@@ -82,6 +86,7 @@ set(LIB_SOURCES
 	src/fonts/text_geometry.cpp
 
 	src/game/loading_thread.cpp
+	src/game/main_loop.cpp
 
 	src/graphics/geometry.cpp
 	src/graphics/geometry_renderer.cpp
@@ -91,13 +96,11 @@ set(LIB_SOURCES
 	src/graphics/render_window.cpp
 	src/graphics/shader.cpp	
 	src/graphics/texture.cpp
-
-	src/menu/update_input_state.cpp
-	src/menu/main_menu.cpp
-	src/menu/main_menu_state.cpp
-
-	src/race/lap_tracker.cpp
-	src/race/race.cpp
+	
+	src/imgui/imgui.cpp
+	src/imgui/imgui_draw.cpp
+	src/imgui/imgui_sfml_opengl.cpp
+	src/imgui/imgui_default_style.cpp
 
 	src/resources/car_loader.cpp
 	src/resources/car_store.cpp
@@ -122,15 +125,15 @@ set(LIB_SOURCES
 	src/scene/render_scene.cpp
 	src/scene/scene.cpp
 	src/scene/scene_loader.cpp
-	src/scene/scene_renderer.cpp
 	src/scene/sound_effect_controller.cpp
 	src/scene/texture_mapping.cpp
 	src/scene/track_scene.cpp
 	src/scene/track_scene_generator.cpp
 	src/scene/track_scene_generator_detail.cpp
 	src/scene/track_vertices.cpp
+	src/scene/view_matrix.cpp
 	src/scene/viewport.cpp
-	src/scene/viewport_arrangement.cpp
+	src/scene/viewport_arrangement.cpp	
 	
 	src/server/server.cpp
 	src/server/server_cup_essentials.cpp
@@ -142,14 +145,11 @@ set(LIB_SOURCES
 	src/server/remote_client.cpp
 	src/server/remote_client_map.cpp	
 
+	src/stage/race_tracker.cpp
 	src/stage/stage.cpp
 	src/stage/stage_creation.cpp
 	src/stage/stage_loader.cpp
 	src/stage/stage_regulator.cpp
-
-	src/user_interface/gui_context.cpp
-	src/user_interface/gui_renderer.cpp
-	src/user_interface/gui_geometry.cpp
 
 	src/utility/logger.cpp
 	src/utility/random.cpp
@@ -166,7 +166,7 @@ set(LIB_SOURCES
 	src/world/world.cpp
 )
 
-file(GLOB_RECURSE LIB_HEADERS *.hpp *.inl)
+file(GLOB_RECURSE LIB_HEADERS *.hpp *.h *.inl)
 
 set(PRECOMPILED_SOURCE "src/stdinc.cpp")
 if(MSVC)
@@ -235,3 +235,4 @@ target_link_libraries(tselements libtselements)
 target_link_libraries(editor libtselements)
 
 add_subdirectory("${PROJECT_SOURCE_DIR}/tests")
+

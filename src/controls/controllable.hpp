@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CONTROLLABLE_HPP_7110923
-#define CONTROLLABLE_HPP_7110923
+#pragma once
 
 #include "control.hpp"
 
@@ -35,5 +34,3 @@ namespace ts
     };
   }
 }
-
-#endif

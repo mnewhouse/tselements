@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CUP_SYNCHRONIZER_HPP_585918891
-#define CUP_SYNCHRONIZER_HPP_585918891
+#pragma once
 
 #include "cup_messages.hpp"
 
@@ -36,5 +35,3 @@ namespace ts
     };
   }
 }
-
-#endif

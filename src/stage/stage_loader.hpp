@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef STAGE_LOADER_HPP_85129835
-#define STAGE_LOADER_HPP_85129835
+#pragma once
 
 #include "utility/generic_loader.hpp"
 
@@ -36,5 +35,3 @@ namespace ts
     };
   }
 }
-
-#endif

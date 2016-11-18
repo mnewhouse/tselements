@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef WINDOW_HPP_58912
-#define WINDOW_HPP_58912
+#pragma once
 
 #include "utility/vector2.hpp"
 #include "utility/color.hpp"
@@ -27,30 +26,29 @@ namespace ts
       FullScreenDesktop
     };
 
-    // The RenderWindow models the game's window. 
-    // It exposes a very minimalistic interface.
+    // The RenderWindow represents the game's window.
     class RenderWindow
     {
     public:
-      RenderWindow(const char* title, std::uint32_t width, std::uint32_t height, WindowMode window_mode);
+      RenderWindow(const char* title, std::int32_t width, std::int32_t height, WindowMode window_mode);
       ~RenderWindow();
 
       void set_framerate_limit(std::uint32_t limit);
+      void set_vsync_enabled(bool enable);
 
       void clear(Colorf color = Colorf(0.0f, 0.0f, 0.0f, 1.0f));
       void display();
       void activate();
 
-      Vector2u size() const;
+      Vector2i size() const;
 
-      bool poll_event(sf::Event& event);      
+      bool poll_event(sf::Event& event);
+
+      Vector2i mouse_position() const;
 
     private:
       struct Impl;
       std::unique_ptr<Impl> impl_;
     };
   }
-
 }
-
-#endif

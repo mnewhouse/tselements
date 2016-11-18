@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef RESOURCES_PATTERN_BUILDER_HPP_2289189125
-#define RESOURCES_PATTERN_BUILDER_HPP_2289189125
+#pragma once
 
 #include "pattern.hpp"
 
@@ -22,6 +21,3 @@ namespace ts
     Pattern build_track_pattern(const Track& track, PatternLoader& pre_loaded_patterns);   
   }
 }
-
-
-#endif

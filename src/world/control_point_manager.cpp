@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "control_point_manager.hpp"
 
 #include <algorithm>

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SERVER_MESSAGE_CONVEYOR_HPP_2389418235
-#define SERVER_MESSAGE_CONVEYOR_HPP_2389418235
+#pragma once
 
 #include "server_message_forwarder.hpp"
 
@@ -38,5 +37,3 @@ namespace ts
     }
   }
 }
-
-#endif

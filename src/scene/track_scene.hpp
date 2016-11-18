@@ -4,10 +4,9 @@
 * Released under the MIT license.
 */
 
-#ifndef TRACK_SCENE_HPP_88859312
-#define TRACK_SCENE_HPP_88859312
+#pragma once
 
-#include "resources/track_geometry.hpp"
+#include "resources/geometry.hpp"
 
 #include "graphics/texture.hpp"
 
@@ -33,8 +32,8 @@ namespace ts
       using texture_type = graphics::Texture;
       explicit TrackSceneLayer(std::uint32_t level);
 
-      using vertex_type = resources::TrackVertex;
-      using face_type = resources::TrackFace;
+      using vertex_type = resources::Vertex;
+      using face_type = resources::Face;
 
       struct Component
       {
@@ -90,9 +89,9 @@ namespace ts
       using LayerHandle = const resources::TrackLayer*;
 
       TrackScene() = default;
-      explicit TrackScene(Vector2u track_size);
+      explicit TrackScene(Vector2i track_size);
 
-      Vector2u track_size() const;
+      Vector2i track_size() const;
 
       using texture_type = TrackSceneLayer::texture_type;
       using vertex_type = TrackSceneLayer::vertex_type;
@@ -112,9 +111,7 @@ namespace ts
       std::vector<std::unique_ptr<texture_type>> textures_;
       std::unordered_map<LayerHandle, TrackSceneLayer> layers_;
       std::vector<TrackSceneLayer*> active_layers_;
-      Vector2u track_size_;
+      Vector2i track_size_;
     };
   }
 }
-
-#endif

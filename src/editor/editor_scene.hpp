@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef EDITOR_SCENE_HPP_85918214
-#define EDITOR_SCENE_HPP_85918214
+#pragma once
 
 #include "resources/track.hpp"
 
@@ -28,7 +27,7 @@ namespace ts
       const resources::Track& track() const;
       resources::Track& track();
 
-      void render(const scene::Viewport& viewport, Vector2u screen_size, double frame_progress) const;
+      void render(const scene::Viewport& viewport, Vector2i screen_size, double frame_progress) const;
 
       scene::RenderScene steal_render_scene();
       void adopt_render_scene(scene::RenderScene render_scene);
@@ -39,5 +38,3 @@ namespace ts
     };
   }
 }
-
-#endif

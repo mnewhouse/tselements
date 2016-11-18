@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef BEZIER_PATH_HPP_859812983498
-#define BEZIER_PATH_HPP_859812983498
+#pragma once
 
 #include "vector2.hpp"
 
@@ -24,7 +23,7 @@ namespace ts
     };
 
     class BezierPath;
-    
+
     namespace detail
     {
       template <typename Point>
@@ -46,8 +45,8 @@ namespace ts
 
       template <typename Point>
       class BezierPathIterator
-        : public boost::iterator_facade<BezierPathIterator<Point>, BezierCurve, 
-                                        boost::random_access_traversal_tag, BezierPathReference<Point>>
+        : public boost::iterator_facade < BezierPathIterator<Point>, BezierCurve,
+        boost::random_access_traversal_tag, BezierPathReference < Point >>
       {
       public:
         BezierPathIterator() = default;
@@ -55,8 +54,8 @@ namespace ts
         template <typename OtherPoint, typename = is_bezier_point_convertible<OtherPoint, Point>>
         BezierPathIterator(const BezierPathIterator<OtherPoint>& other);
 
-        using base_type = boost::iterator_facade<BezierPathIterator<Point>, BezierCurve,
-          boost::random_access_traversal_tag, BezierPathReference<Point>>;
+        using base_type = boost::iterator_facade < BezierPathIterator<Point>, BezierCurve,
+          boost::random_access_traversal_tag, BezierPathReference < Point >> ;
 
         using reference = typename base_type::reference;
         using difference_type = typename base_type::difference_type;
@@ -68,7 +67,7 @@ namespace ts
         friend BezierPath;
 
         template <typename OtherPoint>
-        friend class BezierPathIterator;        
+        friend class BezierPathIterator;
 
         explicit BezierPathIterator(Point* point);
 
@@ -96,7 +95,7 @@ namespace ts
       BezierPath() = default;
 
       template <typename InputIt>
-      explicit BezierPath(InputIt it, InputIt end);      
+      explicit BezierPath(InputIt it, InputIt end);
 
       std::size_t size() const;
       bool empty() const;
@@ -127,5 +126,3 @@ namespace ts
     Vector2<double> bezier_normal_at(const CurveType& curve, double time_point);
   }
 }
-
-#endif

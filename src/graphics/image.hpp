@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef IMAGE_HPP_81293813
-#define IMAGE_HPP_81293813
+#pragma once
 
 #include <SFML/Graphics/Image.hpp>
 
@@ -33,5 +32,3 @@ namespace ts
     };
   }
 }
-
-#endif

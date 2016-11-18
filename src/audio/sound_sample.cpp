@@ -4,6 +4,7 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
 #include "sound_sample.hpp"
 
 #include "utility/stream_utilities.hpp"

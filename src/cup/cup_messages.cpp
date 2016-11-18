@@ -4,6 +4,7 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
 #include "cup_messages.hpp"
 
 #include "stage/stage_description.hpp"

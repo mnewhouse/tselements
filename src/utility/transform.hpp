@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TRANSFORM_HPP_44910245
-#define TRANSFORM_HPP_44910245
+#pragma once
 
 #include "vector2.hpp"
 #include "rect.hpp"
@@ -74,5 +73,3 @@ namespace ts
     return transform_rect(rect, sin(rad), cos(rad));
   }
 }
-
-#endif

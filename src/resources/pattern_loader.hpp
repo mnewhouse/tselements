@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef RESOURCES_PATTERN_LOADER_HPP_48491898123
-#define RESOURCES_PATTERN_LOADER_HPP_48491898123
+#pragma once
 
 #include "pattern.hpp"
 
@@ -32,5 +31,3 @@ namespace ts
     };
   }
 }
-
-#endif

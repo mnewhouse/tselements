@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef GENERIC_STATE_MACHINE_HPP_44892
-#define GENERIC_STATE_MACHINE_HPP_44892
+#pragma once
 
 #include <vector>
 #include <typeindex>
@@ -43,8 +42,6 @@ namespace ts
         state_machine_type* state_machine_;
       };
     }
-
-
 
     // class template StateMachine
     // Allows for construction and management of game states.
@@ -163,5 +160,3 @@ namespace ts
 }
 
 #include "generic_state_machine.inl"
-
-#endif

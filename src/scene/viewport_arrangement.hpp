@@ -4,12 +4,13 @@
 * Released under the MIT license.
 */
 
-#ifndef VIEWPORT_ARRANGEMENT_HPP_689123819
-#define VIEWPORT_ARRANGEMENT_HPP_689123819
+#pragma once
 
 #include "viewport.hpp"
 
 #include <vector>
+
+#include <boost/range/iterator_range.hpp>
 
 namespace ts
 {
@@ -30,11 +31,11 @@ namespace ts
 
       void update_viewports();
 
+      boost::iterator_range<const Viewport*> viewports() const;
+
     private:
       std::vector<Viewport> viewports_;
       Viewport default_viewport_;
     };
   }
 }
-
-#endif

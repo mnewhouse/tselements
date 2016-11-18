@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_MESSAGE_CONVEYOR_HPP_668912385
-#define CLIENT_MESSAGE_CONVEYOR_HPP_668912385
+#pragma once
 
 #include "messages/message_conveyor.hpp"
 
@@ -45,5 +44,3 @@ namespace ts
     }
   }
 }
-
-#endif

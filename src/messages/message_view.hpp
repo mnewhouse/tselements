@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef MESSAGE_VIEW_HPP_19835018925
-#define MESSAGE_VIEW_HPP_19835018925
+#pragma once
 
 #include <cstdint>
 #include <cstddef>
@@ -19,5 +18,3 @@ namespace ts
     using MessageView = boost::iterator_range<const std::uint8_t*>;
   }
 }
-
-#endif

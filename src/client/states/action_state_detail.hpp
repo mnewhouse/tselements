@@ -4,8 +4,9 @@
 * Released under the MIT license.
 */
 
-#include "action_state.hpp"
+#pragma once
 
+#include "action_state.hpp"
 
 namespace ts
 {

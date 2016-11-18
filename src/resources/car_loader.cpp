@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "car_loader.hpp"
 #include "pattern.hpp"
 #include "collision_mask_detail.hpp"
@@ -64,7 +66,7 @@ namespace ts
           if (directive == property)
           {
             if (ArrayStream(remainder) >> behavior.torque_reduction >> behavior.braking_reduction >>
-                behavior.steering_reduction >> behavior.turn_in_reduction >> behavior.antislide_reduction)
+                behavior.turning_reduction >> behavior.grip_reduction >> behavior.antislide_reduction)
             {
               result = behavior;
               return true;
@@ -84,10 +86,10 @@ namespace ts
           {
             if (stream >> stress.front)
             {
-              if (!(stream >> stress.neutral >> stress.back))
+              if (!(stream >> stress.neutral >> stress.rear))
               {
                 stress.neutral = stress.front;
-                stress.back = stress.front;
+                stress.rear = stress.front;
               }
 
               result = stress;
@@ -204,11 +206,14 @@ namespace ts
         else if (read_property("steering", handling.steering)) {}        
         else if (read_property("antislide", handling.antislide)) {}
         else if (read_property("tractionlimit", handling.traction_limit)) { handling.traction_limit *= 1000.0; }
+        else if (read_property("tractionrecovery", handling.traction_recovery)) {}
         else if (read_property("dragcoefficient", handling.drag_coefficient)) {}
         else if (read_property("rollingcoefficient", handling.rolling_coefficient)) {}
         else if (read_property("downforcecoefficient", handling.downforce_coefficient)) {}
         else if (read_property("downforcebrakeeffect", handling.downforce_brake_effect)) {}
-        else if (read_property("slidefriction", handling.slide_friction)) {}
+        else if (read_property("downforceturningeffect", handling.downforce_turning_effect)) {}
+        else if (read_property("downforcegripeffect", handling.downforce_grip_effect)) {}
+        else if (read_property("slidefriction", handling.slide_friction)) {}        
         else if (read_property("mass", handling.mass)) {}
         else if (read_property("maxenginerevs", handling.max_engine_revs)) {}
         else if (read_property("torquemultiplier", handling.torque_multiplier)) {}
@@ -217,7 +222,7 @@ namespace ts
 
         else if (read_stress_factor("torquestress", handling.torque_stress)) {}
         else if (read_stress_factor("brakingstress", handling.braking_stress)) {}
-        else if (read_stress_factor("turning_stress", handling.turning_stress)) {}
+        else if (read_stress_factor("turningstress", handling.turning_stress)) {}
 
         else if (read_traction_loss_behavior("lockupbehavior", handling.lock_up_behavior)) {}
         else if (read_traction_loss_behavior("wheelspinbehavior", handling.wheel_spin_behavior)) {}

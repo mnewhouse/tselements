@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "settings.hpp"
 
 #include "cup/cup_settings.hpp"

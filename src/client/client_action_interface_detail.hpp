@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#pragma once
+
 #include "client_action_interface.hpp"
 #include "client_action_essentials.hpp"
 

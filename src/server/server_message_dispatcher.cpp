@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "server_message_dispatcher.hpp"
 
 namespace ts

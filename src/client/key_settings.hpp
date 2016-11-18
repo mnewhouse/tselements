@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_CONTROLS_HPP_48192378
-#define CLIENT_CONTROLS_HPP_48192378
+#pragma once
 
 #include "controls/key_mapping.hpp"
 
@@ -28,5 +27,3 @@ namespace ts
     KeySettings default_key_settings();
   }
 }
-
-#endif

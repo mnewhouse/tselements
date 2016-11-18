@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef GEOMETRY_RENDERER_HPP_85918298125
-#define GEOMETRY_RENDERER_HPP_85918298125
+#pragma once
 
 #include "shader.hpp"
 #include "sampler.hpp"
@@ -31,5 +30,3 @@ namespace ts
     };
   }
 }
-
-#endif

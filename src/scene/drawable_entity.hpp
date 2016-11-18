@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef DRAWABLE_ENTITY_HPP_85912859
-#define DRAWABLE_ENTITY_HPP_85912859
+#pragma once
 
 #include "graphics/texture.hpp"
 
@@ -51,5 +50,3 @@ namespace ts
     };
   }
 }
-
-#endif

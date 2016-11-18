@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef STREAM_UTILITIES_HPP_581116
-#define STREAM_UTILITIES_HPP_581116
+#pragma once
 
 #include <boost/utility/string_ref.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -74,5 +73,3 @@ namespace ts
     stream_type stream_;
   };
 }
-
-#endif

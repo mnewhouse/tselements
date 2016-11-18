@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef MESSAGE_CONVEYOR_HPP_5819818293
-#define MESSAGE_CONVEYOR_HPP_5819818293
+#pragma once
 
 #include <utility>
 
@@ -62,5 +61,3 @@ namespace ts
     };
   }
 }
-
-#endif

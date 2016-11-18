@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "collision_mask.hpp"
 #include "collision_mask_detail.hpp"
 

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef RECT_HPP_58912
-#define RECT_HPP_58912
+#pragma once
 
 #include "vector2.hpp"
 
@@ -151,6 +150,18 @@ namespace ts
     return result;
   }
 
+  template <typename T>
+  auto size(const Rect<T>& rect)
+  {
+    return make_vector2(rect.width, rect.height);
+  }
+
+  template <typename T>
+  auto position(const Rect<T>& rect)
+  {
+    return make_vector2(rect.left, rect.top);
+  }
+
   template <typename To, typename From>
   Rect<To> rect_cast(const Rect<From>& rect)
   {
@@ -186,5 +197,3 @@ namespace ts
   using DoubleRect = Rect<double>;
   using IntRect = Rect<std::int32_t>;
 }
-
-#endif

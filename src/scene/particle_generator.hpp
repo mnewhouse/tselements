@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef PARTICLE_GENERATOR_HPP_5781923645197283
-#define PARTICLE_GENERATOR_HPP_5781923645197283
+#pragma once
 
 #include "utility/vertex.hpp"
 
@@ -78,5 +77,3 @@ namespace ts
     };
   }
 }
-
-#endif

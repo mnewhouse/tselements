@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef INCLUDE_PATH_HPP_446932
-#define INCLUDE_PATH_HPP_446932
+#pragma once
 
 #include <string>
 #include <initializer_list>
@@ -27,6 +26,3 @@ namespace ts
     boost::filesystem::path find_include_path(boost::string_ref file_name, std::initializer_list<boost::string_ref> search_paths);
   }
 }
-
-#endif
-

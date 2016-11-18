@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef RESOURCE_LIBRARY_INTERFACE_HPP_8149284
-#define RESOURCE_LIBRARY_INTERFACE_HPP_8149284
+#pragma once
 
 namespace ts
 {
@@ -102,5 +101,3 @@ namespace ts
     };
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TEXTURE_HPP_7757132
-#define TEXTURE_HPP_7757132
+#pragma once
 
 #include "utility/rect.hpp"
 
@@ -29,5 +28,3 @@ namespace ts
     };
   }
 }
-
-#endif

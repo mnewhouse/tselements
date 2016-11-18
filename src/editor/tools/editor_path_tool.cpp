@@ -5,907 +5,420 @@
 */
 
 #include "stdinc.hpp"
-
 #include "editor_path_tool.hpp"
-#include "editor/editor_scene.hpp"
-#include "editor/render_scene_3d.hpp"
-#include "editor/terrain_scene_3d.hpp"
-#include "editor/height_map_shaders.hpp"
-#include "editor/terrain_interface_shaders.hpp"
-#include "editor/path_vertices_detail.hpp"
 
-#include "graphics/gl_check.hpp"
-#include "graphics/gl_scissor_box.hpp"
-#include "graphics/texture.hpp"
+#include "editor/editor_context.hpp"
+#include "editor/editor_state.hpp"
 
-#include "user_interface/gui_background_style.hpp"
-#include "user_interface/gui_style.hpp"
-#include "user_interface/gui_widgets.hpp"
-#include "user_interface/gui_geometry.hpp"
-
-#include "utility/vector2.hpp"
-#include "utility/vector3.hpp"
-#include "utility/color.hpp"
-#include "utility/random.hpp"
-
-#include <glm/gtc/type_ptr.hpp>
-
-#include <boost/container/small_vector.hpp>
+#include "imgui/imgui.h"
 
 namespace ts
 {
   namespace editor
   {
-    namespace tools
+    namespace modes
     {
-      static auto create_path_shader_program()
+      enum PathToolModes
       {
-        const auto version_string = "#version 330\n";
+        Nodes,
+        Segments
+      };
 
-        const char* const vertex_shaders[] =
+      const char* const mode_names[] =
+      {
+        "Node",
+        "Segments"
+      };
+    }
+
+    const char* PathTool::tool_name() const
+    {
+      return "Path Tool";
+    }
+
+    PathTool::mode_name_range PathTool::mode_names() const
+    {
+      return { std::begin(modes::mode_names), std::end(modes::mode_names) };
+    }
+
+    void PathTool::update_selection(const WorkingState& working_state)
+    {
+      auto selected_layer = working_state.selected_layer();
+      if (selected_layer_ != selected_layer && selected_layer->type == resources::TrackLayerType::Paths)
+      {
+        selected_layer_ = selected_layer;
+        selected_path_index_ = 0;
+
+        reload_working_path();
+      }
+    }
+
+    void PathTool::ensure_path_layer_exists(const EditorContext& context)
+    {
+      // If we have a node transformation but no selected layer, create and select a layer.
+      if (selected_layer_ == nullptr)
+      {
+        auto& track = context.scene.track();
+        auto layer = track.create_layer("Path Layer", 0, resources::TrackLayerType::Paths);
+        layer->paths.emplace_back();
+
+        select_path(layer, 0, context.working_state);
+      }
+
+      // Otherwise, we might not have a path with the selected index. Need to fix that.
+      else if (selected_path_index_ >= selected_layer_->paths.size())
+      {
+        auto index = selected_layer_->paths.size();
+        selected_layer_->paths.emplace_back();
+
+        select_path(selected_layer_, index, context.working_state);
+      }
+    }
+
+    void PathTool::reload_working_path()
+    {
+      if (selected_layer_ && selected_path_index_ < selected_layer_->paths.size())
+      {
+        // Reload the working path.
+        working_path_ = selected_layer_->paths[selected_path_index_];
+      }
+
+      else
+      {
+        working_path_ = {};
+      }
+    }
+
+    void PathTool::update_tool_info(const EditorContext& context)
+    {
+      update_selection(context.working_state);
+    }
+
+    void PathTool::update_canvas_interface(const EditorContext& context)
+    {
+      update_selection(context.working_state);
+
+      auto mode = active_mode();
+      if (mode == modes::Nodes)
+      {
+        /*** Features
+         * Display current path and its nodes
+         * Select nodes by clicking on them
+         * Editing nodes by dragging them
+         * Adding new nodes by clicking anywhere else
+         ***/
+
+        auto canvas_pos = ImGui::GetWindowPos();
+        auto mouse_pos = ImGui::GetMousePos();
+        auto canvas_mouse_pos = make_vector2<double>(mouse_pos.x - canvas_pos.x,
+                                                     mouse_pos.y - canvas_pos.y);
+
+        CoordTransform transformer(context);
+        auto world_pos = vector2_cast<float>(transformer.world_position(canvas_mouse_pos));
+
+        auto& nodes = working_path_.nodes;
+        auto transform_pos = [&](Vector2f pos)
         {
-          version_string,
-          scene_3d::height_map_vertex_shader_functions,
-          terrain_interface_vertex_shader
+          auto p = transformer.viewport_position(vector2_cast<double>(pos));
+
+          return ImVec2(static_cast<float>(canvas_pos.x + p.x),
+                        static_cast<float>(canvas_pos.y + p.y));
         };
 
-        const char* const fragment_shaders[] =
+        // Draw the path and its control points.
+        // Also listen to events, so that we can modify the path.
+
+        bool previously_hovered = false;
+
+        auto draw_list = ImGui::GetWindowDrawList();
+        for (const auto& node : nodes)
         {
-          version_string,
-          terrain_interface_fragment_shader
-        };
+          auto node_pos = transform_pos(node.position);
+          auto first_pos = transform_pos(node.first_control);
+          auto second_pos = transform_pos(node.second_control);
 
-        return graphics::create_shader_program(vertex_shaders, fragment_shaders);
-      }
+          ImU32 normal_color = ImColor(255, 255, 255, 128);
+          ImU32 hover_color = ImColor(255, 255, 255, 200);
 
-      PathTool::PathTool(EditorScene* editor_scene)
-        : EditorTool(editor_scene)
-      {
-        path_shader_ = create_path_shader_program();
-        height_map_sampler_ = scene_3d::create_height_map_sampler();
-        path_vertex_buffer_ = graphics::create_buffer();
-        path_index_buffer_ = graphics::create_buffer();
-      }
+          draw_list->AddLine(first_pos, second_pos, normal_color, 1.0f);
 
-      void PathTool::set_active_mode(std::size_t mode)
-      {
-        auto new_mode = static_cast<Mode>(mode);
-        if (new_mode != active_mode_)
-        {
-          active_mode_ = static_cast<Mode>(mode);
-
-          node_transformation_ = boost::none;
-          node_placement_ = boost::none;
-
-          segment_placement_ = boost::none;
-          segment_transformation_ = boost::none;
-
-          update_path_buffer();
-        }
-      }
-
-      std::size_t PathTool::active_mode() const
-      {
-        return static_cast<std::size_t>(active_mode_);
-      }
-
-      bool PathTool::update_gui(bool has_focus, const gui::InputState& input_state,
-                                gui::Geometry& geometry)
-      {
-        // Depending on the current mode, render different GUI components.
-        switch (active_mode_)
-        {
-        case Mode::Nodes:
-          update_gui_path_nodes(has_focus, input_state, geometry);
-          break;
-
-        case Mode::StrokeSegments:
-          update_gui_stroke_segments(has_focus, input_state, geometry);
-          break;
-        }
-
-        return has_focus;
-      }
-
-      void PathTool::update_gui_path_nodes(bool& has_focus, const gui::InputState& input_state,
-                                           gui::Geometry& geometry)
-      {
-        using namespace gui;
-        auto scene = editor_scene();
-        auto view_port = scene->view_port();
-
-        auto world_pos = scene->terrain_position_at(input_state.mouse_position);
-
-        auto selected_path = scene->selected_track_path();
-        if (selected_path == nullptr) return;
-        
-        // If the selected path has suddenly become different, we need to drop all of our transformations
-        if (selected_path != selected_path_)
-        {
-          if (node_transformation_)
+          auto do_control = [&](ImVec2 screen_pos, Vector2f world_pos,
+                                NodeTransformation::Control control, float control_size)
           {
-            apply_node_transformation(*selected_path_, *node_transformation_);
-            node_transformation_ = boost::none;
-          }
+            auto diff = make_vector2(screen_pos.x - mouse_pos.x, screen_pos.y - mouse_pos.y);
+            bool hover = diff.x * diff.x + diff.y * diff.y < control_size * control_size;
 
-          node_placement_ = boost::none;
-          selected_path_ = selected_path;
-        }
-
-        auto& path = *selected_path;
-        if (node_transformation_ && world_pos)
-        {
-          // If there's a node being transformed and we moved the mouse...
-          if (input_state.mouse_position != input_state.old_mouse_position)
-          {
-            node_transformation_->end_point = { world_pos->x, world_pos->y };
-            update_node_transformation(path, *node_transformation_);
-          }
-
-          // If the mouse isn't being clicked anymore, finish the transformation.
-          if (!click_state(input_state, gui::MouseButton::Left))
-          {
-            apply_node_transformation(path, *node_transformation_);
-            node_transformation_ = boost::none;
-          }
-        }
-
-        if (node_placement_ && world_pos)
-        {
-          // If there's a node being placed and we moved the mouse...
-          if (input_state.mouse_position != input_state.old_mouse_position)
-          {
-            node_placement_->end_point = { world_pos->x, world_pos->y };
-            update_node_placement(path, *node_placement_);
-          }
-
-          if (!click_state(input_state, gui::MouseButton::Left))
-          {
-            apply_node_placement(path, *node_placement_);
-            node_placement_ = boost::none;
-          }
-        }
-
-        auto node_style = styles::fill_area(Colorb(100, 255, 255, 120)) +
-          make_hover_style(styles::fill_area(Colorb(100, 255, 255, 220)));
-
-        auto selected_node_style = styles::fill_area(Colorb(255, 255, 255, 120)) +
-          make_hover_style(styles::fill_area(Colorb(255, 255, 255, 220)));
-
-        // For each node, draw an interactive handle at the corresponding screen position.
-        if (auto selected_path = scene->selected_track_path())
-        {
-          const auto& path = *selected_path;
-
-          std::uint32_t node_index = 0, 
-            node_end = static_cast<std::uint32_t>(path.nodes.size());
-          if (node_end != 0 && path.closed) --node_end;
-
-          for (; node_index != node_end; ++node_index)
-          {
-            const auto& node = path.nodes[node_index];
-            auto process_control = [&](Vector2f position,
-                                       NodeTransformation::Control control,
-                                       std::int32_t widget_size, 
-                                       const auto& widget_style)
+            auto color = normal_color;
+            if (!previously_hovered && hover)
             {
-              auto screen_position = scene->world_to_screen_position(position);
-
-              // If the position is contained within the view port, display a little widget
-              if (contains(view_port, screen_position))
-              {
-                auto rect = make_rect_from_points(screen_position - make_vector2(widget_size, widget_size),
-                                                  screen_position + make_vector2(widget_size, widget_size));
-
-                auto state = widgets::button(rect_cast<float>(rect), 
-                                             widget_style, input_state, geometry);
-                if (has_focus && click_state(state) && !node_transformation_ && !node_placement_)
-                {
-                  // If this widget is being clicked, set it as the selected node, and also
-                  // mark this node as the one being dragged.
-                  node_transformation_.emplace();
-                  node_transformation_->control = control;
-                  node_transformation_->node_index = node_index;
-                  node_transformation_->control_point = position;
-                  node_transformation_->start_point = { world_pos->x, world_pos->y };
-                  node_transformation_->end_point = { world_pos->x, world_pos->y };
-
-                  selected_node_index_ = boost::none;
-                  selected_node_index_.emplace(node_index);
-                }
-              }
-            };
-
-            auto do_controls = [&](const auto& style)
-            {
-              process_control(node.position, NodeTransformation::Node, 6, style);
-              process_control(node.first_control, NodeTransformation::FirstControl, 4, style);
-              process_control(node.second_control, NodeTransformation::SecondControl, 4, style);
-            };
-
-            if (selected_node_index_ && *selected_node_index_ == node_index)
-            {
-              do_controls(selected_node_style);
+              color = hover_color;
+              previously_hovered = true;
             }
 
-            else
+            draw_list->AddCircle(screen_pos, control_size, color, 12, 2.0f);
+
+            if (!node_transformation_ && hover && ImGui::IsMouseClicked(0))
             {
-              do_controls(node_style);
+              auto node_id = &node - nodes.data();
+
+              NodeTransformation transformation;
+              transformation.control = control;
+              transformation.id = node_id;
+              transformation.action = NodeTransformation::Move;
+              transformation.original_state = node;
+
+              node_transformation_.emplace(transformation);
             }
-          }
-        }
-
-        // Now, if we didn't click on any nodes (that is, we don't have an active node transformation),
-        // and we still have focus here, see if the viewport area was clicked,
-        // so that we can initiate the placement of a new node.
-        if (has_focus && !node_transformation_ && !node_placement_ && !path.closed)
-        {
-          auto state = gui::widget_state(rect_cast<float>(view_port), input_state);
-          if (click_state(state))
-          {
-            if (auto world_pos = scene->terrain_position_at(input_state.mouse_position))
-            {
-              node_placement_.emplace();
-              node_placement_->end_point = { world_pos->x, world_pos->y };
-
-              path.nodes.emplace_back();
-              auto& node = path.nodes.back();
-
-              node.position = node_placement_->end_point;
-              node.first_control = node.position;
-              node.second_control = node.position;
-              node.width = utility::random_real(path.min_width, path.max_width);  
-            }
-          }
-        }
-      }
-
-      void PathTool::update_gui_stroke_segments(bool& has_focus, const gui::InputState& input_state,
-                                                gui::Geometry& geometry)
-      {
-        using namespace gui;
-        auto placement_node_style = styles::fill_area(Colorb(255, 200, 100, 150));
-
-        auto transform_node_style = styles::fill_area(Colorb(150, 255, 255, 150)) +
-          make_hover_style(styles::fill_area(Colorb(150, 255, 255, 220)));
-
-        auto selected_node_style = styles::fill_area(Colorb(255, 255, 255, 150)) +
-          make_hover_style(styles::fill_area(Colorb(255, 255, 255, 220)));
-
-        // For every segment of the currently selected stroke style,
-        // display a start and end handle and make these draggable.
-        auto scene = editor_scene();
-        auto stroke_index = scene->selected_track_path_stroke_index();
-        auto selected_path = scene->selected_track_path();
-        if (!selected_path || stroke_index >= selected_path->strokes.size()) return;
-
-        auto view_port = scene->view_port();
-
-        auto& path = *selected_path;
-        auto& stroke = path.strokes[stroke_index];
-        auto& stroke_properties = stroke.properties;
-
-        const auto& nodes = path.nodes;
-
-        auto world_pos = scene->terrain_position_at(input_state.mouse_position);
-        if (stroke_properties.is_segmented)
-        {
-          auto handle_widget_size = Vector2i(5, 5);
-
-          std::uint32_t segment_index = 0;
-          for (const auto& segment : stroke.segments)
-          {
-            if (!segment_placement_)
-            {
-              // Draw a handle widget at the start and end positions for every segment
-              auto start_index = segment.start_index, end_index = segment.end_index;
-              if (start_index < path.nodes.size() && end_index < path.nodes.size())
-              {
-                auto compute_point = [&](std::uint32_t index, float time_point)
-                {
-                  auto offset = 0.0f;
-                  if (segment.side == segment.First) offset = -1.0f;
-                  else if (segment.side == segment.Second) offset = 1.0f;
-
-                  if (!nodes.empty() && index < nodes.size() - 1 && time_point > 0.0)
-                  {
-                    return path_point_at(nodes[index], nodes[index + 1], time_point, offset);
-                  }
-
-                  // A bit ugly to interpolate between itself, but it's convenient.
-                  return path_point_at(nodes[index], nodes[index], 0.0f, offset);
-                };
-
-                auto start_point = compute_point(segment.start_index, segment.start_time_point);
-                auto end_point = compute_point(segment.end_index, segment.end_time_point);
-
-                auto do_widget = [&](Vector2f point, 
-                                     SegmentTransformation::SegmentPoint segment_point,
-                                     const auto& style)
-                {
-                  auto widget_pos = scene->world_to_screen_position(point);
-                  if (contains(view_port, widget_pos))
-                  {
-                    auto rect = make_rect_from_points(widget_pos - handle_widget_size,
-                                                      widget_pos + handle_widget_size);
-
-                    auto state = widgets::button(rect_cast<float>(rect), style,
-                                                 input_state, geometry);
-
-                    // If the little handle widget is being clicked, initiate a segment 
-                    // transformation.
-                    if (click_state(state) && !segment_transformation_)
-                    {
-                      segment_transformation_.emplace();
-                      segment_transformation_->segment_point = segment_point;
-                      segment_transformation_->start_point = point;
-                      segment_transformation_->segment_index = segment_index;
-
-                      selected_segment_index_ = boost::none;
-                      selected_segment_index_ = segment_index;
-                    }
-
-                    if (hover_state(state))
-                    {
-                      has_focus = false;
-                    }
-                  }
-                };
-
-                if (selected_segment_index_ && *selected_segment_index_ == segment_index)
-                {
-                  do_widget(start_point, SegmentTransformation::Start, selected_node_style);
-                  do_widget(end_point, SegmentTransformation::End, selected_node_style);
-                }
-
-                else
-                {
-                  do_widget(start_point, SegmentTransformation::Start, transform_node_style);
-                  do_widget(end_point, SegmentTransformation::End, transform_node_style);
-                }
-              }
-            }
-            
-            ++segment_index;
-          }
-
-          if (has_focus && world_pos && !segment_transformation_)
-          {
-            // If the mouse is currently somewhere over the path, display an interactive handle that
-            // initiates the placement of a segment when clicked.
-
-            // Find a matching path point where distance to the mouse position is
-            // smaller than a specified tolerance value.
-            auto world_pos = scene->terrain_position_at(input_state.mouse_position);
-            if (world_pos)
-            {
-              auto pos_2d = make_vector2(world_pos->x, world_pos->y);
-              const auto widget_size = Vector2i(5, 5);
-
-              // Need to search the path in three places. Two on the outside of the path, and one
-              // on the path itself.
-              boost::container::small_vector<std::pair<float, SegmentSide>, 4> sides =
-              {
-                { 0.0f, SegmentSide::Both },
-                { -1.0f, SegmentSide::A },
-                { 1.0f, SegmentSide::B }
-              };
-
-              // Unless of course there's a segment already being placed, in which case 
-              // we only have to search that side.
-              if (segment_placement_)
-              {
-                // Simply remove the entires that don't match up.
-                sides.erase(std::remove_if(sides.begin(), sides.end(), [=](const auto& side)
-                {
-                  return side.second != segment_placement_->side;
-                }), sides.end());
-              }
-
-              for (auto side : sides)
-              {
-                using namespace resources_3d;
-                auto match = find_best_matching_path_position(path.nodes.begin(), path.nodes.end(),
-                                                              pos_2d, side.first, 5.0f);
-                if (match.node_it != path.nodes.end())
-                {
-                  auto widget_pos = scene->world_to_screen_position(match.point);
-                  auto widget_rect = make_rect_from_points(widget_pos - widget_size,
-                                                           widget_pos + widget_size);
-                  auto state = widgets::button(rect_cast<float>(widget_rect), placement_node_style,
-                                               input_state, geometry);
-                  if (was_clicked(input_state))
-                  {
-                    auto node_index = static_cast<std::uint32_t>(std::distance(path.nodes.begin(),
-                                                                               match.node_it));
-                    if (!segment_placement_)
-                    {
-                      // Initiate segment placement if the little handle was clicked
-                      segment_placement_.emplace();
-                      segment_placement_->start_point = match.point;
-                      segment_placement_->side = side.second;
-                      segment_placement_->start_time = match.time_point;
-                      segment_placement_->start_index = node_index;
-                    }
-
-                    else
-                    {
-                      // Finalize the placement of a segment that's already being placed.
-                      apply_segment_stroke(path, stroke, *segment_placement_,
-                                           node_index, match.time_point);
-
-                      segment_placement_ = boost::none;
-                    }
-                  }
-                }
-              }
-            }
-
-            if (segment_placement_)
-            {
-              // If there's a segment currently being placed, display a little reference
-              auto style = styles::fill_area(Colorb(255, 150, 0, 220));
-              auto widget_size = Vector2i(5, 5);
-
-              auto point = scene->world_to_screen_position(segment_placement_->start_point);
-              auto area = make_rect_from_points(point + widget_size,
-                                                point - widget_size);
-
-              add_background(rect_cast<float>(area), style, geometry);
-            }
-          }
-
-          if (segment_transformation_ && world_pos)
-          {
-            auto segment_index = segment_transformation_->segment_index;
-
-            // If there is a segment currently being transformed, transform it according to the
-            // movement of the mouse.
-            if (input_state.mouse_position != input_state.old_mouse_position &&
-                segment_index < stroke.segments.size())
-            {              
-              auto& segment = stroke.segments[segment_index];
-              auto offset = 0.0f;
-              if (segment.side == segment.First) offset = -1.0f;
-              else if (segment.side == segment.Second) offset = 1.0f;              
-
-              auto pos_2d = make_vector2(world_pos->x, world_pos->y);
-              auto path_pos = find_best_matching_path_position(nodes.begin(), nodes.end(), pos_2d,
-                                                               offset, 100.0f);
-
-              if (path_pos.node_it != nodes.end())
-              {
-                auto node_index = static_cast<std::uint32_t>(path_pos.node_it - nodes.begin());
-                if (segment_transformation_->segment_point == SegmentTransformation::Start)
-                {
-                  segment.start_index = node_index;
-                  segment.start_time_point = path_pos.time_point;
-                }
-
-                else
-                {
-                  segment.end_index = node_index;
-                  segment.end_time_point = path_pos.time_point;
-                }
-              }
-            }
-
-            if (!click_state(input_state, MouseButton::Left))
-            {
-              segment_transformation_ = boost::none;
-
-              scene->commit(&path);
-            }
-          }
-        }
-      }
-
-      namespace detail
-      {
-        template <typename NodeTransformation>
-        void update_node_transformation(resources_3d::TrackPath& path,
-                                        const NodeTransformation& transformation)
-        {
-          auto& node = path.nodes[transformation.node_index];
-          using Control = NodeTransformation::Control;
-
-          auto offset = transformation.end_point - transformation.start_point;
-          switch (transformation.control)
-          {
-          case Control::FirstControl:
-          {
-            // Make sure the angle between to the node point is the same for both control points.
-            node.first_control = transformation.control_point + offset;
-            auto normal = normalize(node.position - node.first_control);
-            node.second_control = node.position + distance(node.position, node.second_control) * normal;
-            break;
-          }
-
-          case Control::SecondControl:
-          {
-            // Ditto here.
-            node.second_control = transformation.control_point + offset;
-            auto normal = normalize(node.position - node.second_control);
-            node.first_control = node.position + distance(node.position, node.first_control) * normal;
-            break;
-          }
-
-          case Control::Node:
-          default:
-          {
-            // Update the position with the new end point and move the control points over
-            // by the same offset, to ensure they keep their respective angles.
-            auto old_position = node.position;
-            node.position = transformation.control_point + offset;
-            node.first_control += node.position - old_position;
-            node.second_control += node.position - old_position;
-            break;
-          }
-          }
-        }
-      }
-
-      void PathTool::update_node_transformation(resources_3d::TrackPath& path,
-                                                const NodeTransformation& transformation)
-      {
-        detail::update_node_transformation(path, transformation);
-
-        if (path.closed)
-        {
-          auto last = path.nodes.size() - 1;
-          if (transformation.node_index == 0)
-          {
-            // If the path is closed, we need to keep the first and last nodes in sync.
-            auto end_transformation = transformation;
-            end_transformation.node_index = last;
-            detail::update_node_transformation(path, end_transformation);
-          }
-
-          else if (transformation.node_index == last)
-          {
-            auto start_transformation = transformation;
-            start_transformation.node_index = 0;
-            detail::update_node_transformation(path, start_transformation);
-          }
-        }
-
-        update_path_buffer();
-      }
-
-      void PathTool::apply_node_transformation(resources_3d::TrackPath& path,
-                                                const NodeTransformation& transformation)
-      {
-        update_node_transformation(path, transformation);
-
-        editor_scene()->commit(&path);
-      }
-
-      namespace detail
-      {
-        static void update_placement_node(resources_3d::TrackPathNode& node,
-                                          Vector2f end_point)
-        {
-          node.second_control = end_point;
-          node.first_control = node.position - (node.second_control - node.position);
-        }
-      }
-
-      void PathTool::update_node_placement(resources_3d::TrackPath& path, 
-                                           const NodePlacement& node_placement)
-      {
-        detail::update_placement_node(path.nodes.back(), node_placement.end_point);
-
-        update_path_buffer();
-      }
-
-      void PathTool::apply_node_placement(resources_3d::TrackPath& path,
-                                          const NodePlacement& node_placement)
-      {
-        auto& node = path.nodes.back();
-        detail::update_placement_node(node, node_placement.end_point);
-
-        update_path_buffer();        
-        editor_scene()->commit(&path);
-      }
-
-      void PathTool::apply_segment_stroke(resources_3d::TrackPath& path,
-                                          resources_3d::SegmentedStroke& stroke,
-                                          const SegmentPlacement& segment_placement,
-                                          std::uint32_t end_index, float end_time)
-      {
-        using Stroke = resources_3d::SegmentedStroke;
-        using Segment = resources_3d::StrokeSegment;
-
-        Segment segment;
-        segment.side = Segment::Both;
-        if (segment_placement.side == SegmentSide::A) segment.side = Segment::First;
-        else if (segment_placement.side == SegmentSide::B) segment.side = Segment::Second;
-
-        segment.start_index = segment_placement.start_index;
-        segment.start_time_point = segment_placement.start_time;
-        segment.end_index = end_index;
-        segment.end_time_point = end_time;
-        stroke.segments.push_back(segment);
-
-        update_path_buffer();
-        editor_scene()->commit(&path);
-      }
-
-      void PathTool::process_event(const event_type& event)
-      {        
-        if (auto selected_path = editor_scene()->selected_track_path())
-        {
-          auto& path = *selected_path;
-          auto stroke_index = editor_scene()->selected_track_path_stroke_index();
-
-          if (event.type == sf::Event::KeyPressed && active_mode_ == Mode::Nodes)
-          {
-            switch (event.key.code)
-            {
-            case sf::Keyboard::BackSpace:
-              if (!path.nodes.empty())
-              {
-                path.nodes.pop_back();
-                path.closed = false;
-                update_path_buffer();
-                editor_scene()->commit(selected_path);
-              }
-
-              break;
-
-            case sf::Keyboard::C:
-            {
-              if (!path.nodes.empty() && !path.closed)
-              {
-                auto node = path.nodes.front();
-                path.nodes.push_back(node);
-                path.closed = true;
-
-                update_path_buffer();
-                editor_scene()->commit(selected_path);
-              }
-
-              break;
-            }
-
-            case sf::Keyboard::Delete:
-              if (selected_node_index_ && *selected_node_index_ < path.nodes.size())
-              {
-                selected_node_index_ = boost::none;
-                path.nodes.erase(path.nodes.begin() + *selected_node_index_);
-                editor_scene()->commit(selected_path);
-                update_path_buffer();
-              }
-              break;
-
-            case sf::Keyboard::D:
-              selected_path_ = nullptr;
-              editor_scene()->commit(selected_path);
-              editor_scene()->select_track_path(nullptr);
-              update_path_buffer();
-              break;
-            }
-          }
-
-          else if (event.type == sf::Event::KeyPressed && active_mode_ == Mode::StrokeSegments &&
-                   stroke_index < path.strokes.size())
-          {
-            auto& stroke = path.strokes[stroke_index];
-
-            switch (event.key.code)
-            {
-            case sf::Keyboard::BackSpace:
-            {
-              segment_placement_ = boost::none;
-              if (!stroke.segments.empty())
-              {
-                stroke.segments.pop_back();
-                update_path_buffer();
-                editor_scene()->commit(selected_path);
-              }
-              break;
-            }
-
-            case sf::Keyboard::Delete:
-            {
-              if (selected_segment_index_ && 
-                  *selected_segment_index_ < stroke.segments.size())
-              {
-                selected_segment_index_ = boost::none;
-                auto& segments = stroke.segments;
-                segments.erase(segments.begin() + *selected_segment_index_);
-                update_path_buffer();
-                editor_scene()->commit(selected_path);
-              }
-            }
-            }
-          }
-        }
-      }
-
-      void PathTool::update_path_buffer()
-      {
-        element_count_ = 0;
-        line_element_count_ = 0;
-
-        if (auto selected_path = editor_scene()->selected_track_path())
-        {
-          const auto& path = *selected_path;
-          auto stroke_index = editor_scene()->selected_track_path_stroke_index();
-
-          // TODO: make it so that not everything has to be recalculated every time,
-          // particularly when adding or modifying a node at the end of the path.
-          std::vector<scene_3d::PathVertexPoint> vertex_points;
-          scene_3d::compute_path_vertex_points(path.nodes.begin(), path.nodes.end(), 0.025f, vertex_points);
-
-          const Colorb color = { 0, 200, 255, 50 };
-
-          // Generate a track outline
-          resources_3d::StrokeProperties stroke;
-          stroke.type = stroke.Border;
-          stroke.use_relative_size = false;
-          stroke.offset = -1.5f;
-          stroke.width = 3.0f;
-          stroke.color = color;
-
-          path_model_.lines.clear();
-          path_model_.faces.clear();
-          path_model_.vertices.clear();
-
-          scene_3d::generate_path_vertices(path, stroke, vertex_points, 0.0f, 0.0f, 
-                                           path_model_, [](const scene_3d::PathVertex& path_vertex)
-          {
-            Vertex vertex;
-            vertex.position = path_vertex.position;
-            vertex.color = path_vertex.color;
-            return vertex;
-          });
-
-          auto& vertices = path_model_.vertices;
-          auto& faces = path_model_.faces;
-          auto& lines = path_model_.lines;
-
-          Colorb line_color = { 100, 255, 255, 150 };
-          element_count_ = faces.size() * 3;
-
-          auto line_vertex = [=](Vector2f position, Colorb color)
-          {
-            Vertex vertex;
-            vertex.position = position;
-            vertex.color = color;
-            return vertex;
           };
 
-          line_element_count_ = 0;
-          if (active_mode_ == Mode::Nodes)
+          do_control(node_pos, node.position, NodeTransformation::Base, 5.0f);
+          do_control(first_pos, node.first_control, NodeTransformation::First, 4.0f);
+          do_control(second_pos, node.second_control, NodeTransformation::Second, 4.0f);
+        }
+
+        if (!node_transformation_)
+        {
+          if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered())
           {
-            // When editing nodes, draw lines between all nodes and their control points.
-            auto line_index = static_cast<std::uint32_t>(vertices.size());
+            // Begin the addition of a new node.
+            // Let's make sure a path layer exists first.
+            ensure_path_layer_exists(context);
 
-            for (const auto& node : path.nodes)
-            {
-              vertices.insert(vertices.end(),
-              {
-                line_vertex(node.first_control, line_color),
-                line_vertex(node.position, line_color),
-                line_vertex(node.second_control, line_color)
-              });
+            Node node;
+            node.first_control = node.position = node.second_control = world_pos;
+            node.width = path_width_;
+            nodes.push_back(node);
 
-              lines.insert(lines.end(), 
-              { 
-                { line_index, line_index + 1 },
-                { line_index + 1, line_index + 2 }
-              });
+            NodeTransformation transformation{};
+            transformation.original_state = nodes.back();
+            transformation.action = NodeTransformation::Append;
+            transformation.id = nodes.size() - 1;
+            transformation.control = NodeTransformation::Base;
 
-              line_index += 3;
-              line_element_count_ += 4;
-            }
-          }          
-
-          else if (active_mode_ == Mode::StrokeSegments && stroke_index < path.strokes.size() &&
-                   path.strokes[stroke_index].properties.is_segmented)
-          {
-            auto stroke = path.strokes[stroke_index];
-            // Draw a colored line between all stroke segments' start and end points.
-            auto path_color = Colorb(100, 255, 255, 100);
+            node_transformation_.emplace(transformation);
           }
+        }
 
-          // Also draw a line for the path itself.
-          if (vertex_points.size() >= 2)
+        if (node_transformation_)
+        {
+          apply_node_transformation(world_pos);
+
+          if (ImGui::IsMouseReleased(0))
           {
-            auto path_color = Colorb(255, 255, 255, 100);
-            auto line_index = static_cast<std::uint32_t>(vertices.size());
+            finalize_node_transformation(context);
 
-            // For all vertex points, add a line vertex
-            for (const auto& point : vertex_points)
-            {
-              vertices.push_back(line_vertex(point.point, path_color));
-            }            
-
-            // And for every point segment, add two line indices.
-            auto point_it = vertex_points.begin();
-            auto next_point_it = std::next(point_it);
-            for (; next_point_it != vertex_points.end(); ++point_it, ++next_point_it)
-            {
-              lines.insert(lines.end(), { line_index, line_index + 1 });
-
-              line_element_count_ += 2;
-              ++line_index;
-            }
+            node_transformation_ = boost::none;
           }
+        }
 
-          glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, path_index_buffer_.get()));
+        if (nodes.size() >= 2)
+        {
+          auto node_it = nodes.begin();
+          auto node_end = nodes.end();
+          auto next_it = std::next(node_it);
+          for (; next_it != node_end; ++node_it, ++next_it)
+          {
+            auto p1 = transform_pos(node_it->position);
+            auto p2 = transform_pos(node_it->second_control);
+            auto p3 = transform_pos(next_it->first_control);
+            auto p4 = transform_pos(next_it->position);
 
-          auto faces_size = faces.size() * sizeof(resources_3d::ModelFace);
-          auto lines_size = lines.size() * sizeof(resources_3d::ModelLine);
+            std::uint32_t color = ImColor(0.5f, 1.0f, 1.0f, 1.0f);
 
-          glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces_size + lines_size,
-                               nullptr, GL_STATIC_DRAW));
-          glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, faces_size,
-                                  faces.data()));
-          glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, faces_size,
-                                  lines_size, lines.data()));
-
-          glCheck(glBindBuffer(GL_ARRAY_BUFFER, path_vertex_buffer_.get()));
-          glCheck(glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), 
-                               vertices.data(), GL_STATIC_DRAW));          
+            draw_list->AddBezierCurve(p1, p2, p3, p4, color, 2.0f);
+          }
         }
       }
 
-      void PathTool::render() const
+      else if (mode == modes::Segments)
       {
-        glCheck(glDisable(GL_DEPTH_TEST));
-        graphics::scissor_box(editor_scene()->screen_size(), editor_scene()->view_port());
 
-        glCheck(glUseProgram(path_shader_.get()));
-        glCheck(glBindBuffer(GL_ARRAY_BUFFER, path_vertex_buffer_.get()));
-        glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, path_index_buffer_.get()));
-
-        glCheck(glEnableVertexAttribArray(0));
-        glCheck(glEnableVertexAttribArray(1));
-
-        glCheck(glBindSampler(1, height_map_sampler_.get()));
-
-        const auto& render_scene = editor_scene()->render_scene();
-        const auto& terrain_scene = render_scene.terrain_scene();
-
-        glCheck(glActiveTexture(GL_TEXTURE1));
-        glCheck(glBindTexture(GL_TEXTURE_2D, terrain_scene.height_map_texture().get()));
-
-        const auto height_map_cell_size = terrain_scene.height_map_cell_size();
-
-        auto uniform_locations = scene_3d::get_height_map_uniform_locations(path_shader_);
-        glCheck(glUniform1i(uniform_locations.height_map_sampler, 1));
-        glCheck(glUniform1f(uniform_locations.height_map_max_z, terrain_scene.height_map_max_z()));
-        glCheck(glUniform2f(uniform_locations.height_map_cell_size,
-                    height_map_cell_size.x, height_map_cell_size.y));
-
-        auto projection_matrix = render_scene.projection_matrix();
-        auto view_matrix = render_scene.view_matrix();
-
-        glCheck(glUniformMatrix4fv(glGetUniformLocation(path_shader_.get(), "u_projectionMatrix"), 
-                                   1, GL_FALSE, glm::value_ptr(projection_matrix)));
-
-        glCheck(glUniformMatrix4fv(glGetUniformLocation(path_shader_.get(), "u_viewMatrix"), 
-                                   1, GL_FALSE, glm::value_ptr(view_matrix)));
-
-        glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                                      reinterpret_cast<const void*>(offsetof(Vertex, position))));
-
-        glCheck(glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex),
-                                      reinterpret_cast<const void*>(offsetof(Vertex, color))));
-
-        glCheck(glDrawElements(GL_TRIANGLES, element_count_, GL_UNSIGNED_INT,
-                               reinterpret_cast<const void*>(0)));
-
-        glCheck(glDrawElements(GL_LINES, line_element_count_, GL_UNSIGNED_INT,
-                               reinterpret_cast<const void*>(element_count_ * sizeof(std::uint32_t))));
-
-        glCheck(glDisableVertexAttribArray(0));
-        glCheck(glDisableVertexAttribArray(1));
-
-        graphics::disable_scissor_box();
       }
+    }
+
+    void PathTool::apply_node_transformation(Vector2f final_position)
+    {
+      auto& nodes = working_path_.nodes;
+
+      switch (node_transformation_->action)
+      {
+      case NodeTransformation::Append:
+      {
+        auto& node = nodes.back();
+        node.second_control = final_position;
+        node.first_control = node.position - (final_position - node.position);
+        break;
+      }
+
+      case NodeTransformation::Move:
+      {
+        auto node_id = node_transformation_->id;
+        auto control = node_transformation_->control;
+
+        auto& node = nodes[node_id];
+        if (control == NodeTransformation::Base)
+        {
+          auto& original_state = node_transformation_->original_state;
+          auto offset = final_position - original_state.position;
+
+          node.position = final_position;
+          node.first_control = original_state.first_control + offset;
+          node.second_control = original_state.second_control + offset;
+        }
+
+        else if (control == NodeTransformation::First)
+        {
+          node.first_control = final_position;
+
+          auto mag = magnitude(node.position - node.second_control);
+          auto offset = mag * normalize(node.first_control - node.position);
+
+          node.second_control = node.position - offset;
+        }
+
+        else if (control == NodeTransformation::Second)
+        {
+          node.second_control = final_position;
+
+          auto mag = magnitude(node.position - node.first_control);
+          auto offset = mag * normalize(node.second_control - node.position);
+
+          node.first_control = node.position - offset;
+        }
+
+        break;
+      }
+
+      default:
+        break;
+      }
+    }
+
+    void PathTool::finalize_node_transformation(const EditorContext& context)
+    {
+      auto& transformation = *node_transformation_;
+
+      auto selected_layer = selected_layer_;
+      auto path_index = selected_path_index_;
+
+      switch (transformation.action)
+      {
+      case NodeTransformation::Append:
+      {
+        const auto& node = working_path_.nodes.back();
+
+        auto action = [=]()
+        {
+          select_path(selected_layer, path_index, context.working_state);
+
+          working_path_.nodes.push_back(node);
+          commit_working_path(context.scene);
+        };
+
+        auto undo_action = [=]()
+        {
+          select_path(selected_layer, path_index, context.working_state);
+
+          assert(!working_path_.nodes.empty());
+
+          working_path_.nodes.pop_back();
+          commit_working_path(context.scene);
+        };
+
+        context.action_history.push_action("Append node", action, undo_action, false);
+        break;
+      }
+
+      case NodeTransformation::Move:
+      {
+        const auto& new_node = working_path_.nodes[transformation.id];
+
+        auto action = [=]()
+        {
+          select_path(selected_layer, path_index, context.working_state);
+
+          working_path_.nodes[transformation.id] = new_node;
+          commit_working_path(context.scene);
+        };
+
+        auto undo_action = [=]()
+        {
+          select_path(selected_layer, path_index, context.working_state);
+
+          assert(!working_path_.nodes.empty());
+
+          working_path_.nodes[transformation.id] = transformation.original_state;
+          commit_working_path(context.scene);
+        };
+
+        context.action_history.push_action("Edit node", action, undo_action, false);
+        break;
+      }
+
+      default:
+        break;
+      }
+
+      commit_working_path(context.scene);
+      node_transformation_ = boost::none;
+    }
+
+    void PathTool::select_path(resources::TrackLayer* layer, std::size_t path_index, WorkingState& working_state)
+    {
+      working_state.select_layer(layer);
+
+      if (layer && layer->type != resources::TrackLayerType::Paths)
+      {
+        layer = nullptr;
+        path_index = 0;
+      }
+
+      if (layer != selected_layer_ || selected_path_index_ != path_index)
+      {
+        selected_layer_ = layer;
+        selected_path_index_ = path_index;
+
+        reload_working_path();
+      }
+    }
+
+    void PathTool::commit_working_path(const EditorScene& scene)
+    {
+      if (selected_layer_ && selected_path_index_ < selected_layer_->paths.size())
+      {
+        selected_layer_->paths[selected_path_index_] = working_path_;
+      }
+    }
+
+    void PathTool::delete_last(const EditorContext& editor_context)
+    {
+      auto layer = selected_layer_;
+      auto index = selected_path_index_;
+
+      if (!working_path_.nodes.empty() && layer && index < layer->paths.size())
+      {
+        auto action = [=]()
+        {
+          select_path(layer, index, editor_context.working_state);
+          working_path_.nodes.pop_back();
+          commit_working_path(editor_context.scene);
+        };
+
+        const auto& node = working_path_.nodes.back();
+        auto undo_action = [=]()
+        {
+          select_path(layer, index, editor_context.working_state);
+          working_path_.nodes.push_back(node);
+          commit_working_path(editor_context.scene);
+        };
+
+        editor_context.action_history.push_action("Remove node", action, undo_action);
+      }
+    }
+
+    void PathTool::delete_selected(const EditorContext& context)
+    {
+
     }
   }
 }

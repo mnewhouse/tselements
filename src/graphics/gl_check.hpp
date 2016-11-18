@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef GL_CHECK_HPP_384599183245
-#define GL_CHECK_HPP_384599183245
+#pragma once
 
 #include <cstddef>
 
@@ -29,5 +28,3 @@ namespace ts
     }
   }
 }
-
-#endif

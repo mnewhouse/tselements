@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef VERTEX_INTERFACE_HPP_321589
-#define VERTEX_INTERFACE_HPP_321589
+#pragma once
 
 #include <cstdint>
 #include <vector>
@@ -186,5 +185,3 @@ namespace ts
     }
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SHADER_HPP_34189239
-#define SHADER_HPP_34189239
+#pragma once
 
 #include "gl_check.hpp"
 
@@ -93,5 +92,3 @@ namespace ts
     ShaderProgram create_shader_program(const char* vertex_shader_code, const char* fragment_shader_code);
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_ACTION_INTERFACE_HPP_459128519825
-#define CLIENT_ACTION_INTERFACE_HPP_459128519825
+#pragma once
 
 #include "game/game_state.hpp"
 
@@ -33,5 +32,3 @@ namespace ts
     };
   }
 }
-
-#endif

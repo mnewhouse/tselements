@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CONTROL_HPP_13890128
-#define CONTROL_HPP_13890128
+#pragma once
 
 #include <cstdint>
 
@@ -58,5 +57,3 @@ namespace ts
     }
   }
 }
-
-#endif

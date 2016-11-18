@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SERVER_MESSAGES_HPP_77879281
-#define SERVER_MESSAGES_HPP_77879281
+#pragma once
 
 #include "cup/cup_messages.hpp"
 
@@ -18,5 +17,3 @@ namespace ts
     }
   }
 }
-
-#endif

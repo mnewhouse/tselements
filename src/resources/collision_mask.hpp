@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef COLLISION_MASK_HPP_5891819283
-#define COLLISION_MASK_HPP_5891819283
+#pragma once
 
 #include <boost/optional.hpp>
 
@@ -113,6 +112,3 @@ namespace ts
                                   
   }
 }
-
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef VIEWPORT_HPP_189812598125
-#define VIEWPORT_HPP_189812598125
+#pragma once
 
 #include "camera.hpp"
 
@@ -36,5 +35,3 @@ namespace ts
     };
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_MESSAGE_FORWARDER_DETAIL_HPP_8198125258583
-#define CLIENT_MESSAGE_FORWARDER_DETAIL_HPP_8198125258583
+#pragma once
 
 #include "client_message_forwarder.hpp"
 #include "client_cup_essentials.hpp"
@@ -49,5 +48,3 @@ namespace ts
     }
   }
 }
-
-#endif

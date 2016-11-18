@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SERVER_MESSAGE_DISTRIBUTOR_HPP_49308950893
-#define SERVER_MESSAGE_DISTRIBUTOR_HPP_49308950893
+#pragma once
 
 #include <utility>
 
@@ -40,8 +39,11 @@ namespace ts
     };
 
     using DefaultMessageDistributor = MessageDistributor<MessageDispatcher, MessageConveyor>;
+
+    template <typename MessageDispatcher, typename MessageConveyor>
+    auto make_message_distributor(const MessageDispatcher* dispatcher, const MessageConveyor* conveyor)
+    {
+      return MessageDistributor<MessageDispatcher, MessageConveyor>(dispatcher, conveyor);
+    }
   }
 }
-
-
-#endif

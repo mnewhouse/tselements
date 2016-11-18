@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SCENE_HPP_442903
-#define SCENE_HPP_442903
+#pragma once
 
 #include <memory>
 
@@ -43,11 +42,13 @@ namespace ts
       void update_stored_state();
       void update(std::uint32_t frame_duration);
 
-      void render(const ViewportArrangement& viewport_arrangement, Vector2u screen_size,
+      void render(const ViewportArrangement& viewport_arrangement, Vector2i screen_size,
                   double frame_progress) const;
 
       void handle_collision(const world::messages::SceneryCollision& collision);
       void handle_collision(const world::messages::EntityCollision& collision);
+
+      RenderScene steal_render_scene();
 
     private:
       struct Impl;
@@ -55,5 +56,3 @@ namespace ts
     };
   }
 }
-
-#endif

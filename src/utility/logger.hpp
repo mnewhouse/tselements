@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef LOGGER_HPP_128359
-#define LOGGER_HPP_128359
+#pragma once
 
 #include <vector>
 #include <mutex>
@@ -321,10 +320,8 @@ void ts::logger::AsyncLogFileDispatcher::dispatch(InputIt it, InputIt end)
 template <typename InputIt>
 void ts::logger::LogFileDispatcher::dispatch(InputIt it, InputIt end)
 {
-    if (stream_)
-    {
-        std::copy(it, end, std::ostreambuf_iterator<char>(stream_));
-    }
+  if (stream_)
+  {
+    std::copy(it, end, std::ostreambuf_iterator<char>(stream_));
+  }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TRACK_SCENE_GENERATOR_DETAIL_HPP_1102935
-#define TRACK_SCENE_GENERATOR_DETAIL_HPP_1102935
+#pragma once
 
 #include "texture_mapping.hpp"
 
@@ -81,5 +80,3 @@ namespace ts
     }
   }
 }
-
-#endif

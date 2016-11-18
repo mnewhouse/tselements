@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef ENCODING_HPP_18294182
-#define ENCODING_HPP_18294182
+#pragma once
 
 #include <string>
 #include <codecvt>
@@ -37,5 +36,3 @@ namespace ts
 #endif
 
 }
-
-#endif // Header guard

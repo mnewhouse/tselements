@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CAR_STORE_HPP_77112905
-#define CAR_STORE_HPP_77112905
+#pragma once
 
 #include "car_description.hpp"
 #include "car_definition.hpp"
@@ -62,5 +61,3 @@ namespace ts
     };
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TILE_EXPANSION_5829322
-#define TILE_EXPANSION_5829322
+#pragma once
 
 #include "tile_library.hpp"
 
@@ -81,5 +80,3 @@ namespace ts
     }
   }
 }
-
-#endif

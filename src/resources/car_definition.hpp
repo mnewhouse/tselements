@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CAR_DEFINITION_HPP_9102941029
-#define CAR_DEFINITION_HPP_9102941029
+#pragma once
 
 #include "car_hash.hpp"
 #include "collision_mask.hpp"
@@ -53,5 +52,3 @@ namespace ts
     };
   }
 }
-
-#endif

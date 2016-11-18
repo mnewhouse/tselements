@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SOUND_EFFECT_CONTROLLER_HPP_381981298
-#define SOUND_EFFECT_CONTROLLER_381981298
+#pragma once
 
 #include "audio/sound_sample_loader.hpp"
 #include "audio/sound_playback_controller.hpp"
@@ -41,5 +40,3 @@ namespace ts
     };
   }
 }
-
-#endif

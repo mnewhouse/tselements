@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_CUP_ESSENTIALS_DETAIL_HPP_5819852193859
-#define CLIENT_CUP_ESSENTIALS_DETAIL_HPP_5819852193859
+#pragma once
 
 #include "client_cup_essentials.hpp"
 #include "update_message.hpp"
@@ -75,8 +74,6 @@ namespace ts
     template <typename MessageDispatcher>
     void CupEssentials<MessageDispatcher>::update(std::uint32_t frame_duration)
     {
-      request_update(frame_duration);
-
       if (scene_loader_.is_loading() && scene_loader_.is_ready())
       {
         try
@@ -167,7 +164,3 @@ namespace ts
     }
   }
 }
-
-
-
-#endif

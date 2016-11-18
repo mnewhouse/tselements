@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef WORLD_EVENT_TRANSLATOR_DETAIL_HPP_44219825169
-#define WORLD_EVENT_TRANSLATOR_DETAIL_HPP_44219825169
+#pragma once
 
 #include "world_event_translator.hpp"
 #include "world_messages.hpp"
@@ -35,7 +34,9 @@ namespace ts
       messages::ControlPointHit message;
       message.entity = entity;
       message.point_id = point.id;
+      message.point_flags = point.flags;
       message.frame_offset = frame_offset;
+
       dispatch_message(message);      
     }
     
@@ -60,5 +61,3 @@ namespace ts
     }
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef LOCAL_PLAYER_ROSTER_HPP_5590191823
-#define LOCAL_PLAYER_ROSTER_HPP_5590191823
+#pragma once
 
 #include <boost/container/small_vector.hpp>
 
@@ -55,5 +54,3 @@ namespace ts
     };
   }
 }
-
-#endif

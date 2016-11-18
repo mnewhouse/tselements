@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SCENE_SHADERS_HPP_6828976
-#define SCENE_SHADERS_HPP_6828976
+#pragma once
 
 namespace ts
 {
@@ -22,7 +21,7 @@ namespace ts
         void main()
         {
           frag_texCoords = in_texCoords;
-          gl_Position = u_viewMatrix * vec4(in_position, 0.0, 1.0);          
+          gl_Position = u_viewMatrix * vec4(in_position, 0.0, 1.0);
         }
       )";
 
@@ -56,15 +55,15 @@ namespace ts
           frag_texCoord = in_texCoord;
           vec4 transformedCoord = u_colorizerMatrix * vec4(in_colorizerCoord.xy, 0.0, 1.0);
           frag_colorizerCoord = vec3(transformedCoord.xy, in_colorizerCoord.z);
-          vec4 position = u_modelMatrix * vec4(in_position, 0.0, 1.0);
-          vec4 newPosition = u_newModelMatrix * vec4(in_position, 0.0, 1.0);
-          gl_Position = u_viewMatrix * mix(position, newPosition, u_frameProgress);
+          vec4 position = u_viewMatrix * u_modelMatrix * vec4(in_position, 0.0, 1.0);
+          vec4 newPosition = u_viewMatrix * u_newModelMatrix * vec4(in_position, 0.0, 1.0);
+          gl_Position = mix(position, newPosition, u_frameProgress);
         }
       )";
 
       static const char car_fragment_shader[] = R"(
         #version 330
-        uniform sampler2D u_texSampler;
+        uniform sampler2D u_textureSampler;
         uniform sampler2D u_colorizerSampler;
         in vec2 frag_texCoord;
         in vec3 frag_colorizerCoord;
@@ -86,7 +85,7 @@ namespace ts
         }
         void main()
         {
-          vec4 textureColor = texture2D(u_texSampler, frag_texCoord);
+          vec4 textureColor = texture2D(u_textureSampler, frag_texCoord);
           vec4 colorizerColor = texture2D(u_colorizerSampler, frag_colorizerCoord.xy);
           vec4 totalColor = colorizerColor.r * vec4(frag_carColors[0], 1.0) + 
                             colorizerColor.g * vec4(frag_carColors[1], 1.0) + 
@@ -165,8 +164,26 @@ namespace ts
           out_fragColor.a = 1.0 - alpha;
         }
       )";
+
+      static const char boundary_vertex_shader[] = R"(
+      #version 330
+      uniform mat4 u_viewMatrix;
+      uniform vec2 u_worldSize;
+      layout(location = 0) in vec2 in_position;
+      void main()
+      {
+        gl_Position = u_viewMatrix * vec4(in_position * u_worldSize, 0, 1);
+      }
+    )";
+
+      static const char boundary_fragment_shader[] = R"(
+      #version 330
+      out vec4 out_fragColor;
+      void main()
+      {
+        out_fragColor = vec4(1, 1, 0, 1);
+      }
+      )";
     }
   }
 }
-
-#endif

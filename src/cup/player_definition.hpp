@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef PLAYER_DEFINITION_HPP_2298213895
-#define PLAYER_DEFINITION_HPP_2298213895
+#pragma once
 
 #include <string>
 #include <cstdint>
@@ -26,5 +25,3 @@ namespace ts
     };
   }
 }
-
-#endif

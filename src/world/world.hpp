@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef WORLD_HPP_5590592
-#define WORLD_HPP_5590592
+#pragma once
 
 #include "entity.hpp"
 #include "control_point_manager.hpp"
@@ -94,7 +93,7 @@ namespace ts
 
       Vector2<double> world_size() const;
 
-      void update(world::EventInterface& event_interface, std::uint32_t frame_duration);
+      void update(std::uint32_t frame_duration, world::EventInterface& event_interface);
 
       Car* create_car(const CarDefinition& car_definition, std::uint8_t car_id, std::uint16_t start_pos);
 
@@ -130,5 +129,3 @@ namespace ts
     };
   }
 }
-
-#endif

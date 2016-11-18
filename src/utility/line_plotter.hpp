@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef BRESENHAM_HPP_83495239845
-#define BRESENHAM_HPP_83495239845
+#pragma once
 
 #include "vector2.hpp"
 
@@ -119,5 +118,3 @@ namespace ts
     };
   }
 }
-
-#endif

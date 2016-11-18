@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef HANDLING_HPP_41189187391
-#define HANDLING_HPP_41189187391
+#pragma once
 
 namespace ts
 {
@@ -24,8 +23,9 @@ namespace ts
       double drag_coefficient = 1.0;
       double rolling_coefficient = 50.0;
       double downforce_coefficient = 0.0;
-      double downforce_brake_effect = 0.0;
-      double downforce_grip_effect = 0.0;
+      double downforce_brake_effect = 1.0;
+      double downforce_grip_effect = 1.0;
+      double downforce_turning_effect = 1.0;
       double slide_friction = 10.0;
 
       double mass = 500.0;
@@ -35,8 +35,8 @@ namespace ts
       struct TractionLossBehavior
       {
         double antislide_reduction = 0.0;
-        double turn_in_reduction = 0.0;
-        double steering_reduction = 0.0;
+        double grip_reduction = 0.0;
+        double turning_reduction = 0.0;
         double torque_reduction = 0.0;
         double braking_reduction = 0.0;
       };
@@ -45,7 +45,7 @@ namespace ts
       {
         double front = 1.0;
         double neutral = 1.0;
-        double back = 1.0;
+        double rear = 1.0;
       };
 
       double load_balance_limit = 0.0;
@@ -61,5 +61,3 @@ namespace ts
     };
   }
 }
-
-#endif

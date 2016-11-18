@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TRACK_LOADER_HPP_758753
-#define TRACK_LOADER_HPP_758753
+#pragma once
 
 #include "track.hpp"
 
@@ -57,5 +56,3 @@ namespace ts
     Track load_track(boost::string_ref path);
   }
 }
-
-#endif

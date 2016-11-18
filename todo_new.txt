@@ -6,10 +6,12 @@
    * Car selection
    * Modules  
  * Tools
+  * View tools
   * Path tool
   * Tile placement
   * Undo/redo
   * Tool info dialog
+  * Loading/saving
  * Test
   * Modifying car on the fly
   + Escape back to editor
@@ -17,22 +19,47 @@
   
 * GAME
  * Handling
+  * Implement spinning
  * Network connectivity
  * User interface
   * Settings
   * Game setup
  * Graphics
-  * Smoke, dust
+  * Smoke (use textures)
   * Shadows
-  * Color schemes  
+  * Color schemes
+  * Optimize drawing routines
  * Scripting
   * Modules
   * V8?
+  * Scripting API
  
 
 * SIDE
- * Design F1 car
+ * Design F1 car -- Mostly done
 
 * PRIORITY QUEUE
 +++ Basic editor functionality: path tool, tile placement, control points, start points
-+++ GOAL: Create track using "new" tools
++++ SHORT-TERM GOAL: Create track using "new" tools
+--- Lapwanking existing tracks
+
+* PATHS
+ 1) Incorporate paths into track format
+ 2) Make basic tools for path creation
+    * Adding, selecting, editing, deleting control points
+    * Choosing a stroke (or fill) style for a path layer
+ 3) Generating path pattern
+ 
+* INTERFACE
+ * Sidebar
+  * Tool-specific actions
+   * Path + node properties when path tool is selected
+   * Tile selector.
+   
+  * Layer window
+   * Create, remove, hide, rename layer
+  
+ 
+
+* TRACK LOADING + CREATION
+ * Loading screen

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef INTERPOLATE_HPP_5571872385
-#define INTERPOLATE_HPP_5571872385
+#pragma once
 
 namespace ts
 {
@@ -15,5 +14,3 @@ namespace ts
     return a * static_cast<T>(1.0 - t) + b * t;
   }
 }
-
-#endif

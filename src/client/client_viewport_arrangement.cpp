@@ -4,6 +4,7 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
 #include "client_viewport_arrangement.hpp"
 
 #include "stage/stage.hpp"
@@ -28,6 +29,7 @@ namespace ts
         {
           const auto& world = stage_obj.world();
           auto car = world.find_car(world::entity_id_to_car_id(controllable.controllable_id()));
+
           viewport_arrangement.add_viewport(car);
         }
       }

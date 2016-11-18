@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef DYNAMIC_SCENE_GENERATOR_HPP_1910294
-#define DYNAMIC_SCENE_GENERATOR_HPP_1910294
+#pragma once
 
 #include <memory>
 
@@ -23,6 +22,3 @@ namespace ts
     DynamicScene generate_dynamic_scene(const stage::Stage& stage_object);
   }
 }
-
-
-#endif

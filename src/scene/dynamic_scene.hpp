@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef DYNAMIC_SCENE_HPP_190541920
-#define DYNAMIC_SCENE_HPP_190541920
+#pragma once
 
 #include "drawable_entity.hpp"
 
@@ -96,5 +95,3 @@ namespace ts
     };
   }
 }
-
-#endif

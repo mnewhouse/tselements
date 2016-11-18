@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef STAGE_MESSAGE_FWD_HPP_4718378171
-#define STAGE_MESSAGE_FWD_HPP_4718378171
+#pragma once
 
 namespace ts
 {
@@ -18,5 +17,3 @@ namespace ts
     }
   }
 }
-
-#endif

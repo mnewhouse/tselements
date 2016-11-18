@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SERVER_MESSAGE_FORWARDER_HPP_77128173548918
-#define SERVER_MESSAGE_FORWARDER_HPP_77128173548918
+#pragma once
 
 #include "client_message.hpp"
 
@@ -30,12 +29,8 @@ namespace ts
       void forward(const ClientMessage<stage::messages::ControlUpdate>& control_update);
       void forward(const ClientMessage<client::messages::Update>& update);      
 
-      void forward(const world::messages::ControlPointHit& cp_hit);
-
       template <typename MessageType>
       void forward(const MessageType& m) {}
     };   
   }
 }
-
-#endif

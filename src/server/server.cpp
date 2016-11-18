@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "server.hpp"
 #include "server_cup_essentials.hpp"
 

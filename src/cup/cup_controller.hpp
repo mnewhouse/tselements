@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CUP_CONTROLLER_HPP_5182359812
-#define CUP_CONTROLLER_HPP_5182359812
+#pragma once
 
 #include "cup.hpp"
 #include "cup_synchronizer.hpp"
@@ -62,5 +61,3 @@ namespace ts
     };
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TRACK_SCENE_GENERATOR_HPP
-#define TRACK_SCENE_GENERATOR_HPP
+#pragma once
 
 #include "track_scene.hpp"
 
@@ -25,5 +24,3 @@ namespace ts
     TrackScene generate_track_scene(const resources::Track& track);
   }
 }
-
-#endif

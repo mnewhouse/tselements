@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TEXTURE_LIBRARY_HPP_182994
-#define TEXTURE_LIBRARY_HPP_182994
+#pragma once
 
 #include "track_texture.hpp"
 #include "resource_library_interface.hpp"
@@ -33,7 +32,7 @@ namespace ts
         bool operator()(const Texture& a, TextureId id) const;
         bool operator()(TextureId id, const Texture& texture) const;
       };
-    }    
+    }
 
     // The TextureLibrary keeps track of the textures available in a certain track.
     // These are primarily used to draw non-tile-based graphical components, such as 
@@ -48,7 +47,7 @@ namespace ts
       texture_interface_type textures() const;
 
       struct TextureDefinitionInterface;
-      TextureDefinitionInterface define_texture_set(const std::string& file_name);      
+      TextureDefinitionInterface define_texture_set(const std::string& file_name);
 
     private:
       friend TextureDefinitionInterface;
@@ -71,7 +70,4 @@ namespace ts
       boost::string_ref image_file_;
     };
   }
-
 }
-
-#endif

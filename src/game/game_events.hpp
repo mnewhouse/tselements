@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef GAME_EVENTS_HPP_81942
-#define GAME_EVENTS_HPP_81942
+#pragma once
 
 #include <SFML/Window/Event.hpp>
 
@@ -16,5 +15,3 @@ namespace ts
     using Event = sf::Event;
   }
 }
-
-#endif

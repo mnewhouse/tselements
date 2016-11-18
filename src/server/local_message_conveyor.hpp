@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef LOCAL_MESSAGE_CONVEYOR_HPP_4343019185
-#define LOCAL_MESSAGE_CONVEYOR_HPP_4343019185
+#pragma once
 
 namespace ts
 {
@@ -22,5 +21,3 @@ namespace ts
     using LocalConveyor = client::MessageConveyor<client::LocalMessageDispatcher>;
   }
 }
-
-#endif

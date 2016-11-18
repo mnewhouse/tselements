@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "pattern.hpp"
 #include "terrain_library.hpp"
 
@@ -172,14 +174,14 @@ namespace ts
             // Must be paletted image
             if (png_get_color_type(read_ptr, info_ptr) == PNG_COLOR_TYPE_PALETTE)
             {
-              std::uint32_t image_width = png_get_image_width(read_ptr, info_ptr);
-              std::uint32_t image_height = png_get_image_height(read_ptr, info_ptr);
+              std::int32_t image_width = png_get_image_width(read_ptr, info_ptr);
+              std::int32_t image_height = png_get_image_height(read_ptr, info_ptr);
 
               Pattern pattern({ image_width, image_height });
 
               std::vector<png_bytep> row_pointers(image_height);
 
-              for (std::uint32_t row = 0; row != image_height; ++row)
+              for (std::int32_t row = 0; row != image_height; ++row)
               {
                 row_pointers[row] = reinterpret_cast<png_bytep>(pattern.row_begin(row));
               }
@@ -201,7 +203,7 @@ namespace ts
 
     Pattern copy_pattern(const Pattern& pattern, IntRect source_rect)
     {
-      Pattern result(Vector2u(source_rect.width, source_rect.height));
+      Pattern result(make_vector2(source_rect.width, source_rect.height));
 
       auto bottom = source_rect.bottom(), right = source_rect.right();
       for (auto dst_y = 0, src_y = source_rect.top; src_y != bottom; ++src_y, ++dst_y)
@@ -263,8 +265,9 @@ namespace ts
       png_write_end(png_ptr, info_ptr);
     }
 
-    Pattern::Pattern(Vector2u size)
-      : size_(size), bytes_(size.x * size.y, 0)
+    Pattern::Pattern(Vector2i size)
+      : size_(size), 
+        bytes_(size.x * size.y, 0)
     {
     }
 
@@ -288,12 +291,12 @@ namespace ts
       return bytes_.data();
     }
 
-    Vector2u Pattern::size() const
+    Vector2i Pattern::size() const
     {
       return size_;
     }
 
-    void Pattern::resize(Vector2u new_size)
+    void Pattern::resize(Vector2i new_size)
     {
       bytes_.resize(new_size.x * new_size.y);
 
@@ -301,9 +304,9 @@ namespace ts
       size_.y = new_size.y;
     }
 
-    void Pattern::resize(std::uint32_t width, std::uint32_t height)
+    void Pattern::resize(std::int32_t width, std::int32_t height)
     {
-      resize(Vector2u(width, height));
+      resize({ width, height });
     }
   }
 }

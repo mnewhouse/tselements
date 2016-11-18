@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TILE_LIBRARY_HPP_2221902
-#define TILE_LIBRARY_HPP_2221902
+#pragma once
 
 #include "tiles.hpp"
 #include "resource_library_interface.hpp"
@@ -94,5 +93,3 @@ namespace ts
     };
   }
 }
-
-#endif

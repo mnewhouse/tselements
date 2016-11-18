@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef MESSAGE_TRAITS_HPP_581295823
-#define MESSAGE_TRAITS_HPP_581295823
+#pragma once
 
 namespace ts
 {
@@ -19,6 +18,3 @@ namespace ts
     };
   }
 }
-
-
-#endif

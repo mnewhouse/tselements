@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SERVER_STAGE_ESSENTIALS_HPP_761981345
-#define SERVER_STAGE_ESSENTIALS_HPP_761981345
+#pragma once
 
 #include "server_stage_essentials.hpp"
 #include "server_message_dispatcher.hpp"
@@ -13,8 +12,6 @@
 #include "client_message.hpp"
 
 #include "stage/stage_regulator.hpp"
-
-#include "race/lap_tracker.hpp"
 
 #include "world/world_message_fwd.hpp"
 
@@ -38,6 +35,8 @@ namespace ts
       
       void handle_message(const ClientMessage<client::messages::Update>& update_request);
       void handle_message(const ClientMessage<stage::messages::ControlUpdate>& update_message);
+
+      // Internal message (server <-> server)
       void handle_message(const world::messages::ControlPointHit& cp_hit);
 
       const stage::StageDescription& stage_description() const;
@@ -45,7 +44,6 @@ namespace ts
 
     private:
       stage::StageRegulator stage_regulator_;
-      race::LapTracker lap_tracker_;
 
       const MessageDispatcher* message_dispatcher_;
       const MessageConveyor* message_conveyor_;
@@ -54,5 +52,3 @@ namespace ts
     using DefaultStageEssentials = StageEssentials<MessageDispatcher, MessageConveyor>;
   }
 }
-
-#endif

@@ -5,50 +5,27 @@
 */
 
 #include "stdinc.hpp"
+
+#include <GL/glew.h>
+#include <GL/GL.h>
+
 #include "render_scene.hpp"
 #include "scene_shaders.hpp"
 #include "dynamic_scene.hpp"
+#include "view_matrix.hpp"
 
 #include "graphics/gl_scissor_box.hpp"
 #include "graphics/gl_check.hpp"
 
 #include "world/world_limits.hpp"
 
-#include <glm/gtx/transform.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#include <GL/glew.h>
-#include <GL/GL.h>
 
 namespace ts
 {
   namespace scene
   {
-    namespace detail
-    {
-      auto compute_view_matrix(const Viewport& viewport, Vector2u world_size,
-                                    Vector2u screen_size, double frame_progress)
-      {
-        const auto& camera = viewport.camera();
-
-        auto zoom_level = static_cast<float>(camera.zoom_level());
-        auto position = vector2_cast<float>(camera.position());
-        auto rotation = static_cast<float>(camera.rotation().radians());
-
-        auto center = compute_camera_center(camera, vector2_cast<double>(world_size),
-                                            vector2_cast<double>(screen_size), frame_progress);
-
-        glm::vec3 scale(2.0f * zoom_level / screen_size.x, -2.0f * zoom_level / screen_size.y, 0.0f);
-        glm::vec3 translation(-center.x, -center.y, 0.0f);
-
-        auto matrix = glm::scale(glm::mat4(), scale);
-        matrix = glm::rotate(matrix, -rotation, { 0.0f, 0.0f, 1.0f });
-        matrix = glm::translate(matrix, translation);
-
-        return matrix;
-      }
-    }
-
     RenderScene::RenderScene(TrackScene track_scene)
       : track_scene_(std::move(track_scene))
     {
@@ -67,9 +44,11 @@ namespace ts
         track_shader_program_ = graphics::create_shader_program(shaders::track_vertex_shader,
                                                                 shaders::track_fragment_shader);
 
+        auto prog = track_shader_program_.get();
+
         auto& locations = track_component_uniform_locations_;
-        locations.view_matrix = glCheck(glGetUniformLocation(track_shader_program_.get(), "u_viewMatrix"));
-        locations.texture_sampler = glCheck(glGetAttribLocation(track_shader_program_.get(), "u_textureSampler"));
+        locations.view_matrix = glCheck(glGetUniformLocation(prog, "u_viewMatrix"));
+        locations.texture_sampler = glCheck(glGetUniformLocation(prog, "u_textureSampler"));
       }
 
 
@@ -77,16 +56,27 @@ namespace ts
         car_shader_program_ = graphics::create_shader_program(shaders::car_vertex_shader,
                                                               shaders::car_fragment_shader);
 
+        auto prog = car_shader_program_.get();
         auto& locations = car_uniform_locations_;
-        locations.car_colors = glCheck(glGetUniformLocation(car_shader_program_.get(), "u_carColors"));
-        locations.view_matrix = glCheck(glGetUniformLocation(car_shader_program_.get(), "u_viewMatrix"));
-        locations.model_matrix = glCheck(glGetUniformLocation(car_shader_program_.get(), "u_modelMatrix"));
-        locations.new_model_matrix = glCheck(glGetUniformLocation(car_shader_program_.get(), "u_newModelMatrix"));
-        locations.colorizer_matrix = glCheck(glGetUniformLocation(car_shader_program_.get(), "u_colorizerMatrix"));
-        locations.frame_progress = glCheck(glGetUniformLocation(car_shader_program_.get(), "u_frameProgress"));
-        locations.texture_sampler = glCheck(glGetUniformLocation(car_shader_program_.get(), "u_texSampler"));
-        locations.colorizer_sampler = glCheck(glGetUniformLocation(car_shader_program_.get(), "u_colorizerSampler"));
-      }      
+        locations.car_colors = glCheck(glGetUniformLocation(prog, "u_carColors"));
+        locations.view_matrix = glCheck(glGetUniformLocation(prog, "u_viewMatrix"));
+        locations.model_matrix = glCheck(glGetUniformLocation(prog, "u_modelMatrix"));
+        locations.new_model_matrix = glCheck(glGetUniformLocation(prog, "u_newModelMatrix"));
+        locations.frame_progress = glCheck(glGetUniformLocation(prog, "u_frameProgress"));
+        locations.colorizer_matrix = glCheck(glGetUniformLocation(prog, "u_colorizerMatrix"));
+        locations.texture_sampler = glCheck(glGetUniformLocation(prog, "u_textureSampler"));
+        locations.colorizer_sampler = glCheck(glGetUniformLocation(prog, "u_colorizerSampler"));
+      }
+      
+      {
+        boundary_shader_program_ = graphics::create_shader_program(shaders::boundary_vertex_shader,
+                                                                   shaders::boundary_fragment_shader);
+
+        auto& locations = boundary_uniform_locations_;
+        auto prog = boundary_shader_program_.get();
+        locations.view_matrix = glCheck(glGetUniformLocation(prog, "u_viewMatrix"));
+        locations.world_size = glCheck(glGetUniformLocation(prog, "u_worldSize"));
+      }
     }
 
     void RenderScene::setup_entity_buffers()
@@ -114,8 +104,26 @@ namespace ts
       track_component_vertex_buffer_ = graphics::create_buffer();
       track_component_element_buffer_ = graphics::create_buffer();
 
-      std::size_t vertex_buffer_size = 0;
-      std::size_t element_buffer_size = 0;
+      using resources::Face;
+      using resources::Vertex;
+
+      std::array<Face, 2> stencil_faces =
+      { {
+        { 0, 1, 2 },
+        { 1, 2, 3 }
+      } };
+
+      std::array<Vertex, 4> stencil_vertices = {};
+      stencil_vertices[0].position = { 0.0f, 0.0f };
+      stencil_vertices[1].position = { 1.0f, 0.0f };
+      stencil_vertices[2].position = { 0.0f, 1.0f };
+      stencil_vertices[3].position = { 1.0f, 1.0f };
+
+      auto vertex_buffer_size = stencil_vertices.size() * sizeof(stencil_vertices.front());
+      auto element_buffer_size = stencil_faces.size() * sizeof(stencil_faces.front());
+
+      auto vertex_buffer_offset = vertex_buffer_size;
+      auto element_buffer_offset = element_buffer_size;
 
       // Find the size of the buffers that we need
       for (const auto& scene_layer : track_scene.active_layers())
@@ -135,12 +143,13 @@ namespace ts
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, track_component_vertex_buffer_.get()));
       glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, track_component_element_buffer_.get()));
 
-      glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, element_buffer_size, nullptr, GL_STATIC_DRAW));
       glCheck(glBufferData(GL_ARRAY_BUFFER, vertex_buffer_size, nullptr, GL_STATIC_DRAW));
+      glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, element_buffer_size, nullptr, GL_STATIC_DRAW));      
 
-      std::size_t vertex_buffer_offset = 0;
-      std::size_t element_buffer_offset = 0;
-      std::uint32_t vertex_index = 0;
+      glCheck(glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_buffer_offset, stencil_vertices.data()));
+      glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, element_buffer_offset, stencil_faces.data()));
+
+      std::uint32_t vertex_index = stencil_vertices.size();
 
       // Now, populate the buffers with the layers' vertices and faces.
       // Also, store the component information so that we can render it properly.
@@ -151,9 +160,10 @@ namespace ts
 
         for (auto& face : faces)
         {
-          face.first_index += vertex_index;
-          face.second_index += vertex_index;
-          face.third_index += vertex_index;
+          for (auto& index : face.indices)
+          {
+            index += vertex_index;
+          }
         }
 
         auto vertex_range_size = vertices.size() * sizeof(vertices.front());
@@ -180,51 +190,75 @@ namespace ts
       }
     }
 
-    void RenderScene::render(const Viewport& view_port, Vector2u screen_size, double frame_progress) const
+    void RenderScene::render(const Viewport& view_port, Vector2i screen_size, double frame_progress) const
     {
       glCheck(glDisable(GL_CULL_FACE));
       glCheck(glEnable(GL_BLEND));
       glCheck(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
       glCheck(glDisable(GL_DEPTH_TEST));
-      glCheck(glDisable(GL_STENCIL_TEST));
-
+      glCheck(glEnable(GL_STENCIL_TEST));
       glCheck(glEnable(GL_TEXTURE_2D));
 
-      graphics::scissor_box(screen_size, view_port.screen_rect());
+      auto screen_rect = view_port.screen_rect();
+
+      glCheck(glViewport(screen_rect.left, screen_size.y - screen_rect.bottom(),
+                         screen_rect.width, screen_rect.height));
+
+      graphics::scissor_box(screen_size, screen_rect);
+
+      glCheck(glStencilMask(0xFF));
+      glCheck(glClearColor(background_color_.r, background_color_.g, background_color_.b, background_color_.a));
+      glCheck(glClear(GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT));
 
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, track_component_vertex_buffer_.get()));
       glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, track_component_element_buffer_.get()));
 
-      glCheck(glUseProgram(track_shader_program_.get()));
+      glCheck(glEnableVertexAttribArray(0));
+      glCheck(glEnableVertexAttribArray(1));
 
-      auto view_matrix = detail::compute_view_matrix(view_port, track_scene_.track_size(), screen_size, frame_progress);
+      using resources::Vertex;
+      glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                                    reinterpret_cast<const void*>(offsetof(Vertex, position))));
+      glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                                    reinterpret_cast<const void*>(offsetof(Vertex, texture_coords))));
+
+      auto world_size = track_scene_.track_size();
+      auto view_matrix = compute_view_matrix(view_port, world_size, frame_progress);
+      
+      glCheck(glUseProgram(boundary_shader_program_.get()));
+
+      glStencilFunc(GL_NEVER, 1, 0xFF);
+      glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+
+      glCheck(glUniformMatrix4fv(boundary_uniform_locations_.view_matrix, 1, GL_FALSE,
+                                 glm::value_ptr(view_matrix)));
+      glCheck(glUniform2f(boundary_uniform_locations_.world_size, static_cast<float>(world_size.x),
+                          static_cast<float>(world_size.y)));
+
+      glCheck(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 
+                             reinterpret_cast<const void*>(std::uintptr_t(0))));
+
+      glCheck(glStencilFunc(GL_EQUAL, 1, 0xFF));
+      glCheck(glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
+
+      glCheck(glUseProgram(track_shader_program_.get()));
 
       glCheck(glUniformMatrix4fv(track_component_uniform_locations_.view_matrix, 1, GL_FALSE,
                                  glm::value_ptr(view_matrix)));
 
       glCheck(glUniform1i(track_component_uniform_locations_.texture_sampler, 0));
 
-      glCheck(glEnableVertexAttribArray(0));
-      glCheck(glEnableVertexAttribArray(1));
-
-      using resources::TrackVertex;
-      glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(TrackVertex),
-                                    reinterpret_cast<const void*>(offsetof(TrackVertex, position))));
-      glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(TrackVertex),
-                                    reinterpret_cast<const void*>(offsetof(TrackVertex, texture_coords))));
-
+      glCheck(glActiveTexture(GL_TEXTURE0));
       for (const auto& component : track_components_)
-      {
-        glCheck(glActiveTexture(GL_TEXTURE0));
+      {        
         glCheck(glBindTexture(GL_TEXTURE_2D, component.texture->get()));
 
-        glCheck(glDrawElements(GL_TRIANGLES, component.element_count, GL_UNSIGNED_INT,
-                               reinterpret_cast<const void*>(component.element_buffer_offset)));
-
+        auto offset = reinterpret_cast<const void*>(static_cast<std::uintptr_t>(component.element_buffer_offset));
+        glCheck(glDrawElements(GL_TRIANGLES, component.element_count, GL_UNSIGNED_INT, offset));
       }
 
-      glUseProgram(car_shader_program_.get());
+      glCheck(glUseProgram(car_shader_program_.get()));
       glCheck(glUniform1i(car_uniform_locations_.texture_sampler, 0));
       glCheck(glUniform1i(car_uniform_locations_.colorizer_sampler, 1));
       glCheck(glUniform1f(car_uniform_locations_.frame_progress, static_cast<float>(frame_progress)));
@@ -253,13 +287,14 @@ namespace ts
 
         // Bind colorizer texture
 
+
         glCheck(glUniform4fv(car_uniform_locations_.car_colors, 3, e.colors.data()));
         glCheck(glUniformMatrix4fv(car_uniform_locations_.model_matrix, 1, GL_FALSE,
                                    glm::value_ptr(e.model_matrix)));
 
         glCheck(glUniformMatrix4fv(car_uniform_locations_.new_model_matrix, 1, GL_FALSE,
                                    glm::value_ptr(e.new_model_matrix)));
-
+        
         glCheck(glUniformMatrix4fv(car_uniform_locations_.colorizer_matrix, 1, GL_FALSE,
                                    glm::value_ptr(e.colorizer_matrix)));
 
@@ -271,6 +306,7 @@ namespace ts
         element_buffer_offset += sizeof(std::uint32_t) * 6;
       }
 
+      glDisable(GL_STENCIL_TEST);
       graphics::disable_scissor_box();
     }
 
@@ -310,6 +346,16 @@ namespace ts
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, car_vertex_buffer_.get()));
       glCheck(glBufferData(GL_ARRAY_BUFFER, car_vertex_buffer_cache_.size() * sizeof(car_vertex_buffer_cache_.front()),
                            car_vertex_buffer_cache_.data(), GL_STATIC_DRAW));
+    }
+
+    void RenderScene::clear_dynamic_state()
+    {
+      drawable_entities_.clear();
+    }
+
+    void RenderScene::set_background_color(Colorf bg_color)
+    {
+      background_color_ = bg_color;
     }
   }
 }

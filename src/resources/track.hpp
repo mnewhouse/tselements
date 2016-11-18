@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TRACK_HPP_192389
-#define TRACK_HPP_192389
+#pragma once
 
 #include "tile_library.hpp"
 #include "terrain_library.hpp"
@@ -43,11 +42,11 @@ namespace ts
       void set_author(std::string author);
       const std::string& author() const noexcept;
 
-      Vector2u size() const;
-      void set_size(const Vector2u& size);
+      Vector2i size() const;
+      void set_size(const Vector2i& size);
 
-      void set_height_level_count(std::uint32_t height_levels) noexcept;
-      std::uint32_t height_level_count() const noexcept;
+      void set_height_level_count(std::int32_t height_levels) noexcept;
+      std::int32_t height_level_count() const noexcept;
 
       TileLibrary& tile_library() noexcept;
       const TileLibrary& tile_library() const noexcept;
@@ -62,7 +61,7 @@ namespace ts
       TrackLayer* get_layer_by_id(LayerId layer_id);
       const TrackLayer* get_layer_by_id(LayerId layer_id) const;
 
-      TrackLayer* create_layer(std::string layer_name, std::uint32_t level);
+      TrackLayer* create_layer(std::string layer_name, std::uint32_t level, TrackLayerType type = TrackLayerType::Tiles);
       std::size_t layer_count() const noexcept;
 
       using LayerOrderInterface = boost::iterator_range<boost::indirect_iterator<TrackLayer* const*>>;
@@ -83,8 +82,8 @@ namespace ts
       std::string path_;
       std::string author_;
 
-      Vector2u size_;
-      std::uint32_t height_level_count_;
+      Vector2i size_;
+      std::int32_t height_level_count_;
 
       TileLibrary tile_library_;
       TerrainLibrary terrain_library_;
@@ -110,5 +109,3 @@ namespace ts
     };
   }
 }
-
-#endif

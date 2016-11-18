@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_CUP_ESSENTIALS_HPP_66819814551
-#define CLIENT_CUP_ESSENTIALS_HPP_66819814551
+#pragma once
 
 #include "local_player_roster.hpp"
 #include "client_message_conveyor.hpp"
@@ -66,5 +65,3 @@ namespace ts
     };
   }
 }
-
-#endif

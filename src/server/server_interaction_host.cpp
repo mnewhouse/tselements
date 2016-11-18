@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "server_interaction_host.hpp"
 #include "server_cup_controller.hpp"
 

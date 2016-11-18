@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef STDINC_HPP_59598
-#define STDINC_HPP_59598
+#pragma once
 
 #include <array>
 #include <vector>
@@ -56,5 +55,3 @@
 #include <boost/iterator.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
-
-#endif

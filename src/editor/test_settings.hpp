@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TEST_SETTINGS_HPP_859173587235
-#define TEST_SETTINGS_HPP_859173587235
+#pragma once
 
 #include "resources/car_definition.hpp"
 
@@ -15,5 +14,3 @@ namespace ts
   {
   }
 }
-
-#endif

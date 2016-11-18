@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CONTROL_EVENT_TRANSLATOR_DETAIL_48491823597145
-#define CONTROL_EVENT_TRANSLATOR_DETAIL_48491823597145
+#pragma once
 
 #include "control_event_translator.hpp"
 
@@ -46,5 +45,3 @@ namespace ts
     }
   }
 }
-
-#endif

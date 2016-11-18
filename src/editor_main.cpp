@@ -9,24 +9,26 @@
 #include "graphics/render_window.hpp"
 #include "graphics/gl_context.hpp"
 
+#include "imgui/imgui_sfml_opengl.hpp"
+#include "imgui/imgui_default_style.hpp"
+
+#include "game/main_loop.hpp"
 #include "game/game_state.hpp"
 #include "game/loading_thread.hpp"
 
 #include "utility/debug_log.hpp"
 
-#include "editor/track_editor_state.hpp"
+#include "editor/editor_state.hpp"
 
 #include "resources/resource_store.hpp"
 #include "resources/car_store.hpp"
 #include "resources/settings.hpp"
+
 #include "cup/cup_settings.hpp"
 #include "client/player_settings.hpp"
 
-
 #include "fonts/builtin_fonts.hpp"
 #include "fonts/font_library.hpp"
-
-#include "user_interface/gui_context.hpp"
 
 #include <string>
 #include <thread>
@@ -43,16 +45,23 @@ int main(int argc, char* argv[])
 
   try
   {
+    //core::elevate_process_priority();
+    //core::elevate_thread_priority();
+
     int screen_width = 1280, screen_height = 800;
     graphics::RenderWindow window("Project \"Free Like Bird\" - Editor",
                                   screen_width, screen_height, graphics::WindowMode::Windowed);
-    window.set_framerate_limit(120);
+
+    window.set_vsync_enabled(false);
 
     graphics::initialize_glew();
 
     window.activate();
     window.clear();
     window.display();
+
+    imgui::Context gui_context(&window);
+    imgui::push_default_style();
 
     resources::ResourceStore resource_store;
     for (const auto& font : fonts::builtin_fonts)
@@ -64,13 +73,12 @@ int main(int argc, char* argv[])
 
     game::StateMachine state_machine;
     game::LoadingThread loading_thread;
-    gui::Context gui_context;
 
     game::GameContext game_context{};
     game_context.render_window = &window;
+    game_context.gui_context = &gui_context;
     game_context.state_machine = &state_machine;
     game_context.loading_thread = &loading_thread;
-    game_context.gui_context = &gui_context;
     game_context.resource_store = &resource_store;
 
     auto& player_settings = resource_store.settings().player_settings();
@@ -82,47 +90,20 @@ int main(int argc, char* argv[])
     player.name = "test";
     player_settings.selected_players.push_back(player);
 
-    auto car_it = resource_store.car_store().car_definitions().find("porge");
+    auto car_it = resource_store.car_store().car_definitions().find("f1");
     cup_settings.selected_cars.push_back(*car_it);
-
-    game::UpdateContext update_context{};
-    update_context.frame_duration = 20U;
 
     if (argc >= 2)
     {
-      state_machine.create_state<editor::track::EditorState>(game_context, argv[1]);
+      state_machine.create_state<editor::EditorState>(game_context, argv[1]);
     }
 
     else
     {
-      state_machine.create_state<editor::track::EditorState>(game_context);
-    }    
-
-    while (state_machine)
-    {
-      auto state_transition_guard = state_machine.transition_guard();
-
-      for (sf::Event event; window.poll_event(event);)
-      {
-        if (event.type == sf::Event::Closed)
-        {
-          // Clearing the state machine is equivalent to quitting the program.
-          state_machine.clear();
-        }
-
-        state_machine->process_event(event);
-      }
-
-      state_machine->update(update_context);
-
-      game::RenderContext render_context;
-      render_context.frame_progress = 0.0;
-      render_context.screen_size = window.size();
-
-      window.clear();
-      state_machine->render(render_context);
-      window.display();      
+      state_machine.create_state<editor::EditorState>(game_context);
     }
+
+    game::main_loop(game_context);
   }
 
   catch (const std::exception& e)

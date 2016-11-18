@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef LOCAL_CUP_STATE_HPP_2189124929
-#define LOCAL_CUP_STATE_HPP_2189124929
+#pragma once
 
 #include "cup_state.hpp"
 
@@ -18,5 +17,3 @@ namespace ts
     using LocalCupState = CupState<LocalMessageDispatcher>;
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SERVER_INTERACTION_HOST_HPP_48918192839
-#define SERVER_INTERACTION_HOST_HPP_48918192839
+#pragma once
 
 #include "server_message_dispatcher.hpp"
 #include "remote_client_map.hpp"
@@ -48,5 +47,3 @@ namespace ts
     };
   }
 }
-
-#endif

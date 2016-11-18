@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SOUND_SAMPLE_LOADER_HPP_4149012905
-#define SOUND_SAMPLE_LOADER_HPP_4149012905
+#pragma once
 
 #include "sound_sample.hpp"
 
@@ -29,5 +28,3 @@ namespace ts
     };
   }
 }
-
-#endif

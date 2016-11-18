@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_HPP_894531234
-#define CLIENT_HPP_894531234
+#pragma once
 
 #include <memory>
 
@@ -59,5 +58,3 @@ namespace ts
     };
   }
 }
-
-#endif

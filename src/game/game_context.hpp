@@ -4,14 +4,13 @@
 * Released under the MIT license.
 */
 
-#include "components/generic_state_machine.hpp"
+#pragma once
 
-#ifndef GAME_CONTEXT_HPP_129038518923
-#define GAME_CONTEXT_HPP_129038518923
+#include "components/generic_state_machine.hpp"
 
 namespace ts
 {
-  namespace gui
+  namespace imgui
   {
     class Context;
   }
@@ -34,12 +33,10 @@ namespace ts
     struct GameContext
     {
       components::StateMachine<GameState>* state_machine = nullptr;
-      gui::Context* gui_context = nullptr;
+      imgui::Context* gui_context = nullptr;
       graphics::RenderWindow* render_window = nullptr;
       game::LoadingThread* loading_thread = nullptr;
       resources::ResourceStore* resource_store = nullptr;
     };
   }
 }
-
-#endif

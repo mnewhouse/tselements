@@ -4,6 +4,7 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
 #include "bitmap_font.hpp"
 
 #include "graphics/image.hpp"

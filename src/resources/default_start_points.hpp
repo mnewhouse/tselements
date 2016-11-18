@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef DEFAULT_START_POINTS_HPP_1823958129835
-#define DEFAULT_START_POINTS_HPP_1823958129835
+#pragma once
 
 #include "control_point.hpp"
 #include "start_point.hpp"
@@ -72,5 +71,3 @@ namespace ts
     }
   }
 }
-
-#endif

@@ -47,7 +47,7 @@ namespace ts
       return *impl_->stage_ptr_;
     }
 
-    void Scene::render(const ViewportArrangement& viewport_arrangement, Vector2u screen_size,
+    void Scene::render(const ViewportArrangement& viewport_arrangement, Vector2i screen_size,
                        double frame_progress) const
     {
       for (std::size_t viewport_id = 0; viewport_id != viewport_arrangement.viewport_count(); ++viewport_id)
@@ -56,7 +56,6 @@ namespace ts
         impl_->render_scene_.render(viewport, screen_size, frame_progress);
       }
     }
-
 
     void Scene::update_stored_state()
     {
@@ -80,6 +79,11 @@ namespace ts
     {
       impl_->sound_effect_controller_.play_collision_sound(*collision.subject, *collision.object,
                                                           collision.collision);
+    }
+
+    RenderScene Scene::steal_render_scene()
+    {
+      return std::move(impl_->render_scene_);
     }
   }
 }

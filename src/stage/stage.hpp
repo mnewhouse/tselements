@@ -4,10 +4,10 @@
 * Released under the MIT license.
 */
 
-#ifndef STAGE_HPP_33311905
-#define STAGE_HPP_33311905
+#pragma once
 
 #include "stage_description.hpp"
+#include "race_tracker.hpp"
 
 #include "world/world.hpp"
 
@@ -39,19 +39,25 @@ namespace ts
       const world::World& world() const;
       const resources::Track& track() const;
 
-      void update(world::EventInterface& event_interface, std::uint32_t frame_duration);
+      void update(std::uint32_t frame_duration, world::EventInterface& event_interface);
+
       std::uint32_t stage_time() const;
 
+      const RaceTracker* race_tracker() const;      
+
       void set_controllable_state(std::uint16_t controllable_id, std::uint16_t controls_mask);
+
+      void control_point_hit(const world::Entity* entity, std::uint16_t point_id, std::uint32_t point_flags,
+                             std::uint32_t frame_offset, RaceEventInterface& event_interface);
 
     private:
       void create_stage_entities();
 
       world::World world_;
       StageDescription stage_description_;
-      std::uint32_t stage_time_;
+      
+      std::uint32_t stage_time_ = 0;
+      RaceTracker race_tracker_;
     };
   }
 }
-
-#endif

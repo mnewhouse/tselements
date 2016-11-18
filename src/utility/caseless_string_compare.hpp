@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CASELESS_STRING_COMPARE_HPP_4491238
-#define CASELESS_STRING_COMPARE_HPP_4491238
+#pragma once
 
 #include <cctype>
 #include <iterator>
@@ -148,5 +147,3 @@ namespace ts
     return !(a < b);
   }
 }
-
-#endif

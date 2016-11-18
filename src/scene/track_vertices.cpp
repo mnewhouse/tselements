@@ -19,11 +19,11 @@ namespace ts
 {
   namespace scene
   {
-    std::array<resources::TrackVertex, 4>
+    std::array<resources::Vertex, 4>
       generate_tile_vertices(const resources::Tile& tile, const resources::TileDefinition& tile_def,
                              const IntRect& texture_rect, Vector2i fragment_offset, Vector2f texture_scale)
     {
-      std::array<resources::TrackVertex, 4> vertices;
+      std::array<resources::Vertex, 4> vertices;
 
       const auto& image_rect = tile_def.image_rect;
       const auto& pattern_rect = tile_def.pattern_rect;
@@ -51,10 +51,10 @@ namespace ts
 
       auto tex_coords = rect_cast<float>(texture_rect);
 
-      vertices[0].position = tile_position + transform_point(top_left, sin, cos);
-      vertices[1].position = tile_position + transform_point(bottom_left, sin, cos);
-      vertices[2].position = tile_position + transform_point(top_right, sin, cos);
-      vertices[3].position = tile_position + transform_point(bottom_right, sin, cos);
+      vertices[0].position = tile_position + make_vector2(0.5f, 0.5f) + transform_point(top_left, sin, cos);
+      vertices[1].position = tile_position + make_vector2(0.5f, -0.5f) + transform_point(bottom_left, sin, cos);
+      vertices[2].position = tile_position + make_vector2(-0.5f, 0.5f) + transform_point(top_right, sin, cos);
+      vertices[3].position = tile_position + make_vector2(-0.5f, -0.5f) + transform_point(bottom_right, sin, cos);
 
       auto tex_left = tex_coords.left + 0.5f;
       auto tex_top = tex_coords.top + 0.5f;
@@ -69,7 +69,7 @@ namespace ts
       return vertices;
     }
 
-    std::array<resources::TrackFace, 2> generate_tile_faces(std::uint32_t base_index)
+    std::array<resources::Face, 2> generate_tile_faces(std::uint32_t base_index)
     {
       return
       { {
@@ -92,7 +92,7 @@ namespace ts
       Vector2f texture_scale;
 
       std::vector<resources::PlacedTile> placed_tiles;
-      std::vector<resources::TrackVertex> vertex_cache;
+      std::vector<resources::Vertex> vertex_cache;
 
       auto texture_lookup = [&](std::size_t resource_id)
       {

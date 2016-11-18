@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_ACTION_MESSAGE_FORWARDER_HPP_21389127357
-#define CLIENT_ACTION_MESSAGE_FORWARDER_HPP_21389127357
+#pragma once
 
 #include "world/world_message_fwd.hpp"
 
@@ -37,5 +36,3 @@ namespace ts
     };
   }
 }
-
-#endif

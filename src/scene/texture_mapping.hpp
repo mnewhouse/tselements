@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TEXTURE_MAPPING_129001920
-#define TEXTURE_MAPPING_129001920
+#pragma once
 
 #include "utility/rect.hpp"
 
@@ -110,5 +109,3 @@ namespace ts
     }
   }
 }
-
-#endif

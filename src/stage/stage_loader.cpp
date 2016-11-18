@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "stage_loader.hpp"
 #include "stage.hpp"
 #include "stage_creation.hpp"

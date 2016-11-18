@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "resource_store.hpp"
 #include "settings.hpp"
 #include "car_store.hpp"

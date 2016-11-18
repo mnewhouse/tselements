@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef STAGE_CREATION_HPP_6611289
-#define STAGE_CREATION_HPP_6611289
+#pragma once
 
 namespace ts
 {
@@ -21,5 +20,3 @@ namespace ts
     void create_stage_entities(world::World& world, const StageDescription& stage_description);
   }
 }
-
-#endif

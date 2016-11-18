@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef COLLISION_MASK_DETAIL_HPP_58598122
-#define COLLISION_MASK_DETAIL_HPP_58598122
+#pragma once
 
 #include "collision_mask.hpp"
 #include "pattern.hpp"
@@ -219,5 +218,3 @@ namespace ts
     }
   }
 }
-
-#endif

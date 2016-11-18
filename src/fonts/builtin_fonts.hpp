@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef BUILTIN_FONTS_HPP_835491828395
-#define BUILTIN_FONTS_HPP_835491828395
+#pragma once
 
 #include <string>
 
@@ -29,5 +28,3 @@ namespace ts
     static const std::string extrabold_32 = builtin_fonts[1].name;
   }
 }
-
-#endif

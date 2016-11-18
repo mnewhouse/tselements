@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "font_renderer.hpp"
 #include "text_shaders.hpp"
 #include "text_geometry.hpp"

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CONTROL_EVENT_TRANSLATOR_HPP_671834671
-#define CONTROL_EVENT_TRANSLATOR_HPP_671834671
+#pragma once
 
 #include "client/key_settings.hpp"
 
@@ -43,5 +42,3 @@ namespace ts
     };
   }
 }
-
-#endif

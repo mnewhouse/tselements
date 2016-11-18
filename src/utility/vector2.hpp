@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef VECTOR2_HPP_129009
-#define VECTOR2_HPP_129009
+#pragma once
 
 #include "vector3.hpp"
 
@@ -93,84 +92,82 @@ namespace ts
     T y;
   };
 
-  template <typename T>
-  Vector2<T> operator+(Vector2<T> a, Vector2<T> b)
+  template <typename T, typename U>
+  auto operator+(Vector2<T> a, Vector2<U> b)
   {
-    return a += b;
+    return make_vector2(a.x + b.x, a.y + b.y);
+  }
+
+  template <typename T, typename U>
+  auto operator-(Vector2<T> a, Vector2<U> b)
+  {
+    return make_vector2(a.x - b.x, a.y - b.y);
+  }
+
+  template <typename T, typename U>
+  auto operator*(Vector2<T> a, Vector2<U> b)
+  {
+    return make_vector2(a.x * b.x, a.y * b.y);
+  }
+
+  template <typename T, typename U>
+  auto operator/(Vector2<T> a, Vector2<U> b)
+  {
+    return make_vector2(a.x / b.x, a.y / b.y);
+  }
+
+  template <typename T, typename U>
+  auto operator+(Vector2<T> vec, U num)
+  {
+    return make_vector2(vec.x + num, vec.y + num);
+  }
+
+  template <typename T, typename U>
+  auto operator+(T num, Vector2<U> vec)
+  {
+    return make_vector2(num + vec.x, num + vec.y);
+  }
+
+  template <typename T, typename U>
+  auto operator-(Vector2<T> vec, U num)
+  {
+    return make_vector2(vec.x - num, vec.y - num);
+  }
+
+  template <typename T, typename U>
+  auto operator-(T num, Vector2<U> vec)
+  {
+    return make_vector2(num - vec.x, num - vec.y);
+  }
+
+  template <typename T, typename U>
+  auto operator*(Vector2<T> vec, U num)
+  {
+    return make_vector2(vec.x * num, vec.y * num);
+  }
+
+  template <typename T, typename U>
+  auto operator*(T num, Vector2<U> vec)
+  {
+    return make_vector2(num * vec.x, num * vec.y);
+  }
+
+  template <typename T, typename U>
+  auto operator/(Vector2<T> vec, U num)
+  {
+    return make_vector2(vec.x / num, vec.y / num);
+  }
+
+  template <typename T, typename U>
+  auto operator/(T num, Vector2<U> vec)
+  {
+    return make_vector2(num / vec.x, num / vec.y);
   }
 
   template <typename T>
-  Vector2<T> operator-(Vector2<T> a, Vector2<T> b)
+  auto operator-(Vector2<T> vec)
   {
-    return a -= b;
-  }
-
-  template <typename T>
-  Vector2<T> operator*(Vector2<T> a, Vector2<T> b)
-  {
-    return a *= b;
-  }
-
-  template <typename T>
-  Vector2<T> operator/(Vector2<T> a, Vector2<T> b)
-  {
-    return a /= b;
-  }
-
-  template <typename T>
-  Vector2<T> operator+(Vector2<T> vec, T num)
-  {
-    return vec += num;
-  }
-
-  template <typename T>
-  Vector2<T> operator+(T num, Vector2<T> vec)
-  {
-    return vec += num;
-  }
-
-  template <typename T>
-  Vector2<T> operator-(Vector2<T> vec, T num)
-  {
-    return vec -= num;
-  }
-
-  template <typename T>
-  Vector2<T> operator-(T num, Vector2<T> vec)
-  {
-    return Vector2<T>(num, num) - vec;
-  }
-
-  template <typename T>
-  Vector2<T> operator*(Vector2<T> vec, T num)
-  {
-    return vec *= num;
-  }
-
-  template <typename T>
-  Vector2<T> operator*(T num, Vector2<T> vec)
-  {
-    return vec *= num;
-  }
-
-  template <typename T>
-  Vector2<T> operator/(Vector2<T> vec, T num)
-  {
-    return vec /= num;
-  }
-
-  template <typename T>
-  Vector2<T> operator/(T num, Vector2<T> vec)
-  {
-    return Vector2<T>(num, num) / vec;
-  }
-
-  template <typename T>
-  Vector2<T> operator-(Vector2<T> vec)
-  {
-    vec.x = -vec.x;
-    vec.y = -vec.y;
-    return vec;
+    return make_vector2(-vec.x, -vec.y);
   }
 
   template <typename T>
@@ -204,7 +201,7 @@ namespace ts
   }
 
   template <typename T>
-  Vector2<T> normalize(Vector2<T> vec)
+  auto normalize(Vector2<T> vec)
   {
     auto mag = magnitude(vec);
     if (mag == 0) return vec;
@@ -213,14 +210,14 @@ namespace ts
   }
 
   template <typename T>
-  T distance(const Vector2<T>& a, const Vector2<T>& b)
+  auto distance(const Vector2<T>& a, const Vector2<T>& b)
   {
     using std::hypot;
     return hypot(a.x - b.x, a.y - b.y);
   }
 
   template <typename T>
-  Vector2<T> flip_orientation(Vector2<T> vec)
+  auto flip_orientation(Vector2<T> vec)
   {
     using std::swap;
     swap(vec.x, vec.y);
@@ -228,22 +225,22 @@ namespace ts
   }
 
   template <typename To, typename From>
-  Vector2<To> vector2_cast(Vector2<From> vec)
+  auto vector2_cast(Vector2<From> vec)
   {
-    return Vector2<To>(static_cast<To>(vec.x), static_cast<To>(vec.y));
+    return make_vector2(static_cast<To>(vec.x), static_cast<To>(vec.y));
   }
   
   template <typename To, typename From>
-  Vector2<To> vector2_round(const Vector2<From>& vec)
+  auto vector2_round(const Vector2<From>& vec)
   {
     using std::round;
-    return Vector2<To>(static_cast<To>(round(vec.x)), static_cast<To>(round(vec.y)));
+    return make_vector2(static_cast<To>(round(vec.x)), static_cast<To>(round(vec.y)));
   }
 
   template <typename To, typename From, typename RoundFunc>
-  Vector2<To> vector2_round(const Vector2<From>& vec, RoundFunc&& round)
+  auto vector2_round(const Vector2<From>& vec, RoundFunc&& round)
   {
-    return Vector2<To>(static_cast<To>(round(vec.x)), static_cast<To>(round(vec.y)));
+    return make_vector2(static_cast<To>(round(vec.x)), static_cast<To>(round(vec.y)));
   }
 
   template <typename T>
@@ -281,5 +278,3 @@ namespace ts
   using Vector2f = Vector2<float>;
   using Vector2d = Vector2<double>;
 }
-
-#endif

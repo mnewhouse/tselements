@@ -28,7 +28,7 @@ TEST_CASE("Track loading is a complex process, which is required to work perfect
   REQUIRE_NOTHROW(track_loader.load_from_file("assets/tracks/test.trk"));
 
   auto track = track_loader.get_result();
-  REQUIRE(track.size() == Vector2u(1799, 1153));
+  REQUIRE(track.size() == Vector2i(1799, 1153));
   REQUIRE(track.author() == "Jovic");
   
   const auto& tile_library = track.tile_library();

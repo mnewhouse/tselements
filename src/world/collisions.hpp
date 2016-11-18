@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef COLLISIONS_HPP_85918192495
-#define COLLISIONS_HPP_85918192495
+#pragma once
 
 #include "utility/vector2.hpp"
 
@@ -45,5 +44,3 @@ namespace ts
     void resolve_entity_collision(const CollisionResult& collision, Entity& subject, Entity& object);
   }
 }
-
-#endif

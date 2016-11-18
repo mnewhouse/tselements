@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "gl_check.hpp"
 
 #include <GL/glew.h>

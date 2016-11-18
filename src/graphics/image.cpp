@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "image.hpp"
 
 #include "utility/stream_utilities.hpp"

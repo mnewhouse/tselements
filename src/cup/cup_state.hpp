@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CUP_STATE_HPP_44148293
-#define CUP_STATE_HPP_44148293
+#pragma once
 
 namespace ts
 {
@@ -23,5 +22,3 @@ namespace ts
     };
   }
 }
-
-#endif

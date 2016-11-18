@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "render_window.hpp"
 #include "gl_context.hpp"
 
@@ -23,7 +25,7 @@ namespace ts
     struct RenderWindow::Impl
       : public sf::Window
     {
-      Impl(const char* title, std::uint32_t width, std::uint32_t height, WindowMode window_mode)
+      Impl(const char* title, std::int32_t width, std::int32_t height, WindowMode window_mode)
       {
         sf::ContextSettings context_settings;
         context_settings.majorVersion = gl_version::major;
@@ -47,12 +49,10 @@ namespace ts
         }
         
         sf::Window::create(sf::VideoMode(width, height, 32U), title, style, context_settings);
-
-        setVerticalSyncEnabled(true);
       }
     };
 
-    RenderWindow::RenderWindow(const char* title, std::uint32_t width, std::uint32_t height, WindowMode window_mode)
+    RenderWindow::RenderWindow(const char* title, std::int32_t width, std::int32_t height, WindowMode window_mode)
       : impl_(std::make_unique<Impl>(title, width, height, window_mode))
     {
     }
@@ -61,14 +61,15 @@ namespace ts
     {
     }
 
-    Vector2u RenderWindow::size() const
+    Vector2i RenderWindow::size() const
     {
       auto result = impl_->getSize();
-      return Vector2u(result.x, result.y);
+      return Vector2i(result.x, result.y);
     }
 
     void RenderWindow::clear(Colorf color)
     {
+      glStencilMask(0xFF);
       glClearColor(color.r, color.g, color.b, color.a);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     }
@@ -88,9 +89,20 @@ namespace ts
       return impl_->pollEvent(event);
     }
 
+    Vector2i RenderWindow::mouse_position() const
+    {
+      auto pos = sf::Mouse::getPosition(*impl_);
+      return{ pos.x, pos.y };
+    }
+
     void RenderWindow::set_framerate_limit(std::uint32_t limit)
     {
       impl_->setFramerateLimit(limit);
+    }
+
+    void RenderWindow::set_vsync_enabled(bool enable)
+    {
+      impl_->setVerticalSyncEnabled(enable);
     }
   }
 }

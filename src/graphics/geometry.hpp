@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef GEOMETRY_HPP_48192384
-#define GEOMETRY_HPP_48192384
+#pragma once
 
 #include "buffer.hpp"
 #include "texture.hpp"
@@ -48,4 +47,3 @@ namespace ts
     };
   }
 }
-#endif

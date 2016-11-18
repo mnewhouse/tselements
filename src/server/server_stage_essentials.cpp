@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "server_stage_essentials_detail.hpp"
 
 #include "server_message_conveyor.hpp"

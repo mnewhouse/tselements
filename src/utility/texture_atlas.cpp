@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "utility/texture_atlas.hpp"
 
 #include <algorithm>
@@ -241,6 +243,16 @@ namespace ts
     void AtlasList::set_padding(std::int32_t padding)
     {
       padding_ = padding;
+    }
+
+    std::int32_t AtlasList::fragment_overlap() const
+    {
+      return fragment_overlap_;
+    }
+
+    void AtlasList::set_fragment_overlap(std::int32_t fragment_overlap)
+    {
+      fragment_overlap_ = fragment_overlap;
     }
 
     boost::optional<AtlasEntry> AtlasList::allocate_rect(IntRect source_rect)

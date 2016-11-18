@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SCENE_LOADER_HPP_2198129815
-#define SCENE_LOADER_HPP_2198129815
+#pragma once
 
 #include "utility/generic_loader.hpp"
 
@@ -58,5 +57,3 @@ namespace ts
     SceneComponents load_scene_components(const stage::Stage* stage_ptr);
   }
 }
-
-#endif

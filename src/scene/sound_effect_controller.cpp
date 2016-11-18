@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SOUND_EFFECT_CONTROLLER_HPP_4419812985
-#define SOUND_EFFECT_CONTROLLER_HPP_4419812985
+#include "stdinc.hpp"
 
 #include "sound_effect_controller.hpp"
 
@@ -55,5 +54,3 @@ namespace ts
     }
   }
 }
-
-#endif

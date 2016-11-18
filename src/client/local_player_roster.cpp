@@ -4,6 +4,7 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
 #include "local_player_roster.hpp"
 
 #include "controls/control_center.hpp"

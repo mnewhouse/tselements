@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CONTROL_POINT_MANAGER_HPP_3859181235
-#define CONTROL_POINT_MANAGER_HPP_3859181235
+#pragma once
 
 #include "resources/control_point.hpp"
 
@@ -35,7 +34,7 @@ namespace ts
       void destroy_control_point(ControlPointId point_id);
 
       template <typename EventCallback>
-      void test_control_point_intersections(Vector2<double> old_position, Vector2<double> new_position, 
+      void test_control_point_intersections(Vector2<double> old_position, Vector2<double> new_position,
                                             EventCallback&& event_callback);
 
     private:
@@ -44,5 +43,3 @@ namespace ts
     };
   }
 }
-
-#endif

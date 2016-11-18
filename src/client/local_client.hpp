@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef LOCAL_CLIENT_HPP_228198531
-#define LOCAL_CLIENT_HPP_228198531
+#pragma once
 
 #include "client_base.hpp"
 #include "local_message_dispatcher.hpp"
@@ -45,5 +44,3 @@ namespace ts
     using LocalMessageConveyor = MessageConveyor<LocalMessageDispatcher>;
   }
 }
-
-#endif

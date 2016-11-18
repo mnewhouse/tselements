@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef FONT_RENDERER_HPP_182598125
-#define FONT_RENDERER_HPP_182598125
+#pragma once
 
 #include "graphics/shader.hpp"
 #include "graphics/sampler.hpp"
@@ -31,5 +30,3 @@ namespace ts
     };
   }
 }
-
-#endif

@@ -4,10 +4,9 @@
 * Released under the MIT license.
 */
 
-#ifndef TRACK_VERTICES_HPP_9901203
-#define TRACK_VERTICES_HPP_9901203
+#pragma once
 
-#include "resources/track_geometry.hpp"
+#include "resources/geometry.hpp"
 
 #include "utility/rect.hpp"
 #include "utility/color.hpp"
@@ -38,11 +37,11 @@ namespace ts
 
     // Takes a tile and its definition, generate exactly four vertices of type resource::Vertex
     // and write these to the given output iterator.
-    std::array<resources::TrackVertex, 4>
+    std::array<resources::Vertex, 4>
       generate_tile_vertices(const resources::Tile& tile, const resources::TileDefinition& tile_def,
                              const IntRect& texture_rect, Vector2i fragment_offset, Vector2f texture_scale);
 
-    std::array<resources::TrackFace, 2> generate_tile_faces(std::uint32_t base_index);
+    std::array<resources::Face, 2> generate_tile_faces(std::uint32_t base_index);
 
     // This function takes a track and generates the vertices required to display it.
     // Writes the result to the TrackScene object. if use_relative_texture_coords is true,
@@ -51,5 +50,3 @@ namespace ts
                               TrackScene& track_scene);
   }
 }
-
-#endif

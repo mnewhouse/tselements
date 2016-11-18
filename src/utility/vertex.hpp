@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef VERTEX_HPP_1829458
-#define VERTEX_HPP_1829458
+#pragma once
 
 #include "vector2.hpp"
 #include "color.hpp"
@@ -27,5 +26,3 @@ namespace ts
     Vector2<PositionType> texture_coords;
   };
 }
-
-#endif

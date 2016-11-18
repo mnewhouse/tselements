@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SOUND_PLAYBACK_CONTROLLER_HPP_5891182931
-#define SOUND_PLAYBACK_CONTROLLER_HPP_5891182931
+#pragma once
 
 #include "sound_sample.hpp"
 
@@ -85,5 +84,3 @@ namespace ts
     };
   }
 }
-
-#endif

@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "car_sound_controller.hpp"
 
 #include "resources/car_definition.hpp"
@@ -81,11 +83,11 @@ namespace ts
           car_info.engine_sound.set_pitch(std::min(pitch, 1.1f));
         }
 
-        if (car_info.car->traction() < 0.95)
+        auto traction = car_info.car->traction();
+        if (traction < 0.95)
         {
-          auto velocity = car_info.car->velocity();
-          auto speed = magnitude(velocity);
-          auto volume = static_cast<float>(speed / (400.0 * std::max(car_info.car->traction(), 0.25)));
+          auto rev_speed = car_info.car->engine_rev_speed();
+          auto volume = static_cast<float>(std::max(rev_speed, 0.25) * std::sqrt(1.0 - traction) * 2.0);
           volume = std::min(volume, 1.0f);
 
           if (!car_info.skid_sound)

@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "scene_loader.hpp"
 #include "scene.hpp"
 #include "scene_components.hpp"

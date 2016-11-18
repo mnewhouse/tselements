@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef ENTITY_ID_CONVERSION_HPP_13458198512
-#define ENTITY_ID_CONVERSION_HPP_13458198512
+#pragma once
 
 #include "entity.hpp"
 
@@ -26,5 +25,3 @@ namespace ts
     }
   }
 }
-
-#endif

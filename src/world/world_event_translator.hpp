@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef WORLD_EVENT_TRANSLATOR_HPP_777891281833
-#define WORLD_EVENT_TRANSLATOR_HPP_777891281833
+#pragma once
 
 #include "world_event_interface.hpp"
 
@@ -35,7 +34,11 @@ namespace ts
 
       MessageDispatcher message_dispatcher_;
     };
+
+    template <typename MessageDispatcher>
+    auto make_world_event_translator(MessageDispatcher dispatcher)
+    {
+      return world::EventTranslator<MessageDispatcher>(dispatcher);
+    }
   }
 }
-
-#endif

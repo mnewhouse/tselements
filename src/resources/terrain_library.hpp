@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TERRAIN_LIBRARY_HPP_43189182985
-#define TERRAIN_LIBRARY_HPP_43189182985
+#pragma once
 
 #include "terrain_definition.hpp"
 
@@ -38,10 +37,8 @@ namespace ts
 
     private:
       std::vector<TerrainDefinition> terrains_ = std::vector<TerrainDefinition>(max_terrains);
-      std::vector<TerrainId> sub_terrains_ = std::vector<TerrainId>(max_terrains * max_levels);      
+      std::vector<TerrainId> sub_terrains_ = std::vector<TerrainId>(max_terrains * max_levels);
       std::vector<level_range_type> sub_levels_ = std::vector<level_range_type>(max_terrains * max_levels);
     };
   }
 }
-
-#endif

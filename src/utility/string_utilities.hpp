@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef STRING_UTILITIES_HPP_3912380
-#define STRING_UTILITIES_HPP_3912380
+#pragma once
 
 #include <algorithm>
 #include <cctype>
@@ -82,5 +81,3 @@ namespace ts
     }
   };
 }
-
-#endif

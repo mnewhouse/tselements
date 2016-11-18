@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TRACK_HASH_HPP_556920
-#define TRACK_HASH_HPP_556920
+#pragma once
 
 #include <array>
 #include <cstdint>
@@ -17,5 +16,3 @@ namespace ts
     using TrackHash = std::array<std::uint32_t, 4>;
   }
 }
-
-#endif

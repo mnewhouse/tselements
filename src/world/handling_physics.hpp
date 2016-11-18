@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef HANDLING_PHYSICS_HPP_77721905191355
-#define HANDLING_PHYSICS_HPP_77721905191355
+#pragma once
 
 #include "utility/vector2.hpp"
 #include "utility/rotation.hpp"
@@ -34,5 +33,3 @@ namespace ts
     CarUpdateState update_car_state(const Car& car, const resources::TerrainDefinition& terrain, double frame_duration);
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TRIANGLE_UTILITIES_HPP_4891289816
-#define TRIANGLE_UTILITIES_HPP_4891289816
+#pragma once
 
 #include "vector2.hpp"
 #include "vector3.hpp"
@@ -96,5 +95,3 @@ namespace ts
     return out;
   }
 }
-
-#endif

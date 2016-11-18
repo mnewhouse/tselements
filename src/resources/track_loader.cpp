@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "track_loader.hpp"
 #include "tile_library.hpp"
 #include "texture_library.hpp"
@@ -112,7 +114,7 @@ namespace ts
     {
       std::size_t start_line = context.line_index;
 
-      TrackGeometry geometry;
+      Geometry geometry;
       geometry.texture_id = texture_id;
       geometry.level = level;
 
@@ -132,7 +134,7 @@ namespace ts
         primitive_tolower(directive);
         if (directive == "v")
         {
-          TrackVertex vertex;
+          Vertex vertex;
           ArrayStream stream(remainder);
           if (stream >> vertex.position.x >> vertex.position.y >>
               vertex.texture_coords.x >> vertex.texture_coords.y)
@@ -485,11 +487,13 @@ namespace ts
         if (directive == "point")
         {
           std::int32_t x, y, length, direction;          
+
           if (ArrayStream(remainder) >> x >> y >> length >> direction)
           {
             ControlPoint point;
             point.start = { x, y };
             point.end = point.start;
+            point.flags = 0;
 
             // 0 = horizontal, 1 = vertical.
             if (direction == 0)
@@ -501,7 +505,7 @@ namespace ts
             {
               point.end.x += length;
               point.type = ControlPoint::HorizontalLine;
-            }
+            }            
             
             track.add_control_point(point);
             --point_count;
@@ -510,16 +514,22 @@ namespace ts
           else insufficient_parameters(directive_view, context);          
         }
 
-        if (directive == "finish")
+        if (directive == "check")
         {
           // Special kind of control point, which runs from one point to another.
           std::int32_t x1, y1, x2, y2;
-          if (ArrayStream(remainder) >> x1 >> y1 >> x2 >> y2)
+          std::uint32_t flags = 0;
+
+          ArrayStream stream(remainder);
+          if (stream >> x1 >> y1 >> x2 >> y2)
           {
+            stream >> flags;
+
             ControlPoint point;
             point.start = { x1, y1 };
             point.end = { x2, y2 };
             point.type = ControlPoint::FinishLine;
+            point.flags = flags;
             track.add_control_point(point);
             --point_count;
           }
@@ -752,8 +762,8 @@ namespace ts
               if (next_word == "td")
               {
                 remainder = make_string_ref(next_word.end(), line.end());
-                std::uint32_t height_levels;
-                Vector2u size;
+                std::int32_t height_levels;
+                Vector2i size;
                 if (ArrayStream(remainder) >> height_levels >> size.x >> size.y)
                 {
                   track_.set_height_level_count(height_levels);

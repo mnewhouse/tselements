@@ -4,11 +4,12 @@
 * Released under the MIT license.
 */
 
-#ifndef CONTROL_POINT_MANAGER_DETAIL_HPP_54791891
-#define CONTROL_POINT_MANAGER_DETAIL_HPP_54791891
+#pragma once
 
 #include "control_point_manager.hpp"
 #include "entity.hpp"
+
+#include <utility/line_intersection.hpp>
 
 namespace ts
 {
@@ -20,26 +21,20 @@ namespace ts
       void test_finish_line_intersection(Vector2<double> old_position, Vector2<double> new_position,
                                          const ControlPoint& point, EventCallback&& event_callback)
       {
-        auto distance = new_position - old_position;
-        auto point_size = vector2_cast<double>(point.end - point.start);
-
-        /*
-        auto cp = cross_product(distance, point_size);
-        if (cp != 0.0)
+        auto intersection = find_line_intersection(old_position, new_position,
+                                                   vector2_cast<double>(point.start),
+                                                   vector2_cast<double>(point.end));
+        if (intersection)
         {
-          auto m = 1.0 / cp;
-          auto offset = vector2_cast<double>(point.start) - old_position;
-          auto intersect_point = cross_product(offset, point_size) * m;
-          if (intersect_point >= 0.0 && intersect_point < 1.0)
-          {
-            auto time_point = cross_product(offset, distance) * m;
-            if (time_point >= 0.0 && time_point < 1.0)
-            {
-              event_callback(point, time_point);
-            }           
-          }          
+          auto x_diff = new_position.x - old_position.x;
+          auto y_diff = new_position.y - old_position.y;
+
+          double time_point = std::abs(x_diff) < std::abs(y_diff) ?
+            (intersection->y - old_position.y) / y_diff :
+            (intersection->x - old_position.x) / x_diff;
+
+          event_callback(point, time_point);
         }
-        */
       }
 
       template <typename EventCallback>
@@ -121,5 +116,3 @@ namespace ts
     }
   }
 }
-
-#endif

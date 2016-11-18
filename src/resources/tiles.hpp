@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef TILES_HPP_8595182
-#define TILES_HPP_8595182
+#pragma once
 
 #include "utility/rect.hpp"
 #include "utility/vector2.hpp"
@@ -54,5 +53,3 @@ namespace ts
     };
   }
 }
-
-#endif

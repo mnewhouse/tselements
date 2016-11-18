@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef LOADING_THREAD_HPP_5981891822
-#define LOADING_THREAD_HPP_5981891822
+#pragma once
 
 #include <thread>
 #include <future>
@@ -70,5 +69,3 @@ namespace ts
 }
 
 #include "loading_thread_detail.hpp"
-
-#endif

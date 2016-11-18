@@ -1,30 +1,10 @@
 /*
- * The MIT License (MIT)
- *
- * TS Evolution
- * Copyright (c) 2015 Martin Newhouse
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+* TS Elements
+* Copyright 2015-2016 M. Newhouse
+* Released under the MIT license.
+*/
 
-#ifndef GENERIC_STATE_MACHINE_INL_178237
-#define GENERIC_STATE_MACHINE_INL_178237
+#pragma once
 
 #include <algorithm>
 
@@ -290,25 +270,25 @@ namespace ts
     {
       // SFINAE at work: call activate(*state) if it exists, do nothing otherwise.
       template <typename StateType>
-      void activation_helper(StateType* state, decltype(activate(std::declval<StateType&>()), int()) = 0)
+      auto activation_helper(StateType* state, int) -> decltype(activate(*state), void())
       {
         activate(*state);
       }
 
       template <typename StateType>
-      void activation_helper(StateType* state, void* = nullptr)
+      void activation_helper(StateType* state, ...)
       {
       }
 
       // Ditto, but for deactivation.
       template <typename StateType>
-      void deactivation_helper(StateType* state, decltype(deactivate(std::declval<StateType&>()), int()) = 0)
+      auto deactivation_helper(StateType* state, int) -> decltype(deactivate(*state), void())
       {
         deactivate(*state);
       }
 
       template <typename StateType>
-      void deactivation_helper(StateType* state, void* = nullptr)
+      void deactivation_helper(StateType* state, ...)
       {
       }
     }
@@ -316,13 +296,13 @@ namespace ts
     template <typename StateType>
     void StateMachine<StateType>::call_activation_function(StateType* state) const
     {
-      detail::activation_helper(state);
+      detail::activation_helper(state, 0);
     }
 
     template <typename StateType>
     void StateMachine<StateType>::call_deactivation_function(StateType* state) const
     {
-      detail::deactivation_helper(state);
+      detail::deactivation_helper(state, 0);
     }
 
 
@@ -385,5 +365,3 @@ namespace ts
     }
   }
 }
-
-#endif

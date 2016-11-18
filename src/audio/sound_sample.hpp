@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SOUND_SAMPLE_HPP_58198192835
-#define SOUND_SAMPLE_HPP_58198192835
+#pragma once
 
 #include <string>
 
@@ -21,5 +20,3 @@ namespace ts
     SoundSample load_sound_from_file(const std::string& file_name);
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef WORLD_EVENT_INTERFACE_HPP_412012935
-#define WORLD_EVENT_INTERFACE_HPP_412012935
+#pragma once
 
 #include "control_point_manager.hpp"
 
@@ -28,5 +27,3 @@ namespace ts
     };
   }
 }
-
-#endif

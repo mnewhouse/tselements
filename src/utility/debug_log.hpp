@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef DEBUG_LOG_11232_HPP
-#define DEBUG_LOG_11232_HPP
+#pragma once
 
 #include "logger.hpp"
 
@@ -84,5 +83,3 @@ namespace ts
     }
   }
 }
-
-#endif

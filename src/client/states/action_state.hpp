@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef ACTION_STATE_HPP_66892213
-#define ACTION_STATE_HPP_66892213
+#pragma once
 
 #include "client/client_action_interface.hpp"
 
@@ -45,5 +44,3 @@ namespace ts
     };
   }
 }
-
-#endif

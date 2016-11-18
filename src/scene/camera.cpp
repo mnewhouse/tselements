@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "camera.hpp"
 
 #include "world/entity.hpp"
@@ -28,6 +30,8 @@ namespace ts
     void Camera::follow_entity(const world::Entity* entity)
     {
       followed_entity_ = entity;
+
+      update_position();
     }
 
     void Camera::set_position(Vector2<double> position)
@@ -62,8 +66,8 @@ namespace ts
       return zoom_level_;
     }
 
-    Vector2<double> compute_camera_center(const Camera& camera, Vector2<double> world_size,
-                                          Vector2<double> screen_size, double frame_progress)
+    Vector2d compute_camera_center(const Camera& camera, Vector2d world_size,
+                                   Vector2d screen_size, double frame_progress)
     {
       auto zoom = camera.zoom_level(), inverse_zoom = 1.0 / zoom;
       auto position = camera.position();
@@ -87,6 +91,7 @@ namespace ts
       {
         auto left_edge = center.x - (screen_size.x * 0.5) * inverse_zoom;
         auto right_edge = center.x + (screen_size.x * 0.5) * inverse_zoom;
+
         if (left_edge < 0.0)
         {
           center.x -= left_edge;

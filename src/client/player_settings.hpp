@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef PLAYER_SETTINGS_HPP_1247878170120
-#define PLAYER_SETTINGS_HPP_1247878170120
+#pragma once
 
 #include "cup/player_definition.hpp"
 
@@ -21,5 +20,3 @@ namespace ts
     };
   }
 }
-
-#endif

@@ -33,12 +33,12 @@ namespace ts
     }
     
 
-    TrackScene::TrackScene(Vector2u track_size)
+    TrackScene::TrackScene(Vector2i track_size)
       : track_size_(track_size)
     {
     }
 
-    Vector2u TrackScene::track_size() const
+    Vector2i TrackScene::track_size() const
     {
       return track_size_;
     }
@@ -106,12 +106,12 @@ namespace ts
     {
     }
 
-    const std::vector<resources::TrackFace>& TrackSceneLayer::faces() const
+    const std::vector<resources::Face>& TrackSceneLayer::faces() const
     {
       return faces_;
     }
 
-    const std::vector<resources::TrackVertex>& TrackSceneLayer::vertices() const
+    const std::vector<resources::Vertex>& TrackSceneLayer::vertices() const
     {
       return vertices_;
     }
@@ -171,9 +171,11 @@ namespace ts
       std::transform(faces_.begin() + face_index, faces_.end(), faces_.begin() + face_index,
                      [=](auto face)
       {
-        face.first_index += vertex_index;
-        face.second_index += vertex_index;
-        face.third_index += vertex_index;
+        for (auto& index : face.indices)
+        {
+          index += vertex_index;
+        }
+
         return face;
       });
 

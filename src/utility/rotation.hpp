@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef ROTATION_HPP_5589123
-#define ROTATION_HPP_5589123
+#pragma once
 
 namespace ts
 {
@@ -121,5 +120,3 @@ namespace ts
     return radians(a.radians() - b.radians());
   }
 }
-
-#endif

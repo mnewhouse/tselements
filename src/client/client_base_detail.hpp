@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_BASE_DETAIL_HPP_2189235891823
-#define CLIENT_BASE_DETAIL_HPP_2189235891823
+#pragma once
 
 #include "client_base.hpp"
 #include "client_cup_essentials.hpp"
@@ -48,5 +47,3 @@ namespace ts
     }
   }
 }
-
-#endif

@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "geometry_renderer.hpp"
 #include "geometry.hpp"
 #include "geometry_shaders.hpp"

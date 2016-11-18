@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef ENTITY_TYPE_HPP_5819835
-#define ENTITY_TYPE_HPP_5819835
+#pragma once
 
 namespace ts
 {
@@ -17,5 +16,3 @@ namespace ts
     };
   }
 }
-
-#endif

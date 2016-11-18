@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SERVER_CUP_ESSENTIALS_HPP_64389118
-#define SERVER_CUP_ESSENTIALS_HPP_64389118
+#pragma once
 
 #include "server_message_conveyor.hpp"
 #include "server_message_dispatcher.hpp"
@@ -78,5 +77,3 @@ namespace ts
     }
   }
 }
-
-#endif

@@ -4,14 +4,13 @@
 * Released under the MIT license.
 */
 
-#ifndef CLIENT_MESSAGE_FORWARDER_HPP_242418581915
-#define CLIENT_MESSAGE_FORWARDER_HPP_242418581915
+#pragma once
 
 #include "client_action_message_forwarder.hpp"
 
 #include "cup/cup_message_fwd.hpp"
 #include "stage/stage_message_fwd.hpp"
-#include "race/race_messages.hpp"
+#include "stage/race_message_fwd.hpp"
 
 namespace ts
 {
@@ -52,5 +51,3 @@ namespace ts
     };
   }
 }
-
-#endif

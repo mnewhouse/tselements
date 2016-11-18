@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef REMOTE_CLIENT_MAP_HPP_1285981295
-#define REMOTE_CLIENT_MAP_HPP_1285981295
+#pragma once
 
 #include "remote_client.hpp"
 
@@ -41,5 +40,3 @@ namespace ts
     };
   }
 }
-
-#endif

@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef SCENE_COMPONENTS_HPP_85918237285
-#define SCENE_COMPONENTS_HPP_85918237285
+#pragma once
 
 #include "dynamic_scene.hpp"
 #include "particle_generator.hpp"
@@ -33,5 +32,3 @@ namespace ts
     };
   }
 }
-
-#endif

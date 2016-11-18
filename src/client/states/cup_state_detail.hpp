@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CUP_STATE_DETAIL_HPP_338129812893
-#define CUP_STATE_DETAIL_HPP_338129812893
+#pragma once
 
 #include "cup_state.hpp"
 
@@ -33,5 +32,3 @@ namespace ts
     }
   }
 }
-
-#endif

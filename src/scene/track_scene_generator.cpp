@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "track_scene_generator.hpp"
 #include "track_scene_generator_detail.hpp"
 

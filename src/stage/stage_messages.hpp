@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef STAGE_MESSAGES_HPP_125891258
-#define STAGE_MESSAGES_HPP_125891258
+#pragma once
 
 #include <cstdint>
 
@@ -31,5 +30,3 @@ namespace ts
     }
   }
 }
-
-#endif

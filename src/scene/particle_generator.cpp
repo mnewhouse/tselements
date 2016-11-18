@@ -4,6 +4,8 @@
 * Released under the MIT license.
 */
 
+#include "stdinc.hpp"
+
 #include "particle_generator.hpp"
 
 #include "world/world.hpp"

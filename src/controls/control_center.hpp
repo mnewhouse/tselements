@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef CONTROL_CENTER_HPP_2289130
-#define CONTROL_CENTER_HPP_2289130
+#pragma once
 
 #include "controllable.hpp"
 
@@ -42,5 +41,3 @@ namespace ts
     };
   }
 }
-
-#endif

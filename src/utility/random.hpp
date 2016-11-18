@@ -4,8 +4,7 @@
 * Released under the MIT license.
 */
 
-#ifndef RANDOM_HPP_66981918912
-#define RANDOM_HPP_66981918912
+#pragma once
 
 #include <random>
 #include <limits>
@@ -46,5 +45,3 @@ namespace ts
     }
   }
 }
-
-#endif

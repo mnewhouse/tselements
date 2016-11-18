@@ -45,12 +45,12 @@ TEST_CASE("Collision mask")
   image.saveToFile("assets/output/test-mask.png");
 
   {
-    resources::Pattern object_pattern(Vector2u(32, 16));
+    resources::Pattern object_pattern({ 32, 16 });
     object_pattern(16, 0) = 1;
     object_pattern(20, 1) = 1;
     object_pattern(16, 2) = 1;
 
-    resources::Pattern scenery_pattern(Vector2u(64, 64));
+    resources::Pattern scenery_pattern({ 64, 64 });
     scenery_pattern(35, 0) = 1;
     scenery_pattern(43, 1) = 1;
     scenery_pattern(16, 2) = 1;
