@@ -84,6 +84,11 @@ namespace ts
       impl_->setActive(true);
     }
 
+    bool RenderWindow::has_focus() const
+    {
+      return impl_->hasFocus();
+    }
+
     bool RenderWindow::poll_event(sf::Event& event)
     {
       return impl_->pollEvent(event);

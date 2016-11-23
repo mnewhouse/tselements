@@ -21,6 +21,6 @@ namespace ts
 
   namespace scene
   {
-    TrackScene generate_track_scene(const resources::Track& track);
+    TrackScene generate_track_scene(const resources::Track& track, bool include_all_assets = false);
   }
 }

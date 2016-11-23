@@ -243,9 +243,11 @@ namespace ts
       }
 
       TextureMapping generate_resource_texture_map(const resources::Track& track, const PlacementMap& placement_map,
-                                                   const TextureMapping::texture_type* atlas_textures)
+                                                   std::vector<std::unique_ptr<graphics::Texture>> atlas_textures)
       {
-        TextureMapping texture_map;
+        TextureMapping texture_map(std::move(atlas_textures));
+        const auto& textures = texture_map.textures();
+
         {
           // Need an enclosing scope to ensure the map_interface is destroyed before the return statement.
           auto map_interface = texture_map.create_mapping_interface();
@@ -281,20 +283,20 @@ namespace ts
                   partial_rect.width = image_rect.width;
                   partial_rect.height = image_rect.height;
 
-                  auto texture = atlas_textures[atlas_id];
+                  const auto& texture = textures[atlas_id];
                   if (placement.source_rect != placement.full_source_rect)
                   {
                     Vector2i fragment_offset(placement.source_rect.left - placement.full_source_rect.left,
                                              placement.source_rect.top - placement.full_source_rect.top);
 
-                    map_interface.map_texture_fragment(resource_id, texture,
+                    map_interface.map_texture_fragment(resource_id, texture.get(),
                                                        intersection(partial_rect, placement.atlas_rect),
                                                        fragment_offset);
                   }
 
                   else
                   {
-                    map_interface.map_texture(resource_id, texture, partial_rect);
+                    map_interface.map_texture(resource_id, texture.get(), partial_rect);
                   }
                 }
               }
@@ -395,7 +397,7 @@ namespace ts
 
         for (const auto& layer : track.layers())
         {
-          for (const auto& geometry : layer.geometry)
+          for (const auto& geometry : layer.geometry())
           {
             std::size_t atlas_id = atlas_list.current_atlas();
 
@@ -410,7 +412,7 @@ namespace ts
           }
 
           // Loop through all the placed tiles
-          for (const auto& tile : layer.tiles)
+          for (const auto& tile : layer.tiles())
           {
             std::size_t atlas_id = atlas_list.current_atlas();
 
@@ -484,11 +486,8 @@ namespace ts
       TrackScene generate_track_scene(const resources::Track& track, const PlacementMap& placement_map)
       {
         ImageLoader image_loader;
-        TrackScene track_scene(track.size());
 
-        using texture_type = TextureMapping::texture_type;
-
-        std::vector<texture_type> atlas_textures;
+        std::vector<std::unique_ptr<graphics::Texture>> atlas_textures;
         atlas_textures.reserve(placement_map.atlases.size());
 
         for (const auto& atlas : placement_map.atlases)
@@ -501,14 +500,15 @@ namespace ts
           glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
           glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
-          atlas_textures.push_back(track_scene.register_texture(std::move(texture)));
+          atlas_textures.push_back(std::move(texture));
         }
 
         glCheck(glBindTexture(GL_TEXTURE_2D, 0));
 
-        auto texture_mapping = generate_resource_texture_map(track, placement_map, atlas_textures.data());
-        scene::build_track_vertices(track, texture_mapping, track_scene);
+        auto texture_mapping = generate_resource_texture_map(track, placement_map, std::move(atlas_textures));
 
+        TrackScene track_scene(track.size(), std::move(texture_mapping));
+        scene::build_track_vertices(track, track_scene);
         return track_scene;
       }
     }

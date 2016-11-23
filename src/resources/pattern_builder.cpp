@@ -45,7 +45,7 @@ namespace ts
       const auto& layers = track.layers();
       for (const auto& layer : layers)
       {
-        expand_tiles(layer.tiles.begin(), layer.tiles.end(), track.tile_library(),
+        expand_tiles(layer.tiles().begin(), layer.tiles().end(), track.tile_library(),
                      std::back_inserter(tile_expansion));
       }
 
@@ -78,7 +78,7 @@ namespace ts
 
       for (const auto& layer : track.layers())
       {
-        for (const auto& tile : layer.tiles)
+        for (const auto& tile : layer.tiles())
         {
           auto tile_def = tiles.find(tile.id);
           auto group_def = tile_groups.find(tile.id);

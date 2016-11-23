@@ -79,6 +79,8 @@ set(LIB_SOURCES
 	src/editor/editor_working_state.cpp
 
 	src/editor/tools/editor_path_tool.cpp
+	src/editor/tools/editor_tile_tool.cpp
+	src/editor/tools/tile_interaction_renderer.cpp
 
 	src/fonts/bitmap_font.cpp
 	src/fonts/font_library.cpp
@@ -115,6 +117,7 @@ set(LIB_SOURCES
 	src/resources/texture_library.cpp
 	src/resources/tile_library.cpp
 	src/resources/track.cpp
+	src/resources/track_layer.cpp
 	src/resources/track_loader.cpp
 
 	src/scene/camera.cpp

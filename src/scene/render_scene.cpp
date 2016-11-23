@@ -6,9 +6,6 @@
 
 #include "stdinc.hpp"
 
-#include <GL/glew.h>
-#include <GL/GL.h>
-
 #include "render_scene.hpp"
 #include "scene_shaders.hpp"
 #include "dynamic_scene.hpp"
@@ -19,6 +16,9 @@
 
 #include "world/world_limits.hpp"
 
+#include <GL/glew.h>
+#include <GL/GL.h>
+
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -26,6 +26,8 @@ namespace ts
 {
   namespace scene
   {
+    using namespace render_scene;
+
     RenderScene::RenderScene(TrackScene track_scene)
       : track_scene_(std::move(track_scene))
     {
@@ -190,7 +192,8 @@ namespace ts
       }
     }
 
-    void RenderScene::render(const Viewport& view_port, Vector2i screen_size, double frame_progress) const
+    void RenderScene::render(const Viewport& view_port, Vector2i screen_size, double frame_progress,
+                             const render_callback& post_render) const
     {
       glCheck(glDisable(GL_CULL_FACE));
       glCheck(glEnable(GL_BLEND));
@@ -286,8 +289,6 @@ namespace ts
         glCheck(glBindTexture(GL_TEXTURE_2D, e.texture->get()));
 
         // Bind colorizer texture
-
-
         glCheck(glUniform4fv(car_uniform_locations_.car_colors, 3, e.colors.data()));
         glCheck(glUniformMatrix4fv(car_uniform_locations_.model_matrix, 1, GL_FALSE,
                                    glm::value_ptr(e.model_matrix)));
@@ -306,8 +307,16 @@ namespace ts
         element_buffer_offset += sizeof(std::uint32_t) * 6;
       }
 
-      glDisable(GL_STENCIL_TEST);
+      glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
+      glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+      glCheck(glUseProgram(0));
+      glCheck(glBindTexture(GL_TEXTURE_2D, 0));
+      glCheck(glDisable(GL_STENCIL_TEST));
+
+      if (post_render) post_render(view_matrix);
+
       graphics::disable_scissor_box();
+      glCheck(glViewport(0, 0, screen_size.x, screen_size.y));
     }
 
     void RenderScene::update_entities(const DynamicScene& dynamic_scene, std::uint32_t frame_duration)
@@ -345,7 +354,7 @@ namespace ts
 
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, car_vertex_buffer_.get()));
       glCheck(glBufferData(GL_ARRAY_BUFFER, car_vertex_buffer_cache_.size() * sizeof(car_vertex_buffer_cache_.front()),
-                           car_vertex_buffer_cache_.data(), GL_STATIC_DRAW));
+                           car_vertex_buffer_cache_.data(), GL_STREAM_DRAW));
     }
 
     void RenderScene::clear_dynamic_state()
@@ -356,6 +365,11 @@ namespace ts
     void RenderScene::set_background_color(Colorf bg_color)
     {
       background_color_ = bg_color;
+    }
+
+    const TrackScene& RenderScene::track_scene() const
+    {
+      return track_scene_;
     }
   }
 }

@@ -24,7 +24,7 @@ namespace ts
   {
     static const std::int32_t desired_atlas_size = 2048;
     
-    TrackScene generate_track_scene(const resources::Track& track)
+    TrackScene generate_track_scene(const resources::Track& track, bool include_all_assets)
     {
       /* In order to generate a track scene, we must:
          * Generate one or more texture atlases so that the track can be rendered efficiently.
@@ -43,8 +43,9 @@ namespace ts
       std::int32_t atlas_size = std::min(desired_atlas_size, graphics::max_texture_size());
       if (atlas_size < 256) throw std::runtime_error("unable to load track scene (insufficient texture size)");
 
-      auto placement_map = detail::generate_atlas_placement_map(track, image_mapping, 
-                                                                make_vector2(atlas_size, atlas_size));
+      auto placement_map = detail::generate_atlas_placement_map(track, image_mapping,
+                                                                make_vector2(atlas_size, atlas_size),
+                                                                include_all_assets);
 
       return detail::generate_track_scene(track, placement_map);
     }

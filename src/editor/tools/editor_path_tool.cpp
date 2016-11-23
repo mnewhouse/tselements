@@ -44,7 +44,7 @@ namespace ts
     void PathTool::update_selection(const WorkingState& working_state)
     {
       auto selected_layer = working_state.selected_layer();
-      if (selected_layer_ != selected_layer && selected_layer->type == resources::TrackLayerType::Paths)
+      if (selected_layer_ != selected_layer && selected_layer->type() == resources::TrackLayerType::Paths)
       {
         selected_layer_ = selected_layer;
         selected_path_index_ = 0;
@@ -60,16 +60,16 @@ namespace ts
       {
         auto& track = context.scene.track();
         auto layer = track.create_layer("Path Layer", 0, resources::TrackLayerType::Paths);
-        layer->paths.emplace_back();
+        layer->paths().emplace_back();
 
         select_path(layer, 0, context.working_state);
       }
 
       // Otherwise, we might not have a path with the selected index. Need to fix that.
-      else if (selected_path_index_ >= selected_layer_->paths.size())
+      else if (selected_path_index_ >= selected_layer_->paths().size())
       {
-        auto index = selected_layer_->paths.size();
-        selected_layer_->paths.emplace_back();
+        auto index = selected_layer_->paths().size();
+        selected_layer_->paths().emplace_back();
 
         select_path(selected_layer_, index, context.working_state);
       }
@@ -77,10 +77,10 @@ namespace ts
 
     void PathTool::reload_working_path()
     {
-      if (selected_layer_ && selected_path_index_ < selected_layer_->paths.size())
+      if (selected_layer_ && selected_path_index_ < selected_layer_->paths().size())
       {
         // Reload the working path.
-        working_path_ = selected_layer_->paths[selected_path_index_];
+        working_path_ = selected_layer_->paths()[selected_path_index_];
       }
 
       else
@@ -367,7 +367,7 @@ namespace ts
     {
       working_state.select_layer(layer);
 
-      if (layer && layer->type != resources::TrackLayerType::Paths)
+      if (layer && layer->type() != resources::TrackLayerType::Paths)
       {
         layer = nullptr;
         path_index = 0;
@@ -384,9 +384,12 @@ namespace ts
 
     void PathTool::commit_working_path(const EditorScene& scene)
     {
-      if (selected_layer_ && selected_path_index_ < selected_layer_->paths.size())
+      if (selected_layer_ && selected_path_index_)
       {
-        selected_layer_->paths[selected_path_index_] = working_path_;
+        // scene.commit_working_path(selected_layer_, selected_path_index_, working_path_);
+
+        auto& paths = selected_layer_->paths();
+        if (selected_path_index_ < paths.size()) paths[selected_path_index_] = working_path_;
       }
     }
 
@@ -395,7 +398,7 @@ namespace ts
       auto layer = selected_layer_;
       auto index = selected_path_index_;
 
-      if (!working_path_.nodes.empty() && layer && index < layer->paths.size())
+      if (!working_path_.nodes.empty() && layer && index < layer->paths().size())
       {
         auto action = [=]()
         {

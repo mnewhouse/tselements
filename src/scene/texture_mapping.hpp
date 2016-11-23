@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <memory>
 
 #include "graphics/texture.hpp"
 
@@ -21,12 +22,10 @@ namespace ts
   {
     struct MappedTexture
     {
-      using texture_type = const graphics::Texture*;
-
       std::size_t resource_id;
       IntRect texture_rect;
       Vector2i fragment_offset;
-      texture_type texture;
+      const graphics::Texture* texture;
     };
 
     struct TextureMappingInterface;
@@ -36,8 +35,10 @@ namespace ts
     class TextureMapping
     {
     public:
+      explicit TextureMapping(std::vector<std::unique_ptr<graphics::Texture>> textures);
+
       using mapping_range = boost::iterator_range<const MappedTexture*>;
-      using texture_type = MappedTexture::texture_type;
+      using texture_type = const graphics::Texture*;
 
       // The following functions are provided for completeness, but they are extremely slow if 
       // used several times in a row. In such cases, it will be a great deal more efficient
@@ -59,10 +60,13 @@ namespace ts
       // to use this class while a mapping face object exists.
       TextureMappingInterface create_mapping_interface();
 
+      const std::vector<std::unique_ptr<graphics::Texture>>& textures() const;
+
     private:
       friend TextureMappingInterface;
       std::vector<MappedTexture> textures_;
       std::vector<MappedTexture> texture_fragments_;
+      std::vector<std::unique_ptr<graphics::Texture>> texture_storage_;
     };
 
     // The texture mapping interface provides a way to define a large number of textures
@@ -71,7 +75,7 @@ namespace ts
     struct TextureMappingInterface
     {
     public:
-      using texture_type = MappedTexture::texture_type;
+      using texture_type = TextureMapping::texture_type;
 
       ~TextureMappingInterface();
 

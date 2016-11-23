@@ -16,7 +16,7 @@ namespace ts
 {
   namespace resources
   {
-    struct TrackLayer;
+    class TrackLayer;
   }
 
   namespace editor

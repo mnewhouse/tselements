@@ -11,8 +11,6 @@
 #include "utility/transform.hpp"
 #include "utility/vector2.hpp"
 
-#include <iostream>
-
 namespace ts
 {
   namespace resources

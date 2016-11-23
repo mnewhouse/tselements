@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "texture_mapping.hpp"
+
 #include "resources/geometry.hpp"
 
 #include "graphics/texture.hpp"
@@ -21,7 +23,7 @@ namespace ts
 {
   namespace resources
   {
-    struct TrackLayer;
+    class TrackLayer;
   }
 
   namespace scene
@@ -87,16 +89,12 @@ namespace ts
     {
     public:
       using LayerHandle = const resources::TrackLayer*;
-
-      TrackScene() = default;
-      explicit TrackScene(Vector2i track_size);
+      explicit TrackScene(Vector2i track_size, TextureMapping texture_mapping);
 
       Vector2i track_size() const;
 
       using texture_type = TrackSceneLayer::texture_type;
       using vertex_type = TrackSceneLayer::vertex_type;
-
-      const texture_type* register_texture(std::unique_ptr<texture_type> texture);
 
       TrackSceneLayer* create_layer(LayerHandle track_layer);
 
@@ -107,10 +105,12 @@ namespace ts
       const_layer_range active_layers() const;
       void deactivate_layer(LayerHandle layer_handle);
 
-    private:
-      std::vector<std::unique_ptr<texture_type>> textures_;
+      const TextureMapping& texture_mapping() const;
+
+    private:      
       std::unordered_map<LayerHandle, TrackSceneLayer> layers_;
       std::vector<TrackSceneLayer*> active_layers_;
+      TextureMapping texture_mapping_;
       Vector2i track_size_;
     };
   }

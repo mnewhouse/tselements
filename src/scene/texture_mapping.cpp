@@ -11,6 +11,11 @@ namespace ts
 {
   namespace scene
   {
+    TextureMapping::TextureMapping(std::vector<std::unique_ptr<graphics::Texture>> textures)
+      : texture_storage_(std::move(textures))
+    {
+    }
+
     void TextureMapping::map_texture(std::size_t resource_id, texture_type texture, IntRect texture_rect)
     {
       // Slow
@@ -42,13 +47,7 @@ namespace ts
 
     TextureMapping::mapping_range TextureMapping::find(std::size_t resource_id) const
     {
-      auto result = find_all(resource_id);
-      if (result.second)
-      {
-        return result.first;
-      }
-
-      return mapping_range(result.first.begin(), result.first.begin() + 1);
+      return find(resource_id, nullptr);
     }
 
     TextureMapping::mapping_range TextureMapping::find(std::size_t resource_id,
@@ -78,6 +77,11 @@ namespace ts
       }
 
       return range;
+    }
+
+    const std::vector<std::unique_ptr<graphics::Texture>>& TextureMapping::textures() const
+    {
+      return texture_storage_;
     }
 
     TextureMappingInterface TextureMapping::create_mapping_interface()

@@ -31,6 +31,8 @@ namespace ts
       std::array<std::uint32_t, 3> indices;
     };
 
+    static_assert(sizeof(Face) == sizeof(std::uint32_t) * 3, "error");
+
     template <typename VertexType>
     struct BasicGeometry
     {

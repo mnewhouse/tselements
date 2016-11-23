@@ -26,7 +26,7 @@ namespace ts
 
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texture_size_.x, texture_size_.y,
                       GL_RGBA, GL_UNSIGNED_BYTE, image.getPixelsPtr());
-
+      glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     Texture::Texture(Vector2u texture_size)

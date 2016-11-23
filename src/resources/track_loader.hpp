@@ -18,7 +18,7 @@ namespace ts
 {
   namespace resources
   {
-    struct TrackLayer;
+    class TrackLayer;
 
     struct BrokenTrackException
       : std::runtime_error

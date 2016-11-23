@@ -17,9 +17,9 @@ namespace ts
   {
     struct LayerOrderComparator
     {
-      bool operator()(const TrackLayer* a, const TrackLayer* b) const noexcept
+      bool operator()(const TrackLayer* a, const TrackLayer* b) const
       {
-        return a->level < b->level;
+        return a->level() < b->level();
       }
     };
 
@@ -93,22 +93,6 @@ namespace ts
       return texture_library_;
     }
 
-    const TrackLayer* Track::get_layer_by_id(LayerId layer_id) const
-    {
-      auto it = layers_.find(layer_id);
-      if (it == layers_.end()) return nullptr;
-
-      return &it->second;
-    }
-
-    TrackLayer* Track::get_layer_by_id(LayerId layer_id)
-    {
-      auto it = layers_.find(layer_id);
-      if (it == layers_.end()) return nullptr;
-
-      return &it->second;      
-    }
-
     Track::LayerOrderInterface Track::layers()
     {
       TrackLayer* const* begin = layer_order_.data();
@@ -125,18 +109,90 @@ namespace ts
       return ImmutableLayerOrderInterface(boost::make_indirect_iterator(begin), boost::make_indirect_iterator(end));
     }
 
+    void Track::set_layer_level(TrackLayer* layer, std::uint32_t level)
+    {
+      auto layer_it = std::find(layer_order_.begin(), layer_order_.end(), layer);
+      
+
+      if (layer_it != layer_order_.end())
+      {
+        // Shift the layer to the closest spot that would keep everything sorted
+
+        auto old_level = layer->level();
+        auto predicate = [=](const TrackLayer* layer)
+        {
+          return layer->level() >= level;
+        };
+
+        if (level < old_level)
+        {
+          // Find the first layer that has a level greater than or equal to our new level
+          auto range_end = std::find_if(std::next(layer_it), layer_order_.end(), predicate);
+          std::rotate(layer_it, std::next(layer_it), range_end);
+        }
+
+        else if (level > old_level)
+        {
+          auto rev = std::make_reverse_iterator(layer_it);
+          auto range_end = std::find_if(rev, layer_order_.rend(), predicate);
+          std::rotate(std::prev(rev), range_end, rev);
+        }
+      }
+
+      layer->set_level(level);
+    }
+
+    std::int32_t Track::shift_towards_front(const TrackLayer* layer, std::int32_t shift_amount)
+    {
+      auto layer_it = std::find(layer_order_.begin(), layer_order_.end(), layer);
+      if (layer_it == layer_order_.end()) return 0;
+
+      auto level = layer->level();
+      auto next = std::next(layer_it);
+
+      std::int32_t i = 0;
+      while (i < shift_amount && next != layer_order_.end() && (*next)->level() == level)
+      {
+        std::iter_swap(layer_it++, next++);
+
+        ++i;
+      }
+
+      return i;
+    }
+
+    std::int32_t Track::shift_towards_back(const TrackLayer* layer, std::int32_t shift_amount)
+    {
+      auto layer_it = std::find(layer_order_.begin(), layer_order_.end(), layer);
+      if (layer_it == layer_order_.end() || layer_it == layer_order_.begin()) return 0;
+
+      auto level = layer->level();
+      auto prev = std::prev(layer_it);
+
+      std::int32_t i = 0;
+      while (i < shift_amount && (*prev)->level() == level)
+      {
+        // This loop is a bit tricky, but this is the best way to write it that I could think of.
+        std::iter_swap(layer_it, prev);
+        ++i;
+
+        if (prev == layer_order_.begin()) break;
+
+        --layer_it; 
+        --prev;        
+      }
+
+      return i;
+    }
+
     TrackLayer* Track::create_layer(std::string layer_name, std::uint32_t level, TrackLayerType type)
     {
       LayerId layer_id = 0;
       if (!layers_.empty()) layer_id = layers_.crbegin()->first + 1;
 
-      TrackLayer layer;
-      layer.id = layer_id;
-      layer.type = type;
-      layer.name = std::move(layer_name);
-      layer.level = level;
+      auto result = layers_.emplace(std::piecewise_construct, std::forward_as_tuple(layer_id),
+                                    std::forward_as_tuple(type, level, std::move(layer_name)));
 
-      auto result = layers_.insert(std::make_pair(layer_id, layer));
       auto layer_ptr = &result.first->second;
       
       // Make sure to keep the layers sorted by level

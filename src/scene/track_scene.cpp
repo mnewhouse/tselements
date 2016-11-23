@@ -33,9 +33,15 @@ namespace ts
     }
     
 
-    TrackScene::TrackScene(Vector2i track_size)
-      : track_size_(track_size)
+    TrackScene::TrackScene(Vector2i track_size, TextureMapping texture_mapping)
+      : texture_mapping_(std::move(texture_mapping)),
+        track_size_(track_size)  
     {
+    }
+
+    const TextureMapping& TrackScene::texture_mapping() const
+    {
+      return texture_mapping_;
     }
 
     Vector2i TrackScene::track_size() const
@@ -43,15 +49,9 @@ namespace ts
       return track_size_;
     }
 
-    const TrackScene::texture_type* TrackScene::register_texture(std::unique_ptr<texture_type> texture)
-    {
-      textures_.push_back(std::move(texture));
-      return textures_.back().get();
-    }
-
     TrackSceneLayer* TrackScene::create_layer(LayerHandle track_layer)
     {
-      auto result = layers_.insert(std::make_pair(track_layer, TrackSceneLayer(track_layer->level)));
+      auto result = layers_.insert(std::make_pair(track_layer, TrackSceneLayer(track_layer->level())));
       if (result.second)
       {
         active_layers_.push_back(&result.first->second);

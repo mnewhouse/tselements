@@ -27,10 +27,16 @@ namespace ts
       const resources::Track& track() const;
       resources::Track& track();
 
-      void render(const scene::Viewport& viewport, Vector2i screen_size, double frame_progress) const;
+      using render_callback = scene::RenderScene::render_callback;
+
+      void render(const scene::Viewport& viewport, Vector2i screen_size, double frame_progress,
+                  const render_callback& post_render = nullptr) const;
 
       scene::RenderScene steal_render_scene();
       void adopt_render_scene(scene::RenderScene render_scene);
+
+      const scene::RenderScene* render_scene() const;
+      scene::RenderScene* render_scene();
 
     private:
       resources::Track track_;

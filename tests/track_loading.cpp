@@ -63,29 +63,14 @@ TEST_CASE("Track loading is a complex process, which is required to work perfect
   if (layers.size() == 1)
   {
     auto& layer = layers[0];
+    auto& layer_tiles = layer.tiles();
 
-    REQUIRE(layer.tiles.size() == 2);
-    if (layer.tiles.size() == 2)
+    REQUIRE(layer_tiles.size() == 2);
+    if (layer_tiles.size() == 2)
     {
-      REQUIRE(layer.tiles[0].id == 25);
-      REQUIRE(layer.tiles[0].position == Vector2i(523, 117));
-      REQUIRE(layer.tiles[0].rotation == 126);
-    }
-
-    //REQUIRE(layer.geometry.size() == 1);
-    if (layer.geometry.size() == 1)
-    {
-      auto& v_array = layer.geometry[0];
-
-      REQUIRE(v_array.vertices.size() == 3);      
-      REQUIRE(v_array.texture_id == 10);
-
-      if (v_array.vertices.size() == 4)
-      {
-        REQUIRE(vector2_round<std::int32_t>(v_array.vertices[0].position) == Vector2i(93, 125));
-        REQUIRE(vector2_round<std::int32_t>(v_array.vertices[1].position) == Vector2i(177, 62));
-        REQUIRE(vector2_round<std::int32_t>(v_array.vertices[2].position) == Vector2i(126, 163));
-      }
+      REQUIRE(layer_tiles[0].id == 25);
+      REQUIRE(layer_tiles[0].position == Vector2i(523, 117));
+      REQUIRE(layer_tiles[0].rotation == 126);
     }
   }
 
@@ -98,20 +83,8 @@ TEST_CASE("Track loading is a complex process, which is required to work perfect
     auto image_mapping = detail::generate_image_mapping(track);
     auto placement_map = detail::generate_atlas_placement_map(track, image_mapping, { 2048, 2048 }, true);
 
-    std::vector<const graphics::Texture*> dummy_textures(placement_map.atlases.size(), nullptr);
-    auto texture_map = detail::generate_resource_texture_map(track, placement_map, dummy_textures.data());
-
-    for (auto& atlas : placement_map.atlases)
-    {
-      for (auto& d : atlas.image_data)
-      {
-        printf("%s\n", d.first.data());
-        for (auto& i : d.second)
-        {
-          printf("  %d %d %d %d\n", i.source_rect.left, i.source_rect.top, i.source_rect.width, i.source_rect.height);
-        }
-      }
-    }
+    std::vector<std::unique_ptr<graphics::Texture>> dummy_textures(placement_map.atlases.size());
+    auto texture_map = detail::generate_resource_texture_map(track, placement_map, std::move(dummy_textures));
 
     for (const auto& tile_def : tiles)
     {
@@ -135,7 +108,8 @@ TEST_CASE("Track loading is a complex process, which is required to work perfect
     {
       auto surface = detail::build_atlas_surface(atlas, image_loader);
       graphics::save_image(surface, "assets/output/atlas_" + std::to_string(++id) + ".png");
-    } 
+    
+    }
   }
 
   SECTION("Pattern builder")

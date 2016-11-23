@@ -119,4 +119,7 @@ namespace ts
   {
     return radians(a.radians() - b.radians());
   }
+
+  using Rotationf = Rotation<float>;
+  using Rotationd = Rotation<double>;
 }

@@ -15,6 +15,8 @@
 
 #include <boost/range/iterator_range.hpp>
 
+#include <glm/mat4x4.hpp>
+
 namespace ts
 {
   namespace scene
@@ -38,10 +40,20 @@ namespace ts
       virtual void delete_last(const EditorContext& context) {}
       virtual void delete_selected(const EditorContext& context) {}
 
+      virtual void activate(const EditorContext& context) {}
+      virtual void deactivate(const EditorContext& context) {}
+
+      virtual void next(const EditorContext& context) {}
+      virtual void previous(const EditorContext& context) {}
+
+      virtual void on_canvas_render(const ImmutableEditorContext& context, const glm::mat4& matrix) const {}
+
       virtual const char* tool_name() const { return "Tool"; }
 
       using mode_name_range = boost::iterator_range<const char* const*>;
       virtual mode_name_range mode_names() const { return mode_name_range(nullptr, nullptr); };
+
+      
 
     private:
       std::uint32_t active_mode_ = 0;

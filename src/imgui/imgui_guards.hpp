@@ -32,6 +32,12 @@ namespace ts
         ++count_;
       }
 
+      void pop()
+      {
+        ImGui::PopStyleVar();
+        --count_;
+      }
+
     private:
       int count_ = 0;
     };
@@ -47,6 +53,12 @@ namespace ts
       {
         ImGui::PushStyleColor(idx, value);
         ++count_;
+      }
+
+      void pop()
+      {
+        ImGui::PopStyleColor();
+        --count_;
       }
 
     private:

@@ -33,16 +33,15 @@ namespace ts
       float sin = std::sin(tile_rotation.radians());
       float cos = std::cos(tile_rotation.radians());
 
-      auto pattern_width = static_cast<float>(pattern_rect.width);
-      auto pattern_height = static_cast<float>(pattern_rect.height);
+      auto pattern_size = vector2_cast<float>(size(pattern_rect));
 
-      auto scale = make_vector2(pattern_width / image_rect.width, pattern_height / image_rect.height);
-      auto center = make_vector2(pattern_width * 0.5f, pattern_height * 0.5f);
+      auto scale = make_vector2(pattern_size.x / image_rect.width, pattern_size.y / image_rect.height);
+      auto center = make_vector2(pattern_size.x * 0.5f, pattern_size.y * 0.5f);
 
       auto tile_position = vector2_cast<float>(tile.position);
-      auto scaled_offset = vector2_cast<float>(fragment_offset) * scale;
+      auto scaled_offset = (fragment_offset + make_vector2(0.5f, 0.5f)) * scale;
 
-      auto fragment_size = vector2_cast<float>(make_vector2(texture_rect.width, texture_rect.height));
+      auto fragment_size = vector2_cast<float>(size(texture_rect)) - make_vector2(1.0f, 1.0f);
 
       auto top_left = scaled_offset - center;
       auto bottom_right = top_left + fragment_size * scale;
@@ -51,10 +50,10 @@ namespace ts
 
       auto tex_coords = rect_cast<float>(texture_rect);
 
-      vertices[0].position = tile_position + make_vector2(0.5f, 0.5f) + transform_point(top_left, sin, cos);
-      vertices[1].position = tile_position + make_vector2(0.5f, -0.5f) + transform_point(bottom_left, sin, cos);
-      vertices[2].position = tile_position + make_vector2(-0.5f, 0.5f) + transform_point(top_right, sin, cos);
-      vertices[3].position = tile_position + make_vector2(-0.5f, -0.5f) + transform_point(bottom_right, sin, cos);
+      vertices[0].position = tile_position + transform_point(top_left, sin, cos);
+      vertices[1].position = tile_position + transform_point(bottom_left, sin, cos);
+      vertices[2].position = tile_position + transform_point(top_right, sin, cos);
+      vertices[3].position = tile_position + transform_point(bottom_right, sin, cos);
 
       auto tex_left = tex_coords.left + 0.5f;
       auto tex_top = tex_coords.top + 0.5f;
@@ -65,6 +64,8 @@ namespace ts
       vertices[1].texture_coords = make_vector2(tex_left, tex_bottom) * texture_scale;
       vertices[2].texture_coords = make_vector2(tex_right, tex_top) * texture_scale;
       vertices[3].texture_coords = make_vector2(tex_right, tex_bottom) * texture_scale;
+
+      for (auto i = 0; i != 4; ++i) vertices[i].color = Colorb(255, 255, 255, 255);
 
       return vertices;
     }
@@ -79,14 +80,14 @@ namespace ts
     }
 
 
-    void build_track_vertices(const resources::Track& track, const TextureMapping& texture_mapping,
-                              TrackScene& track_scene)
+    void build_track_vertices(const resources::Track& track, TrackScene& track_scene)
 
     {
       const auto& tile_library = track.tile_library();
       const auto& texture_library = track.texture_library();
+      const auto& texture_mapping = track_scene.texture_mapping();
 
-      const auto& textures = tile_library.tiles();
+      const auto& textures = texture_library.textures();
 
       boost::optional<TextureMapping::texture_type> current_texture = boost::none;
       Vector2f texture_scale;
@@ -137,7 +138,7 @@ namespace ts
         auto* scene_layer = track_scene.create_layer(&layer);
 
         // Loop through all tiles on the layer
-        for (const auto& tile : layer.tiles)
+        for (const auto& tile : layer.tiles())
         {
           // Then expand the tile groups
           placed_tiles.clear();
@@ -167,7 +168,7 @@ namespace ts
               {
                 // Update current texture and texture scale
                 current_texture = mapping.texture;
-                texture_scale = 1.0f / vector2_cast<float>(mapping.texture->size());
+                texture_scale = 1.0f / mapping.texture->size();
               }             
 
               auto vertices = generate_tile_vertices(placed_tile, *placed_tile.definition,

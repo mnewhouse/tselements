@@ -42,6 +42,7 @@ namespace ts
 
       Vector2i size() const;
 
+      bool has_focus() const;
       bool poll_event(sf::Event& event);
 
       Vector2i mouse_position() const;

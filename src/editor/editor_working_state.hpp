@@ -13,7 +13,7 @@ namespace ts
 {
   namespace resources
   {
-    struct TrackLayer;
+    class TrackLayer;
     struct TrackPath;
   }
 

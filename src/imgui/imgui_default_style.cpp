@@ -36,11 +36,11 @@ namespace ts
       //ImGuiCol_CheckMark,
       //ImGuiCol_SliderGrab,
       //ImGuiCol_SliderGrabActive,
-      //ImGuiCol_Button,
+      { ImGuiCol_Button, { 50, 90, 170 } },
       { ImGuiCol_ButtonHovered,{ 70, 120, 200 } },
       { ImGuiCol_ButtonActive,{ 70, 120, 200 } },
       { ImGuiCol_Header,{ 70, 120, 200 } },
-      { ImGuiCol_HeaderHovered,{ 70, 120, 200 } },
+      { ImGuiCol_HeaderHovered,{ 120, 170, 250 } },
       { ImGuiCol_HeaderActive,{ 70, 120, 200 } },
       { ImGuiCol_Column,{ 70, 70, 75 } },
       { ImGuiCol_ColumnHovered,{ 70, 70, 75 } },
@@ -76,6 +76,8 @@ namespace ts
       {
         ImGui::PushStyleColor(style.id, style.color);
       }
+
+      ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 24.f);
     }
 
     extern const std::array<ImVec4, ImGuiCol_COUNT> default_style_colors = load_default_style_colors();

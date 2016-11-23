@@ -53,7 +53,11 @@ namespace ts
       void history_window();
       void layers_window();
 
+      template <typename ContextType, typename Self>
+      static ContextType make_context(Self&& self);
+
       EditorContext make_context();
+      ImmutableEditorContext make_context() const;
 
       std::unique_ptr<EditorScene> editor_scene_;
       std::future<std::unique_ptr<EditorScene>> loading_future_;

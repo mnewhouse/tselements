@@ -47,29 +47,15 @@ namespace ts
   }
 
   struct ArrayStream
+    : private boost::iostreams::array_source, 
+      public boost::iostreams::stream<boost::iostreams::array_source>
   {
-    explicit ArrayStream(boost::string_ref string)
-      : source_(string.begin(), string.end()),
-        stream_(source_)
-    {}
-
-    explicit operator bool() const
-    {
-      return static_cast<bool>(stream_);
-    }
-
-    template <typename T>
-    ArrayStream& operator>>(T& value)
-    {
-      stream_ >> value;
-      return *this;
-    }
-
-  private:
     using source_type = boost::iostreams::array_source;
-    source_type source_;
-    
-    using stream_type = boost::iostreams::stream<source_type>;
-    stream_type stream_;
+    using base_type = boost::iostreams::stream<source_type>;
+
+    explicit ArrayStream(boost::string_ref string)
+      : source_type(string.begin(), string.end()),
+        base_type(static_cast<const source_type&>(*this))
+    {}
   };
 }

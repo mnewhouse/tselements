@@ -48,6 +48,11 @@ namespace ts
         auto time_point = high_resolution_clock::now();
         auto render_time = (time_point - last_display);
 
+        if (render_time >= milliseconds(20))
+        {
+          std::printf("%llu\n", render_time.count());
+        }
+
         last_display = time_point;
         time_point += render_time;        
 
@@ -79,8 +84,16 @@ namespace ts
                 state_machine.clear();
               }
 
-              if (gui_context) gui_context->process_event(event);
-              state_machine->process_event(event);             
+              bool process = window->has_focus();
+
+              // Certain events should be processed regardless of whether the window has focus
+              if (event.type == sf::Event::GainedFocus || event.type == sf::Event::LostFocus) process = true;
+
+              if (process)
+              {
+                if (gui_context) gui_context->process_event(event);
+                state_machine->process_event(event);
+              }
             }
           }
 

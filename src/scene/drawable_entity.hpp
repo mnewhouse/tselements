@@ -31,6 +31,7 @@ namespace ts
         glm::vec2 position;
         glm::vec2 texture_coords;
         glm::vec3 colorizer_coords;
+        Colorb color;
       };
 
       const world::Entity* entity = nullptr;

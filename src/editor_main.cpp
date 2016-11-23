@@ -45,9 +45,6 @@ int main(int argc, char* argv[])
 
   try
   {
-    //core::elevate_process_priority();
-    //core::elevate_thread_priority();
-
     int screen_width = 1280, screen_height = 800;
     graphics::RenderWindow window("Project \"Free Like Bird\" - Editor",
                                   screen_width, screen_height, graphics::WindowMode::Windowed);
@@ -64,10 +61,6 @@ int main(int argc, char* argv[])
     imgui::push_default_style();
 
     resources::ResourceStore resource_store;
-    for (const auto& font : fonts::builtin_fonts)
-    {
-      resource_store.font_library().load_font(font.name, font.path);
-    }
 
     resource_store.car_store().load_car_directory("cars");
 

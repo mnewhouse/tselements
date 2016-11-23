@@ -22,7 +22,7 @@ namespace ts
 
     EditorScene::EditorScene(resources::Track track)
       : track_(std::move(track)),
-        render_scene_(scene::generate_track_scene(track_))
+      render_scene_(scene::generate_track_scene(track_, true))
     {
       render_scene_->set_background_color(editor_bg_color);
     }
@@ -37,11 +37,12 @@ namespace ts
       return track_;
     }
 
-    void EditorScene::render(const scene::Viewport& view_port, Vector2i screen_size, double frame_progress) const
+    void EditorScene::render(const scene::Viewport& view_port, Vector2i screen_size, double frame_progress,
+                             const scene::RenderScene::render_callback& post_render) const
     {
       if (render_scene_)
       {
-        render_scene_->render(view_port, screen_size, frame_progress);
+        render_scene_->render(view_port, screen_size, frame_progress, post_render);
       }      
     }
 
@@ -61,6 +62,16 @@ namespace ts
 
       render_scene_->set_background_color(editor_bg_color);
       render_scene_->clear_dynamic_state();
+    }
+
+    scene::RenderScene* EditorScene::render_scene()
+    {
+      return render_scene_.get_ptr();
+    }
+
+    const scene::RenderScene* EditorScene::render_scene() const
+    {
+      return render_scene_.get_ptr();
     }
   }
 }

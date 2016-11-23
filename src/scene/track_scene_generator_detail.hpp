@@ -62,7 +62,7 @@ namespace ts
 
       TextureMapping generate_resource_texture_map(const resources::Track& track,
                                                    const PlacementMap& placement_map,
-                                                   const TextureMapping::texture_type* atlas_textures);
+                                                   std::vector<std::unique_ptr<graphics::Texture>> atlas_textures);
 
       PlacementMap generate_atlas_placement_map(const resources::Track& track, const ImageMapping& image_mapping,
                                                 Vector2i atlas_size, bool include_all_assets = false);

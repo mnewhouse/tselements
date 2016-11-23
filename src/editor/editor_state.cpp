@@ -18,6 +18,8 @@
 #include "imgui/imgui_guards.hpp"
 #include "imgui/imgui_default_style.hpp"
 
+#include <boost/range/adaptor/reversed.hpp>
+
 namespace ts
 {
   namespace editor
@@ -57,9 +59,8 @@ namespace ts
 
     EditorState::EditorState(const game_context& ctx)
       : GameState(ctx),
-      InterfaceState(ToolType::None, 0),
-      active_tool_(),
-      path_tool_(),
+      InterfaceState(ToolType::Path, 0),
+      active_tool_(&path_tool_),
       view_port_({}),
       action_history_(64)
     {
@@ -92,7 +93,18 @@ namespace ts
 
     void EditorState::render(const render_context& ctx) const
     {
-      if (editor_scene_) editor_scene_->render(view_port_, ctx.screen_size, ctx.frame_progress);
+      if (editor_scene_)
+      {
+        auto callback = [this](const glm::mat4& view_matrix)
+        {
+          if (active_tool_)
+          {
+            active_tool_->on_canvas_render(make_context(), view_matrix);
+          }
+        };
+
+        editor_scene_->render(view_port_, ctx.screen_size, ctx.frame_progress, callback);
+      }
     }
 
     void EditorState::update_loading_state()
@@ -159,28 +171,80 @@ namespace ts
           ImGui::EndMenu();
         }
 
+        if (ImGui::BeginMenu("Edit", has_scene))
+        {
+          if (ImGui::MenuItem("Undo", "Ctrl+Z", false, action_history_.can_undo()))
+          {
+            action_history_.undo();
+          }
+
+          if (ImGui::MenuItem("Redo", "Ctrl+Y", false, action_history_.can_redo()))
+          {
+            action_history_.redo();
+          }
+
+          ImGui::Separator();
+          ImGui::MenuItem("Cut", "Ctrl+X", false, false);
+          ImGui::MenuItem("Copy", "Ctrl+C", false, false);
+          ImGui::MenuItem("Paste", "Ctrl+V", false, false);
+
+          if (ImGui::MenuItem("Delete", "Delete", false, false))
+          {
+            active_tool_->delete_selected(make_context());
+          }
+
+          if (ImGui::MenuItem("Delete Last", "Backspace", false, active_tool_ != nullptr))
+          {
+            active_tool_->delete_last(make_context());
+          }
+
+          ImGui::Separator();
+          ImGui::MenuItem("Select All", "Ctrl+A", false, false);
+
+          ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View", has_scene))
+        {
+          ImGui::MenuItem("Reset Zoom");
+
+          ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Layers", has_scene))
+        {
+          auto selected_layer = working_state_.selected_layer();
+          auto active = selected_layer != nullptr;
+
+          ImGui::MenuItem("Create Layer", "Ctrl+N");
+          ImGui::MenuItem("Delete Layer", "Ctrl+Delete", false, active);
+          ImGui::MenuItem("Hide Layer", "H", false, active);
+          ImGui::MenuItem("Layer Properties", "Ctrl+P", false, active);
+          ImGui::EndMenu();
+        }
+
         if (ImGui::BeginMenu("Tools", has_scene))
         {
-            struct Item
-            {
-              EditorTool* tool;
-              ToolType type;
-              const char* shortcut;
-            };
+          struct Item
+          {
+            EditorTool* tool;
+            ToolType type;
+            const char* shortcut;
+          };
 
-            Item tools[] =
-            {
-              { &path_tool_, ToolType::Path, "P" },
-              { &tile_tool_, ToolType::Tiles, "T" }
-            };
+          Item tools[] =
+          {
+            { &path_tool_, ToolType::Path, "P" },
+            { &tile_tool_, ToolType::Tiles, "T" }
+          };
 
-            for (auto item : tools)
+          for (auto item : tools)
+          {
+            if (ImGui::MenuItem(item.tool->tool_name(), item.shortcut, active_tool_ == item.tool))
             {
-              if (ImGui::MenuItem(item.tool->tool_name(), item.shortcut, active_tool_ == item.tool))
-              {
-                set_active_tool(item.type);
-              }
+              set_active_tool(item.type);
             }
+          }
 
           ImGui::EndMenu();
         }
@@ -195,7 +259,7 @@ namespace ts
           std::uint32_t index = 0;
           for (auto mode_name : mode_names)
           {
-            if (ImGui::MenuItem(mode_name, std::to_string(index).c_str(), mode == index))
+            if (ImGui::MenuItem(mode_name, std::to_string(index + 1).c_str(), mode == index))
             {
               set_active_mode(index);
             }
@@ -337,7 +401,7 @@ namespace ts
       }
 
       // If the window is focused and we are scrolling, adjust the camera zoom.
-      if (ImGui::IsWindowFocused() && io.MouseWheel != 0)
+      if (ImGui::IsWindowHovered() && ImGui::IsWindowFocused() && io.MouseWheel != 0)
       {
         auto min_zoom = std::min(canvas_size.x / world_size.x,
                                  canvas_size.y / world_size.y);
@@ -424,17 +488,12 @@ namespace ts
 
       style.push(ImGuiStyleVar_WindowPadding, ImVec2(3, 3));
       style.push(ImGuiStyleVar_ItemSpacing, ImVec2(2, 2));
-      ImGui::BeginChild("window_frame", ImVec2(window_size.x, 200), true);
+      ImGui::BeginChild("history_frame", ImVec2(window_size.x, 150), true);
       color.push(ImGuiCol_FrameBg, ImColor(0.45f, 0.45f, 0.5f, 1.0f));
 
-      ImGui::ListBoxHeader("", ImVec2(window_size.x - 6, 200 - 6));
+      ImGui::ListBoxHeader("", ImVec2(window_size.x - 6, 150 - 6));
 
       char format_buffer[32];
-      auto action_label = [&](std::size_t index)
-      {
-        std::sprintf(format_buffer, "##action_%llu", index);
-        return +format_buffer;
-      };
 
       auto stack_size = action_history_.stack_size();
       auto current_index = action_history_.current_index();
@@ -443,14 +502,14 @@ namespace ts
       // Draw an item for all the actions that can be undone.
       for (; index != current_index; ++index)
       {        
-        if (ImGui::Selectable(action_label(index), false))
+        ImGui::PushID(static_cast<int>(index));
+        if (ImGui::Selectable(action_history_.action_description(index).c_str(), false))
         {
           // Undo all the actions that happened after this point
           action_history_.undo(current_index - index);
         }
 
-        ImGui::SameLine();
-        ImGui::TextUnformatted(action_history_.action_description(index).c_str());
+        ImGui::PopID();
         ImGui::Separator();
       }
 
@@ -459,34 +518,35 @@ namespace ts
       // Draw an item for the currently active action
       if (index < stack_size)
       {
+        ImGui::PushID(static_cast<int>(index));
+
         // This is not really a selectable so much, because it would have no effect
-        ImGui::Selectable(action_label(index), true);
-        ImGui::SameLine();
-        ImGui::TextUnformatted(action_history_.action_description(index).c_str());
+        ImGui::Selectable(action_history_.action_description(index).c_str(), true);
+        ImGui::PopID();
+
         ImGui::Separator();
-        ++index;
+        ++index;        
       }
 
       // And finally, the remaining items (that have been undone, and can be redone)
       for (; index != stack_size; ++index)
       {
-        if (ImGui::Selectable(action_label(index), false))
+        ImGui::PushID(static_cast<int>(index));
+        if (ImGui::Selectable(action_history_.action_description(index).c_str(), false))
         {
           action_history_.redo(index - current_index);
         }
 
-        ImGui::SameLine();
-        ImGui::TextUnformatted(action_history_.action_description(index).c_str());
+        ImGui::PopID();
         ImGui::Separator();
       }
 
-      if (ImGui::Selectable(action_label(stack_size), current_index == stack_size))
+      ImGui::PushID(static_cast<int>(index));
+      if (ImGui::Selectable("Latest", current_index == stack_size))
       {
         action_history_.redo(stack_size - current_index);
       }
-
-      ImGui::SameLine();
-      ImGui::TextUnformatted("Current");
+      ImGui::PopID();
 
       ImGui::ListBoxFooter();
       ImGui::EndChild();
@@ -494,7 +554,68 @@ namespace ts
 
     void EditorState::layers_window()
     {
-      
+      auto window_size = ImGui::GetWindowSize();
+      imgui::StyleGuard style;
+      imgui::ColorGuard color;
+
+      style.push(ImGuiStyleVar_WindowPadding, ImVec2(3, 3));
+      ImGui::BeginChild("layers_frame", ImVec2(window_size.x, 150), true);
+      color.push(ImGuiCol_FrameBg, ImColor(0.45f, 0.45f, 0.5f, 1.0f));
+      color.push(ImGuiCol_CheckMark, ImColor(0.0f, 0.7f, 0.0f, 1.0f));
+
+      auto& track = editor_scene_->track();
+      auto selected_layer = working_state_.selected_layer();
+
+      char buffer[40];
+      auto label_name = [&](auto* layer)
+      {
+        std::sprintf(buffer, "##layer_%p", layer);
+        return +buffer;
+      };
+
+      auto layer_name_input_label = [&](auto* layer)
+      {
+        std::sprintf(buffer, "##layer_visible_%p", layer);
+        return +buffer;
+      };
+
+      ImVec2 list_box_size(window_size.x - 6, 150 - 6);
+
+      ImGui::ListBoxHeader("", list_box_size);
+      for (auto& layer : track.layers() | boost::adaptors::reversed)
+      {
+        if (ImGui::Selectable(label_name(&layer), &layer == selected_layer, 0, ImVec2(0, 24)))
+        {
+          working_state_.select_layer(&layer);
+        }
+
+        if (ImGui::IsItemActive() && ImGui::IsMouseDragging())
+        {
+          auto item_pos = ImGui::GetItemRectMin();
+          auto mouse_pos = ImGui::GetMousePos();
+          
+          auto move_amount = static_cast<std::int32_t>(std::floor((mouse_pos.y - item_pos.y) / 24.0f));
+          if (move_amount != 0)
+          {
+            if (move_amount < 0) track.shift_towards_front(&layer, -move_amount);
+            else track.shift_towards_back(&layer, move_amount);
+          }         
+        }
+
+        if (ImGui::IsItemClicked(0) && ImGui::IsMouseDoubleClicked(0))
+        {
+        }
+        
+        ImGui::SameLine();
+
+        const auto& layer_name = layer.name();
+        ImGui::TextUnformatted(layer_name.data(), layer_name.data() + layer_name.size());
+
+        ImGui::Separator();        
+      }
+
+      ImGui::ListBoxFooter();
+      ImGui::EndChild();
     }
 
     void EditorState::process_event(const event_type& event)
@@ -537,6 +658,14 @@ namespace ts
           if (event.key.control) action_history_.redo();
           break;
 
+        case Key::Left:
+          if (active_tool_) active_tool_->previous(make_context());
+          break;
+
+        case Key::Right:
+          if (active_tool_) active_tool_->next(make_context());
+          break;
+
         default:
           break;
         }
@@ -560,9 +689,15 @@ namespace ts
         }
       }();
 
-      if (tool_pointer)
+      if (active_tool_ && active_tool_ != tool_pointer)
+      {
+        active_tool_->deactivate(make_context());
+      }
+
+      if (active_tool_ != tool_pointer)
       {
         active_tool_ = tool_pointer;
+        if (tool_pointer) tool_pointer->activate(make_context());
       }
     }
 
@@ -574,19 +709,30 @@ namespace ts
       }
     }
 
-    EditorContext EditorState::make_context()
+    template <typename ContextType, typename Self>
+    ContextType EditorState::make_context(Self&& self)
     {
       return
       {
-        *editor_scene_,
-        static_cast<InterfaceState&>(*this),
-        working_state_,
-        action_history_,
-        view_port_,
+        *self.editor_scene_,
+        self,
+        self.working_state_,
+        self.action_history_,
+        self.view_port_,
 
-        vector2_cast<double>(context().render_window->size()),
-        vector2_cast<double>(editor_scene_->track().size())
+        vector2_cast<double>(self.context().render_window->size()),
+        vector2_cast<double>(self.editor_scene_->track().size())
       };
+    }
+
+    EditorContext EditorState::make_context()
+    {
+      return make_context<EditorContext>(*this);
+    }
+
+    ImmutableEditorContext EditorState::make_context() const
+    {
+      return make_context<ImmutableEditorContext>(*this);
     }
   }
 }

@@ -172,7 +172,7 @@ namespace ts
 
       else
       {
-        layer.geometry.push_back(std::move(geometry));
+        layer.geometry().push_back(std::move(geometry));
 
         if (vertex_count != vertices.size())
         {
@@ -193,7 +193,7 @@ namespace ts
       // by creating a new layer if it doesn't.
       auto ensure_layer_exists = [&](std::uint32_t level)
       {
-        if (!current_layer || current_layer->level != level)
+        if (!current_layer || current_layer->level() != level)
         {
           auto layer_count = track.layer_count();
           current_layer = track.create_layer("Layer " + std::to_string(layer_count + 1), level);
@@ -219,7 +219,7 @@ namespace ts
           if (read_tile(context, directive_view, remainder, tile, level_tile))
           {
             ensure_layer_exists(tile.level);
-            current_layer->tiles.push_back(tile);
+            current_layer->tiles().push_back(tile);
           }
         }
 
@@ -244,14 +244,15 @@ namespace ts
 
         else if (directive == "layer")
         {
-          io::array_source buffer(remainder.begin(), remainder.end());
-          io::stream<io::array_source> stream(buffer);
+          ArrayStream stream(remainder);
 
-          std::uint32_t level;
+          std::uint32_t level, visible;
           std::string layer_name;
-          if (stream >> level && std::getline(stream, layer_name))
+
+          if (stream >> level >> visible >> std::ws && std::getline(stream, layer_name))
           {
-            current_layer = track.create_layer(layer_name, level);
+            current_layer = track.create_layer(std::move(layer_name), level);
+            current_layer->set_visible(visible != 0);
           }         
         }
 

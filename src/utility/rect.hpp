@@ -162,6 +162,48 @@ namespace ts
     return make_vector2(rect.left, rect.top);
   }
 
+  template <typename T>
+  auto translate(Rect<T> rect, Vector2<T> translation)
+  {
+    rect.left += translation.x;
+    rect.top += translation.y;
+    return rect;
+  }
+
+  template <typename T>
+  auto scale(Rect<T> rect, Vector2<T> scale)
+  {
+    rect.left *= scale.x;
+    rect.top *= scale.y;
+    rect.width *= scale.x;
+    rect.height *= scale.y;
+    return rect;
+  }
+
+  template <typename T>
+  auto top_left(const Rect<T>& rect)
+  {
+    return position(rect);
+  }
+
+  template <typename T>
+  auto top_right(const Rect<T>& rect)
+  {
+    return make_vector2(rect.right(), rect.top);
+  }
+
+  template <typename T>
+  auto bottom_left(const Rect<T>& rect)
+  {
+    return make_vector2(rect.left, rect.bottom());
+  }
+
+  template <typename T>
+  auto bottom_right(const Rect<T>& rect)
+  {
+    return position(rect) + size(rect);
+  }
+
   template <typename To, typename From>
   Rect<To> rect_cast(const Rect<From>& rect)
   {

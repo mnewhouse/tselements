@@ -46,7 +46,6 @@ namespace ts
     // This function takes a track and generates the vertices required to display it.
     // Writes the result to the TrackScene object. if use_relative_texture_coords is true,
     // divides the absolute texture coords by the texture size so that we get relative texture coords.    
-    void build_track_vertices(const resources::Track& track, const TextureMapping& texture_mapping,
-                              TrackScene& track_scene);
+    void build_track_vertices(const resources::Track& track, TrackScene& track_scene);
   }
 }

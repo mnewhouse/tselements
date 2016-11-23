@@ -23,6 +23,18 @@ namespace ts
     class WorkingState;
     class ActionHistory;
 
+    struct ImmutableEditorContext
+    {
+      const EditorScene& scene;
+      const InterfaceState& interface_state;
+      const WorkingState& working_state;
+      const ActionHistory& action_history;
+      const scene::Viewport& canvas_viewport;
+
+      Vector2d screen_size;
+      Vector2d world_size;
+    };
+
     struct EditorContext
     {
       EditorScene& scene;
@@ -33,12 +45,20 @@ namespace ts
 
       Vector2d screen_size;
       Vector2d world_size;
+
+      operator ImmutableEditorContext() const
+      {
+        return
+        {
+          scene, interface_state, working_state, action_history, canvas_viewport, screen_size, world_size
+        };
+      }
     };
     
     class CoordTransform
     {
     public:
-      explicit CoordTransform(const EditorContext& context);
+      explicit CoordTransform(const ImmutableEditorContext& context);
 
       Vector2d world_position(Vector2d viewport_pos) const;
       Vector2d viewport_position(Vector2d world_pos) const;
@@ -50,7 +70,7 @@ namespace ts
       double inverse_zoom_;
     };
 
-    Vector2d calculate_world_position(const EditorContext& context, Vector2d viewport_position);
-    Vector2d calculate_viewport_position(const EditorContext& context, Vector2d world_position);
+    Vector2d calculate_world_position(const ImmutableEditorContext& context, Vector2d viewport_position);
+    Vector2d calculate_viewport_position(const ImmutableEditorContext& context, Vector2d world_position);
   }
 }

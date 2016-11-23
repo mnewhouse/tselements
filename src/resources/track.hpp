@@ -58,11 +58,15 @@ namespace ts
       const TerrainLibrary& terrain_library() const noexcept;
 
       using LayerId = std::uint32_t;
-      TrackLayer* get_layer_by_id(LayerId layer_id);
-      const TrackLayer* get_layer_by_id(LayerId layer_id) const;
+      //TrackLayer* get_layer_by_id(LayerId layer_id);
+      //const TrackLayer* get_layer_by_id(LayerId layer_id) const;
 
       TrackLayer* create_layer(std::string layer_name, std::uint32_t level, TrackLayerType type = TrackLayerType::Tiles);
       std::size_t layer_count() const noexcept;
+
+      void set_layer_level(TrackLayer* layer, std::uint32_t level);
+      std::int32_t shift_towards_front(const TrackLayer* layer, std::int32_t amount = 1);
+      std::int32_t shift_towards_back(const TrackLayer* layer, std::int32_t amount = 1);
 
       using LayerOrderInterface = boost::iterator_range<boost::indirect_iterator<TrackLayer* const*>>;
       using ImmutableLayerOrderInterface = boost::iterator_range<boost::indirect_iterator<const TrackLayer* const*>>;
@@ -89,7 +93,7 @@ namespace ts
       TerrainLibrary terrain_library_;
       TextureLibrary texture_library_;
 
-      std::map<TrackLayer::Id, TrackLayer> layers_;
+      std::map<LayerId, TrackLayer> layers_;
       std::vector<TrackLayer*> layer_order_;
 
       std::vector<ControlPoint> control_points_;

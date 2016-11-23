@@ -54,6 +54,7 @@ namespace ts
               best = stage::format_lap_time(car_info->best_lap_time);
             }
 
+            ImGui::AlignFirstTextHeightToWidgets();
             ImGui::Text("Last:");
             ImGui::SameLine(area_size.x * 0.5f - ImGui::CalcTextSize(last.c_str()).x - 10);
             ImGui::TextUnformatted(last.c_str());
@@ -67,6 +68,7 @@ namespace ts
             auto seconds = (lap_time_elapsed % 60000) / 1000;
             auto tenths = (lap_time_elapsed % 1000) / 100;
 
+            ImGui::AlignFirstTextHeightToWidgets();
             ImGui::TextUnformatted("Lap");
 
             if (car_info->laps_done >= lap_count) buffer = "Finished!";
@@ -86,6 +88,7 @@ namespace ts
             {
               auto last = car_info->last_sector_time;
               auto formatted_time = stage::format_lap_time(last);
+              ImGui::AlignFirstTextHeightToWidgets();
               ImGui::Text("S%d:", sector_id);
               ImGui::SameLine(area_size.x * 0.5f - ImGui::CalcTextSize(formatted_time.c_str()).x - 10);
               ImGui::TextUnformatted(formatted_time.c_str());
@@ -106,7 +109,7 @@ namespace ts
                 } 
               }
             }
-                        
+        
             ImGui::End();
             ImGui::PopStyleColor(2);
           }
