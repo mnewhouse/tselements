@@ -135,57 +135,17 @@ namespace ts
         }
         */
 
-        auto* scene_layer = track_scene.create_layer(&layer);
-
-        // Loop through all tiles on the layer
+        std::uint32_t tile_index = 0;
         for (const auto& tile : layer.tiles())
         {
-          // Then expand the tile groups
           placed_tiles.clear();
-
-          resources::expand_tiles(&tile, &tile + 1,
+          resources::expand_tiles(layer.tiles().begin(), layer.tiles().end(),
                                   tile_library, std::back_inserter(placed_tiles));
 
-          using resources::PlacedTile;
-          std::stable_sort(placed_tiles.begin(), placed_tiles.end(),
-                           [](const PlacedTile& a, const PlacedTile& b)
-          {
-            return a.level < b.level;
-          });
+          track_scene.add_tile_geometry(&layer, tile_index, placed_tiles.data(), placed_tiles.size());
 
-          // Register the tile to the scene, as an item
-          scene_layer->append_item();
-          std::uint32_t base_index = 0;
-
-          // Now, loop through the expanded tiles, and add their vertices to the scene.
-          for (const auto& placed_tile : placed_tiles)
-          {
-            auto mapping_range = texture_lookup(texture_mapping.tile_id(placed_tile.id));
-
-            for (const auto& mapping : mapping_range)
-            {
-              if (!current_texture || mapping.texture != *current_texture)
-              {
-                // Update current texture and texture scale
-                current_texture = mapping.texture;
-                texture_scale = 1.0f / mapping.texture->size();
-              }             
-
-              auto vertices = generate_tile_vertices(placed_tile, *placed_tile.definition,
-                                                     mapping.texture_rect, mapping.fragment_offset,
-                                                     texture_scale);
-
-              auto faces = generate_tile_faces(base_index);
-
-              auto vertex_count = static_cast<std::uint32_t>(vertices.size());
-              auto face_count = static_cast<std::uint32_t>(faces.size());
-
-              scene_layer->append_last_item_geometry(mapping.texture,
-                                                     vertices.data(), vertex_count,
-                                                     faces.data(), face_count);
-            }
-          }
-        }
+          ++tile_index;
+        }       
       }
     }
   }

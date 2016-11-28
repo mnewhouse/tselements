@@ -28,9 +28,19 @@ namespace ts
   {
     namespace render_scene
     {
+      struct TrackLayerData
+      {
+        graphics::Buffer vertex_buffer;
+        graphics::Buffer index_buffer;
+
+        std::uint32_t vertex_buffer_size;
+        std::uint32_t index_buffer_size;
+      };
+
       struct TrackComponent
       {
-        const graphics::Texture* texture;
+        const TrackLayerData* layer_data;
+        const graphics::Texture* texture;        
 
         std::uint32_t level;
         std::uint32_t element_buffer_offset;
@@ -98,6 +108,7 @@ namespace ts
       void set_background_color(Colorf bg_color);
 
       const TrackScene& track_scene() const;
+      TrackScene& track_scene();
 
     private:
       void load_shader_programs();
@@ -109,10 +120,10 @@ namespace ts
       graphics::ShaderProgram track_shader_program_;
       graphics::ShaderProgram car_shader_program_;
       graphics::ShaderProgram boundary_shader_program_;
-      
-      graphics::Buffer track_component_vertex_buffer_;
-      graphics::Buffer track_component_element_buffer_;
 
+      graphics::Buffer boundary_index_buffer_;
+      graphics::Buffer boundary_vertex_buffer_;      
+      
       graphics::Buffer car_vertex_buffer_;
       graphics::Buffer car_index_buffer_;
       
@@ -120,6 +131,7 @@ namespace ts
       render_scene::CarUniformLocations car_uniform_locations_;
       render_scene::BoundaryUniformLocations boundary_uniform_locations_;
 
+      std::unordered_map<const resources::TrackLayer*, render_scene::TrackLayerData> layers_;
       std::vector<render_scene::TrackComponent> track_components_;
       std::vector<render_scene::EntityInfo> drawable_entities_;
       std::vector<DrawableEntity::Vertex> car_vertex_buffer_cache_;

@@ -103,8 +103,8 @@ namespace ts
 
     void RenderScene::load_track_components(const TrackScene& track_scene)
     {
-      track_component_vertex_buffer_ = graphics::create_buffer();
-      track_component_element_buffer_ = graphics::create_buffer();
+      boundary_index_buffer_ = graphics::create_buffer();
+      boundary_vertex_buffer_ = graphics::create_buffer();
 
       using resources::Face;
       using resources::Vertex;
@@ -124,71 +124,54 @@ namespace ts
       auto vertex_buffer_size = stencil_vertices.size() * sizeof(stencil_vertices.front());
       auto element_buffer_size = stencil_faces.size() * sizeof(stencil_faces.front());
 
-      auto vertex_buffer_offset = vertex_buffer_size;
-      auto element_buffer_offset = element_buffer_size;
+      glCheck(glBindBuffer(GL_ARRAY_BUFFER, boundary_vertex_buffer_.get()));
+      glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, boundary_index_buffer_.get()));
 
-      // Find the size of the buffers that we need
-      for (const auto& scene_layer : track_scene.active_layers())
+      glCheck(glBufferData(GL_ARRAY_BUFFER, vertex_buffer_size, stencil_vertices.data(), GL_STATIC_DRAW));
+      glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, element_buffer_size, stencil_faces.data(), GL_STATIC_DRAW));
+      
+      // Create all the necessary layer data and populate the buffers.
+      for (const auto& scene_layer : track_scene.layers())
       {
+        auto track_layer = scene_layer.associated_layer();
+        auto& layer_data = layers_[track_layer];
+
         const auto& vertices = scene_layer.vertices();
         const auto& faces = scene_layer.faces();
 
-        vertex_buffer_size += vertices.size() * sizeof(vertices.front());
-        element_buffer_size += faces.size() * sizeof(faces.front());
+        auto index_data_size = faces.size() * sizeof(faces.front());
+        auto vertex_data_size = vertices.size() * sizeof(vertices.front());
+
+        layer_data.index_buffer = graphics::create_buffer();
+        layer_data.vertex_buffer = graphics::create_buffer();
+
+        layer_data.index_buffer_size = graphics::next_power_of_two(index_data_size);
+        layer_data.vertex_buffer_size = graphics::next_power_of_two(vertex_data_size);
+
+        glCheck(glBindBuffer(GL_ARRAY_BUFFER, layer_data.vertex_buffer.get()));
+        glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer.get()));
+
+        glCheck(glBufferData(GL_ARRAY_BUFFER, layer_data.vertex_buffer_size, nullptr, GL_STATIC_DRAW));
+        glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer_size, nullptr, GL_STATIC_DRAW));
+
+        glCheck(glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_data_size, vertices.data()));
+        glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertex_data_size, vertices.data()));
       }
 
-      // Reserve some more space in order to be able to move components around,
-      // then round up to the nearest power of two.
-      vertex_buffer_size = graphics::next_power_of_two(vertex_buffer_size + vertex_buffer_size / 2);
-      element_buffer_size = graphics::next_power_of_two(element_buffer_size + element_buffer_size / 2);
-      
-      glCheck(glBindBuffer(GL_ARRAY_BUFFER, track_component_vertex_buffer_.get()));
-      glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, track_component_element_buffer_.get()));
-
-      glCheck(glBufferData(GL_ARRAY_BUFFER, vertex_buffer_size, nullptr, GL_STATIC_DRAW));
-      glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, element_buffer_size, nullptr, GL_STATIC_DRAW));      
-
-      glCheck(glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_buffer_offset, stencil_vertices.data()));
-      glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, element_buffer_offset, stencil_faces.data()));
-
-      std::uint32_t vertex_index = stencil_vertices.size();
-
-      // Now, populate the buffers with the layers' vertices and faces.
-      // Also, store the component information so that we can render it properly.
-      for (const auto& scene_layer : track_scene.active_layers())
+      // Now, store the component information so that we can display the scene in the proper order.
+      for (const auto& component : track_scene.components())
       {
-        const auto& vertices = scene_layer.vertices();
-        auto faces = scene_layer.faces();
-
-        for (auto& face : faces)
-        {
-          for (auto& index : face.indices)
-          {
-            index += vertex_index;
-          }
-        }
-
-        auto vertex_range_size = vertices.size() * sizeof(vertices.front());
-        auto element_range_size = faces.size() * sizeof(faces.front());
-
-        glCheck(glBufferSubData(GL_ARRAY_BUFFER, vertex_buffer_offset, vertex_range_size, vertices.data()));
-        glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, element_buffer_offset, element_range_size, faces.data()));
+        auto& layer_data = layers_[component.track_layer];
 
         // Loop through the layer's components and store the information we need.
-        for (const auto& component : scene_layer.components())
-        {
-          TrackComponent track_component;
-          track_component.element_buffer_offset = element_buffer_offset + component.face_index * sizeof(faces.front());
-          track_component.element_count = component.face_count * 3;
-          track_component.level = scene_layer.level();
-          track_component.texture = component.texture;
-          track_components_.push_back(track_component);
-        }
+        TrackComponent track_component;
+        track_component.element_buffer_offset = component.face_index * sizeof(Face);
+        track_component.element_count = component.face_count * 3;
+        track_component.level = component.level;
+        track_component.texture = component.texture;
+        track_component.layer_data = &layer_data;
 
-        vertex_buffer_offset += vertex_range_size;
-        element_buffer_offset += element_range_size;
-
-        vertex_index += vertices.size();
+        track_components_.push_back(track_component);
       }
     }
 
@@ -214,9 +197,6 @@ namespace ts
       glCheck(glClearColor(background_color_.r, background_color_.g, background_color_.b, background_color_.a));
       glCheck(glClear(GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT));
 
-      glCheck(glBindBuffer(GL_ARRAY_BUFFER, track_component_vertex_buffer_.get()));
-      glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, track_component_element_buffer_.get()));
-
       glCheck(glEnableVertexAttribArray(0));
       glCheck(glEnableVertexAttribArray(1));
 
@@ -239,6 +219,9 @@ namespace ts
       glCheck(glUniform2f(boundary_uniform_locations_.world_size, static_cast<float>(world_size.x),
                           static_cast<float>(world_size.y)));
 
+      glCheck(glBindBuffer(GL_ARRAY_BUFFER, boundary_vertex_buffer_.get()));
+      glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, boundary_index_buffer_.get()));
+
       glCheck(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 
                              reinterpret_cast<const void*>(std::uintptr_t(0))));
 
@@ -254,7 +237,10 @@ namespace ts
 
       glCheck(glActiveTexture(GL_TEXTURE0));
       for (const auto& component : track_components_)
-      {        
+      {
+        glCheck(glBindBuffer(GL_ARRAY_BUFFER, component.layer_data->vertex_buffer.get()));
+        glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, component.layer_data->index_buffer.get()));
+
         glCheck(glBindTexture(GL_TEXTURE_2D, component.texture->get()));
 
         auto offset = reinterpret_cast<const void*>(static_cast<std::uintptr_t>(component.element_buffer_offset));
@@ -368,6 +354,11 @@ namespace ts
     }
 
     const TrackScene& RenderScene::track_scene() const
+    {
+      return track_scene_;
+    }
+
+    TrackScene& RenderScene::track_scene()
     {
       return track_scene_;
     }

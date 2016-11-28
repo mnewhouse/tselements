@@ -14,6 +14,7 @@
 #include "resources/pattern_builder.hpp"
 
 #include "scene/track_scene_generator_detail.hpp"
+#include "scene/track_scene.hpp"
 
 #include "graphics/image.hpp"
 
@@ -94,12 +95,40 @@ TEST_CASE("Track loading is a complex process, which is required to work perfect
       REQUIRE(range.begin() != range.end());
     }
 
-    for (const auto& texture : textures)
     {
-    //  REQUIRE(detail::texture_rect_exists(placement_map, texture.file_name, texture.rect));
+      graphics::Texture a, b, c;
 
-    //  auto range = texture_map.find(texture_map.texture_id(texture.id));
-    //  REQUIRE(range.begin() != range.end());
+      resources::Vertex verts[4] = {};
+      verts[0].color = Colorb(255, 0, 0, 255);
+      verts[1].color = Colorb(255, 255, 0, 255);
+      verts[2].color = Colorb(0, 255, 0, 255);
+      verts[3].color = Colorb(0, 0, 255, 0);
+
+      resources::Face faces[2];
+      faces[0].indices = { 0, 1, 2 };
+      faces[1].indices = { 1, 2, 3 };
+
+      resources::TrackLayer track_layer(resources::TrackLayerType::Tiles, 0, "dummy");
+
+      scene::TrackSceneLayer layer(&track_layer);
+      layer.append_item_geometry(0, &a, verts, 4, faces, 2, 0);
+      layer.append_item_geometry(1, &a, verts, 4, faces, 2, 0);
+      layer.append_item_geometry(1, &a, verts, 4, faces, 2, 0);
+      REQUIRE(layer.components().size() == 1);
+
+      layer.append_item_geometry(1, &a, verts, 4, faces, 2, 1);
+      REQUIRE(layer.components().size() == 2);
+      REQUIRE(layer.vertices().size() == 16);
+      REQUIRE(layer.faces().size() == 8);
+
+      layer.clear_item_geometry(1);
+      REQUIRE(layer.components().size() == 1);
+      REQUIRE(layer.vertices().size() == 4);
+      REQUIRE(layer.faces().size() == 2);
+      layer.append_item_geometry(1, &b, verts, 4, faces, 2, 0);
+      REQUIRE(layer.components().size() == 2);
+      REQUIRE(layer.vertices().size() == 8);
+      REQUIRE(layer.faces().size() == 4);      
     }
 
     detail::ImageLoader image_loader;
@@ -107,8 +136,7 @@ TEST_CASE("Track loading is a complex process, which is required to work perfect
     for (const auto& atlas : placement_map.atlases)
     {
       auto surface = detail::build_atlas_surface(atlas, image_loader);
-      graphics::save_image(surface, "assets/output/atlas_" + std::to_string(++id) + ".png");
-    
+      graphics::save_image(surface, "assets/output/atlas_" + std::to_string(++id) + ".png");    
     }
   }
 

@@ -46,9 +46,25 @@
 * PATHS
  1) Incorporate paths into track format
  2) Make basic tools for path creation
-    * Adding, selecting, editing, deleting control points
-    * Choosing a stroke (or fill) style for a path layer
- 3) Generating path pattern
+    * Adding, selecting, editing, deleting path nodes
+    * Choosing a stroke (or fill) style for a particular path
+    * Stroking/filling a path with tiles and textures.
+ 3) Building track pattern from path
+ 
+* TILES
+ * Add tiles to scene
+ * Select/move/rotate/delete placed tiles
+  * Draw selected tiles with a custom shader
+  * 
+  
+* LAYERS
+ * Create/remove/rename layer
+ * Layer properties
+ * Select first layer when track loads.
+ 
+ 
+* TESTS
+ * Tile geometry.
  
 * INTERFACE
  * Sidebar
@@ -57,7 +73,7 @@
    * Tile selector.
    
   * Layer window
-   * Create, remove, hide, rename layer
+   * Create, remove, hide, show, rename layer
   
  
 

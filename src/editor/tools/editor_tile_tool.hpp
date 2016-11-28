@@ -62,6 +62,7 @@ namespace ts
       void reload_tile_library_cache(const EditorScene& editor_scene);
 
       boost::optional<std::uint32_t> placement_tile_id() const;
+      void place_tile_at(EditorScene& scene, Vector2d world_pos);
 
       resources::TrackLayer* selected_layer_ = nullptr;
 
@@ -72,7 +73,7 @@ namespace ts
       bool scroll_to_selected_ = false;
 
       std::int32_t selected_tile_category_ = 0;
-      Rotationd placement_tile_rotation_;
+      std::int32_t placement_tile_rotation_ = 0;
       
       struct TileQuad
       {

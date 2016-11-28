@@ -15,6 +15,8 @@
 
 #include <boost/optional.hpp>
 
+#include <vector>
+
 namespace ts
 {
   namespace editor
@@ -36,11 +38,16 @@ namespace ts
       void adopt_render_scene(scene::RenderScene render_scene);
 
       const scene::RenderScene* render_scene() const;
-      scene::RenderScene* render_scene();
+
+      void append_tile(resources::TrackLayer* track_layer, const resources::Tile& tile);
 
     private:
+      const std::vector<resources::PlacedTile>& expand_tile(const resources::Tile& tile) const;
+
       resources::Track track_;
       boost::optional<scene::RenderScene> render_scene_;
+
+      mutable std::vector<resources::PlacedTile> tile_expansion_cache_;
     };
   }
 }

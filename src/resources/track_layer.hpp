@@ -29,11 +29,13 @@ namespace ts
       explicit TrackLayer(TrackLayerType type, std::uint32_t level, std::string name);      
 
       std::uint32_t level() const { return level_; }
+      std::uint32_t z_index() const { return z_index_; };
       TrackLayerType type() const { return type_; }
       bool visible() const { return visible_; }
       const std::string& name() const { return name_; }
 
       void set_level(std::uint32_t level);
+      void set_z_index(std::uint32_t z_index);
       void set_visible(bool show);
 
       void hide() { set_visible(false); }
@@ -53,6 +55,7 @@ namespace ts
     private:
       TrackLayerType type_;
       std::uint32_t level_ = 0;
+      std::uint32_t z_index_ = 0;
       
       bool visible_ = true;
       std::string name_;

@@ -111,8 +111,7 @@ namespace ts
 
     void Track::set_layer_level(TrackLayer* layer, std::uint32_t level)
     {
-      auto layer_it = std::find(layer_order_.begin(), layer_order_.end(), layer);
-      
+      auto layer_it = std::find(layer_order_.begin(), layer_order_.end(), layer);      
 
       if (layer_it != layer_order_.end())
       {
@@ -137,9 +136,14 @@ namespace ts
           auto range_end = std::find_if(rev, layer_order_.rend(), predicate);
           std::rotate(std::prev(rev), range_end, rev);
         }
+
+        layer->set_level(level);
+
+        std::uint32_t z_index = 0;
+        for (auto layer : layer_order_) layer->set_z_index(z_index++);
       }
 
-      layer->set_level(level);
+      
     }
 
     std::int32_t Track::shift_towards_front(const TrackLayer* layer, std::int32_t shift_amount)
@@ -157,6 +161,9 @@ namespace ts
 
         ++i;
       }
+
+      std::uint32_t z_index = 0;
+      for (auto layer : layer_order_) layer->set_z_index(z_index++);
 
       return i;
     }
@@ -182,6 +189,9 @@ namespace ts
         --prev;        
       }
 
+      std::uint32_t z_index = 0;
+      for (auto layer : layer_order_) layer->set_z_index(z_index++);
+
       return i;
     }
 
@@ -199,6 +209,9 @@ namespace ts
       auto& order = layer_order_;
       auto insert_position = std::upper_bound(order.begin(), order.end(), layer_ptr, LayerOrderComparator());
       order.insert(insert_position, layer_ptr);
+
+      std::uint32_t z_index = 0;
+      for (auto layer : layer_order_) layer->set_z_index(z_index++);
 
       return layer_ptr;
     }

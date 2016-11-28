@@ -31,6 +31,15 @@ namespace ts
 {
   namespace editor
   {
+    namespace modes
+    {
+      enum Mode
+      {
+        TilePlacement,
+        TileSelection
+      };
+    }
+
     graphics::Texture load_tiled_transparency_texture()
     {
       sf::Image transparency_tiles;
@@ -247,6 +256,8 @@ namespace ts
 
     void TileTool::update_canvas_interface(const EditorContext& context)
     {
+      update_selected_layer(context);
+
       auto canvas_pos = ImGui::GetWindowPos();
       auto mouse_pos = ImGui::GetMousePos();
       auto canvas_mouse_pos = make_vector2<double>(mouse_pos.x - canvas_pos.x,
@@ -254,9 +265,21 @@ namespace ts
 
       CoordTransform transformer(context);
       auto world_pos = transformer.world_position(canvas_mouse_pos);
+      const auto& view_port = context.canvas_viewport;
 
-      update_placement_tile_preview(context.scene, world_pos);
-      const auto& view_port = context.canvas_viewport;      
+      auto mode = active_mode();
+      if (mode == modes::TilePlacement && selected_layer_)
+      {
+        auto& scene = context.scene;
+
+        if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0))
+        {
+          // Place a tile
+          place_tile_at(scene, world_pos);
+        }
+
+        update_placement_tile_preview(scene, world_pos);
+      }
     }
 
     void TileTool::on_canvas_render(const ImmutableEditorContext& context, const glm::mat4& view_matrix) const
@@ -362,6 +385,19 @@ namespace ts
         }
       }
     }
+
+    void TileTool::place_tile_at(EditorScene& scene, Vector2d world_pos)
+    {
+      if (auto tile_id = placement_tile_id())
+      {
+        resources::Tile tile;
+        tile.position = vector2_cast<std::int32_t>(world_pos);
+        tile.id = *tile_id;
+        tile.level = 0;
+        tile.rotation = placement_tile_rotation_;
+        scene.append_tile(selected_layer_, tile);
+      }      
+    }
     
     void TileTool::update_placement_tile_preview(EditorScene& editor_scene, Vector2d world_pos)
     {
@@ -377,7 +413,7 @@ namespace ts
           resources::PlacedTile dummy;
           dummy.id = placement_tile_->id;
           dummy.definition = placement_tile_;
-          dummy.rotation = placement_tile_rotation_.degrees();
+          dummy.rotation = placement_tile_rotation_;
           tile_interaction_renderer_.update_tile_geometry(&dummy, 1, texture_mapping);
         }
 
@@ -415,8 +451,10 @@ namespace ts
         placement_tile_dirty_ = false;
       }
 
+      auto rad = degrees(static_cast<float>(placement_tile_rotation_)).radians();
+
       auto model_matrix = glm::rotate(glm::translate(glm::vec3(world_pos.x, world_pos.y, 0.0f)),
-                                      static_cast<float>(placement_tile_rotation_.radians()),
+                                      rad,
                                       glm::vec3(0, 0, 1));
 
       tile_interaction_renderer_.set_transform(model_matrix);
