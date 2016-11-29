@@ -121,7 +121,7 @@ TEST_CASE("Track loading is a complex process, which is required to work perfect
       REQUIRE(layer.vertices().size() == 16);
       REQUIRE(layer.faces().size() == 8);
 
-      layer.clear_item_geometry(1);
+      layer.remove_item_geometry(1);
       REQUIRE(layer.components().size() == 1);
       REQUIRE(layer.vertices().size() == 4);
       REQUIRE(layer.faces().size() == 2);

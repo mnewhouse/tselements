@@ -112,6 +112,8 @@ namespace ts
       void add_tile(const resources::TrackLayer* layer, std::uint32_t tile_index, 
                     const resources::PlacedTile* tile_expansion, std::size_t tile_count);
 
+      void remove_tile(const resources::TrackLayer* layer, std::uint32_t tile_index);
+
     private:
       void load_shader_programs();
       void setup_entity_buffers();

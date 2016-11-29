@@ -289,7 +289,7 @@ namespace ts
       return geometry_update;
     }
 
-    TrackSceneLayer::GeometryUpdate TrackSceneLayer::clear_item_geometry(std::uint32_t index, bool shift)
+    TrackSceneLayer::GeometryUpdate TrackSceneLayer::remove_item_geometry(std::uint32_t index, bool shift)
     {
       auto pred = [=](const ItemInfo& item)
       {
@@ -297,6 +297,13 @@ namespace ts
       };
 
       auto item_it = std::find_if(items_.begin(), items_.end(), pred);
+      GeometryUpdate geometry_update{};
+      if (item_it != items_.end())
+      {
+        geometry_update.face_begin = item_it->face_index;
+        geometry_update.vertex_begin = item_it->vertex_index;
+      }
+
       while (item_it != items_.end())
       {
         auto face_it = faces_.begin() + item_it->face_index;
@@ -372,17 +379,17 @@ namespace ts
       }
 
       items_.erase(std::remove_if(items_.begin(), items_.end(), pred), items_.end());
+      
+      geometry_update.face_end = faces_.size();
+      geometry_update.vertex_end = vertices_.size();
 
-      GeometryUpdate geometry_update{};
       return geometry_update;
     }
 
-    TrackScene::GeometryUpdate 
-      TrackScene::add_tile_geometry(const resources::TrackLayer* layer, std::uint32_t tile_index,
-                                    const resources::PlacedTile* expanded_tiles, std::size_t tile_count)
+    namespace detail
     {
-      GeometryUpdate result{};
-      auto apply_update = [&](const GeometryUpdate& update)
+      void apply_geometry_update(TrackSceneLayer::GeometryUpdate& result,
+                                 const TrackSceneLayer::GeometryUpdate& update)
       {
         if (result.face_begin == result.face_end && result.vertex_begin == result.vertex_end)
         {
@@ -397,6 +404,24 @@ namespace ts
           if (update.vertex_end > result.vertex_end) result.vertex_end = update.vertex_end;
         }
       };
+    }
+
+    TrackScene::GeometryUpdate TrackScene::remove_item_geometry(const resources::TrackLayer* layer,
+                                                                std::uint32_t item_index)
+    {
+      if (auto scene_layer = find_layer_internal(layer))
+      {
+        return scene_layer->remove_item_geometry(item_index);
+      }
+
+      return{};
+    }
+
+    TrackScene::GeometryUpdate 
+      TrackScene::add_tile_geometry(const resources::TrackLayer* layer, std::uint32_t tile_index,
+                                    const resources::PlacedTile* expanded_tiles, std::size_t tile_count)
+    {
+      GeometryUpdate result{};
 
       if (auto scene_layer = find_layer_internal(layer))
       {
@@ -412,10 +437,12 @@ namespace ts
 
         auto commit_geometry = [&]()
         {
-          apply_update(scene_layer->append_item_geometry(tile_index, current_texture,
-                                                         vertex_cache_.data(), vertex_cache_.size(),
-                                                         face_cache_.data(), face_cache_.size(),
-                                                         current_level));
+          auto update = scene_layer->append_item_geometry(tile_index, current_texture,
+                                                          vertex_cache_.data(), vertex_cache_.size(),
+                                                          face_cache_.data(), face_cache_.size(),
+                                                          current_level);
+
+          detail::apply_geometry_update(result, update);
         };
 
         for (const auto& tile : expansion_range)

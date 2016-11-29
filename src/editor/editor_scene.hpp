@@ -40,6 +40,7 @@ namespace ts
       const scene::RenderScene* render_scene() const;
 
       void append_tile(resources::TrackLayer* track_layer, const resources::Tile& tile);
+      void remove_tile(resources::TrackLayer* track_layer, std::uint32_t tile_index);
 
     private:
       const std::vector<resources::PlacedTile>& expand_tile(const resources::Tile& tile) const;

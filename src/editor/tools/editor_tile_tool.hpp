@@ -57,12 +57,14 @@ namespace ts
     private:
       void set_placement_tile_id(std::uint32_t tile_id, const resources::TileLibrary& tile_libray);
       void update_placement_tile_preview(EditorScene& editor_scene, Vector2d world_pos);
+
+      void select_layer(resources::TrackLayer* layer, const EditorContext& context);
       void update_selected_layer(const EditorContext& context);
 
       void reload_tile_library_cache(const EditorScene& editor_scene);
 
       boost::optional<std::uint32_t> placement_tile_id() const;
-      void place_tile_at(EditorScene& scene, Vector2d world_pos);
+      void place_tile_at(const EditorContext& context, Vector2d world_pos);
 
       resources::TrackLayer* selected_layer_ = nullptr;
 

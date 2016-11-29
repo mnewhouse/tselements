@@ -9,6 +9,7 @@
 
 #include "editor/editor_scene.hpp"
 #include "editor/editor_working_state.hpp"
+#include "editor/editor_action_history.hpp"
 
 #include "resources/track.hpp"
 #include "resources/tile_library.hpp"
@@ -24,8 +25,6 @@
 
 #include <glm/mat4x4.hpp>
 #include <glm/gtx/transform.hpp>
-
-
 
 namespace ts
 {
@@ -275,7 +274,7 @@ namespace ts
         if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0))
         {
           // Place a tile
-          place_tile_at(scene, world_pos);
+          place_tile_at(context, world_pos);
         }
 
         update_placement_tile_preview(scene, world_pos);
@@ -386,7 +385,7 @@ namespace ts
       }
     }
 
-    void TileTool::place_tile_at(EditorScene& scene, Vector2d world_pos)
+    void TileTool::place_tile_at(const EditorContext& context, Vector2d world_pos)
     {
       if (auto tile_id = placement_tile_id())
       {
@@ -395,7 +394,23 @@ namespace ts
         tile.id = *tile_id;
         tile.level = 0;
         tile.rotation = placement_tile_rotation_;
-        scene.append_tile(selected_layer_, tile);
+
+        auto layer = selected_layer_;
+        auto tile_index = layer->tiles().size();
+
+        auto action = [=]()
+        {
+          select_layer(layer, context);
+          context.scene.append_tile(layer, tile);         
+        };        
+
+        auto undo_action = [=]()
+        {
+          select_layer(layer, context);
+          context.scene.remove_tile(layer, tile_index);
+        };
+
+        context.action_history.push_action("Place tile", action, undo_action);
       }      
     }
     
@@ -468,6 +483,12 @@ namespace ts
       };
 
       return mode_name_range(std::begin(names), std::end(names));
+    }
+
+    void TileTool::select_layer(resources::TrackLayer* layer, const EditorContext& context)
+    {
+      context.working_state.select_layer(layer);
+      update_selected_layer(context);
     }
 
     void TileTool::update_selected_layer(const EditorContext& context)

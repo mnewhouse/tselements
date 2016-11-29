@@ -66,7 +66,7 @@ namespace ts
                                           const face_type* faces, std::uint32_t face_count,
                                           std::uint32_t level);
 
-      GeometryUpdate clear_item_geometry(std::uint32_t item_index, bool shift = true);
+      GeometryUpdate remove_item_geometry(std::uint32_t item_index, bool shift = true);
       
       bool visible() const;
       void hide();
@@ -118,10 +118,11 @@ namespace ts
 
       using GeometryUpdate = TrackSceneLayer::GeometryUpdate;
 
-      GeometryUpdate add_tile_geometry(const resources::TrackLayer* layer, std::uint32_t tile_id,
+      GeometryUpdate add_tile_geometry(const resources::TrackLayer* layer, std::uint32_t tile_index,
                                        const resources::PlacedTile* expanded_tile, std::size_t count);
 
-      void clear_tile_geometry(const resources::TrackLayer* layer, std::uint32_t tile_id);
+      GeometryUpdate remove_item_geometry(const resources::TrackLayer* layer, 
+                                          std::uint32_t item_index);
       
       using layer_range = boost::iterator_range<boost::indirect_iterator<const TrackSceneLayer* const*>>;
       layer_range layers() const;

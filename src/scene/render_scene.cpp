@@ -447,5 +447,19 @@ namespace ts
         reload_track_components();
       }     
     }
+
+    void RenderScene::remove_tile(const resources::TrackLayer* layer, std::uint32_t tile_index)
+    {
+      auto layer_it = layers_.find(layer);
+      if (layer_it != layers_.end())
+      {
+        auto geometry_update = track_scene_.remove_item_geometry(layer, tile_index);
+
+        update_layer_geometry(layer, layer_it->second, geometry_update);
+
+        track_scene_.reload_components();
+        reload_track_components();
+      }
+    }
   }
 }

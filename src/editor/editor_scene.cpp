@@ -90,5 +90,16 @@ namespace ts
         render_scene_->add_tile(layer, tile_index, tile_expansion.data(), tile_expansion.size());
       }
     }
+
+    void EditorScene::remove_tile(resources::TrackLayer* layer, std::uint32_t tile_index)
+    {
+      auto& tiles = layer->tiles();
+      tiles.erase(tiles.begin() + tile_index);
+
+      if (render_scene_)
+      {
+        render_scene_->remove_tile(layer, tile_index);
+      }
+    }
   }
 }
