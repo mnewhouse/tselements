@@ -84,11 +84,10 @@ namespace ts
       layer->tiles().push_back(tile);
 
       if (render_scene_)
-      {
-        auto& track_scene = render_scene_->track_scene();       
+      {   
         const auto& tile_expansion = expand_tile(tile);
 
-        track_scene.add_tile_geometry(layer, tile_index, tile_expansion.data(), tile_expansion.size());
+        render_scene_->add_tile(layer, tile_index, tile_expansion.data(), tile_expansion.size());
       }
     }
   }

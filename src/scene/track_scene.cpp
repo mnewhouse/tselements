@@ -65,32 +65,32 @@ namespace ts
 
     void TrackScene::create_layer(LayerHandle track_layer)
     {
-      auto result = layers_.insert(std::make_pair(track_layer, TrackSceneLayer(track_layer)));
+      auto result = layer_map_.insert(std::make_pair(track_layer, TrackSceneLayer(track_layer)));
       if (result.second)
       {
-        layer_order_.push_back(&result.first->second);
+        this->layer_list_.push_back(&result.first->second);
       }
     }
 
-    TrackSceneLayer* TrackScene::find_layer(LayerHandle track_layer)
+    TrackSceneLayer* TrackScene::find_layer_internal(LayerHandle track_layer)
     {
-      auto it = layers_.find(track_layer);
-      if (it != layers_.end()) return &it->second;
+      auto it = layer_map_.find(track_layer);
+      if (it != layer_map_.end()) return &it->second;
       
       return nullptr;
     }
 
     const TrackSceneLayer* TrackScene::find_layer(LayerHandle track_layer) const
     {
-      auto it = layers_.find(track_layer);
-      if (it != layers_.end()) return &it->second;
+      auto it = layer_map_.find(track_layer);
+      if (it != layer_map_.end()) return &it->second;
 
       return nullptr;
     }
 
     TrackScene::layer_range TrackScene::layers() const
     {
-      return layer_range(layer_order_.data(), layer_order_.data() + layer_order_.size());
+      return layer_range(layer_list_.data(), layer_list_.data() + layer_list_.size());
     }
 
     const std::vector<TrackScene::Component>& TrackScene::components() const
@@ -150,25 +150,35 @@ namespace ts
         items_.reserve(items_.size() + items_.size() / 2 + 10);
       }
 
+      auto vertex_index = vertices_.size();
+      auto face_index = faces_.size();
+
       auto item_it = detail::find_item(items_, item_index, level);
+
+      if (item_it != items_.end())
+      {
+        // When not inserting to the end of the items list, 
+        // use the face and vertex indices of whatever item comes next.
+        vertex_index = item_it->vertex_index;
+        face_index = item_it->face_index;
+
+        if (item_it->item_index == item_index && item_it->level == level)
+        {
+          vertex_index += item_it->vertex_count;
+          face_index += item_it->face_count;
+        }
+      }
+      
       if (item_it == items_.end() || item_it->item_index != item_index || item_it->level != level)
       {
         // If there's no matching item yet, create a new one.
         ItemInfo entry;
         entry.item_index = item_index;
         entry.level = level;
-        entry.vertex_index = vertices_.size();
+        entry.vertex_index = vertex_index;
         entry.vertex_count = 0;
-        entry.face_index = faces_.size();
+        entry.face_index = face_index;
         entry.face_count = 0;
-        if (item_it != items_.end())
-        {
-          // When not inserting to the end of the items list, 
-          // use the face and vertex indices of whatever item comes next.
-          entry.vertex_index = item_it->vertex_index;
-          entry.face_index = item_it->face_index;
-        }
-
         item_it = items_.insert(item_it, entry);
       }      
 
@@ -180,16 +190,13 @@ namespace ts
       auto component_it = detail::find_component(components_, item_it->face_index);
 
       GeometryUpdate geometry_update;
-      geometry_update.face_begin = item_it->face_index;
-      geometry_update.vertex_begin = item_it->vertex_index;
-     
+      geometry_update.face_begin = face_index;
+      geometry_update.vertex_begin = vertex_index;     
 
       // If we have a matching one, increment the face count and be done with it.
       if (component_it != components_.end() && component_it->texture == texture && component_it->level == level)
       {
         component_it->face_count += face_count;
-        geometry_update.component_begin = component_it - components_.begin();
-        geometry_update.component_end = geometry_update.component_end + 1;
       }
 
       // Otherwise, if we found a component but it doesn't match up...
@@ -211,15 +218,11 @@ namespace ts
         if (split_component.face_count != 0)
         {
           component_it = components_.insert(std::next(component_it), { new_component, split_component });
-          geometry_update.component_begin = component_it - components_.begin();
-          geometry_update.component_end = geometry_update.component_begin + 2;
         }
 
         else
         {
           component_it = components_.insert(std::next(component_it), new_component);
-          geometry_update.component_begin = component_it - components_.begin();
-          geometry_update.component_end = geometry_update.component_begin + 1;
         }
       }
 
@@ -229,8 +232,6 @@ namespace ts
       {        
         component_it = std::prev(components_.end());
         component_it->face_count += face_count;
-        geometry_update.component_begin = component_it - components_.begin();
-        geometry_update.component_end = geometry_update.component_begin + 1;
       }
 
       else
@@ -242,9 +243,6 @@ namespace ts
         new_component.level = level;
         new_component.texture = texture;
         component_it = components_.insert(component_it, new_component);
-
-        geometry_update.component_begin = component_it - components_.begin();
-        geometry_update.component_end = geometry_update.component_begin + 1;
       }
 
       // Transform all components that come after the inserted/modified one.
@@ -256,8 +254,8 @@ namespace ts
       });
         
       // Now, insert the faces and vertices in the appropriate positions
-      auto face_it = faces_.insert(faces_.begin() + item_it->face_index, faces, faces + face_count);
-      auto vertex_it = vertices_.insert(vertices_.begin() + item_it->vertex_index, vertices, vertices + vertex_count);
+      auto face_it = faces_.insert(faces_.begin() + face_index, faces, faces + face_count);
+      auto vertex_it = vertices_.insert(vertices_.begin() + vertex_index, vertices, vertices + vertex_count);
 
       // Transform all items that come after the one we modified.
       std::transform(std::next(item_it), items_.end(), std::next(item_it), [=](ItemInfo item)
@@ -267,9 +265,18 @@ namespace ts
         return item;
       });
 
+      // Transform the faces we inserted to match the vertex position
+      std::transform(face_it, face_it + face_count, face_it,
+                     [=](resources::Face face)
+      {
+        for (auto& idx : face.indices) idx += vertex_index;
+        return face;
+      });
+
       face_it += face_count;
 
       // And also transform the faces, so that the vertex indices match up again.
+
       std::transform(face_it, faces_.end(), face_it, 
                      [=](resources::Face face)
       {
@@ -366,37 +373,84 @@ namespace ts
 
       items_.erase(std::remove_if(items_.begin(), items_.end(), pred), items_.end());
 
-      GeometryUpdate geometry_update;
+      GeometryUpdate geometry_update{};
       return geometry_update;
     }
 
-    void TrackScene::add_tile_geometry(const resources::TrackLayer* layer, std::uint32_t tile_index,
-                                       const resources::PlacedTile* expanded_tiles, std::size_t tile_count)
+    TrackScene::GeometryUpdate 
+      TrackScene::add_tile_geometry(const resources::TrackLayer* layer, std::uint32_t tile_index,
+                                    const resources::PlacedTile* expanded_tiles, std::size_t tile_count)
     {
-      if (auto scene_layer = find_layer(layer))
+      GeometryUpdate result{};
+      auto apply_update = [&](const GeometryUpdate& update)
       {
-        auto faces = generate_tile_faces(0);
+        if (result.face_begin == result.face_end && result.vertex_begin == result.vertex_end)
+        {
+          result = update;
+        }
+
+        else
+        {
+          if (update.face_begin < result.face_begin) result.face_begin = update.face_begin;
+          if (update.face_end > result.face_end) result.face_end = update.face_end;
+          if (update.vertex_begin < result.vertex_begin) result.vertex_begin = update.vertex_begin;
+          if (update.vertex_end > result.vertex_end) result.vertex_end = update.vertex_end;
+        }
+      };
+
+      if (auto scene_layer = find_layer_internal(layer))
+      {
         const auto& tex_mapping = texture_mapping();
 
-        for (std::size_t idx = 0; idx != tile_count; ++idx)
-        {
-          const auto& tile = expanded_tiles[idx];          
+        auto expansion_range = boost::make_iterator_range(expanded_tiles, expanded_tiles + tile_count);
 
+        vertex_cache_.clear();
+        face_cache_.clear();
+
+        const graphics::Texture* current_texture = nullptr;
+        std::uint32_t current_level = 0;
+
+        auto commit_geometry = [&]()
+        {
+          apply_update(scene_layer->append_item_geometry(tile_index, current_texture,
+                                                         vertex_cache_.data(), vertex_cache_.size(),
+                                                         face_cache_.data(), face_cache_.size(),
+                                                         current_level));
+        };
+
+        for (const auto& tile : expansion_range)
+        {
           for (const auto& mapping : tex_mapping.find(tex_mapping.tile_id(tile.id)))
           {
+            if (current_texture && (mapping.texture != current_texture || tile.level != current_level))
+            {
+              commit_geometry();
+
+              vertex_cache_.clear();
+              face_cache_.clear();
+            }
+
             auto vertices = generate_tile_vertices(tile, *tile.definition,
                                                    mapping.texture_rect, mapping.fragment_offset,
                                                    1.0f / mapping.texture->size());
 
-            auto vertex_count = static_cast<std::uint32_t>(vertices.size());
-            auto face_count = static_cast<std::uint32_t>(faces.size());
+            auto faces = generate_tile_faces(vertex_cache_.size());
 
-            auto update = scene_layer->append_item_geometry(tile_index, mapping.texture,
-                                                            vertices.data(), vertex_count,
-                                                            faces.data(), face_count, tile.level);
+            vertex_cache_.insert(vertex_cache_.end(), vertices.begin(), vertices.end());
+            face_cache_.insert(face_cache_.end(), faces.begin(), faces.end());    
+
+            current_texture = mapping.texture;
+            current_level = tile.level;
           }
         }
+
+        if (current_texture)
+        {
+          commit_geometry();
+        }
       }
+
+      return result;
     }
 
     const std::vector<TrackScene::Component>& TrackScene::reload_components()

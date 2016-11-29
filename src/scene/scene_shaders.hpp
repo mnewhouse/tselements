@@ -181,7 +181,7 @@ namespace ts
       out vec4 out_fragColor;
       void main()
       {
-        out_fragColor = vec4(1, 1, 0, 1);
+        out_fragColor = vec4(0, 0, 0, 1);
       }
       )";
     }

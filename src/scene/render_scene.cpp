@@ -155,24 +155,10 @@ namespace ts
         glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer_size, nullptr, GL_STATIC_DRAW));
 
         glCheck(glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_data_size, vertices.data()));
-        glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertex_data_size, vertices.data()));
+        glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, index_data_size, faces.data()));
       }
 
-      // Now, store the component information so that we can display the scene in the proper order.
-      for (const auto& component : track_scene.components())
-      {
-        auto& layer_data = layers_[component.track_layer];
-
-        // Loop through the layer's components and store the information we need.
-        TrackComponent track_component;
-        track_component.element_buffer_offset = component.face_index * sizeof(Face);
-        track_component.element_count = component.face_count * 3;
-        track_component.level = component.level;
-        track_component.texture = component.texture;
-        track_component.layer_data = &layer_data;
-
-        track_components_.push_back(track_component);
-      }
+      reload_track_components();
     }
 
     void RenderScene::render(const Viewport& view_port, Vector2i screen_size, double frame_progress,
@@ -197,21 +183,12 @@ namespace ts
       glCheck(glClearColor(background_color_.r, background_color_.g, background_color_.b, background_color_.a));
       glCheck(glClear(GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT));
 
-      glCheck(glEnableVertexAttribArray(0));
-      glCheck(glEnableVertexAttribArray(1));
-
-      using resources::Vertex;
-      glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                                    reinterpret_cast<const void*>(offsetof(Vertex, position))));
-      glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                                    reinterpret_cast<const void*>(offsetof(Vertex, texture_coords))));
-
       auto world_size = track_scene_.track_size();
       auto view_matrix = compute_view_matrix(view_port, world_size, frame_progress);
       
       glCheck(glUseProgram(boundary_shader_program_.get()));
 
-      glStencilFunc(GL_NEVER, 1, 0xFF);
+      glStencilFunc(GL_ALWAYS, 1, 0xFF);
       glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 
       glCheck(glUniformMatrix4fv(boundary_uniform_locations_.view_matrix, 1, GL_FALSE,
@@ -221,6 +198,15 @@ namespace ts
 
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, boundary_vertex_buffer_.get()));
       glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, boundary_index_buffer_.get()));
+
+      glCheck(glEnableVertexAttribArray(0));
+      glCheck(glEnableVertexAttribArray(1));
+
+      using resources::Vertex;
+      glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                                    reinterpret_cast<const void*>(offsetof(Vertex, position))));
+      glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                                    reinterpret_cast<const void*>(offsetof(Vertex, texture_coords))));
 
       glCheck(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 
                              reinterpret_cast<const void*>(std::uintptr_t(0))));
@@ -240,6 +226,15 @@ namespace ts
       {
         glCheck(glBindBuffer(GL_ARRAY_BUFFER, component.layer_data->vertex_buffer.get()));
         glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, component.layer_data->index_buffer.get()));
+
+        glCheck(glEnableVertexAttribArray(0));
+        glCheck(glEnableVertexAttribArray(1));
+
+        using resources::Vertex;
+        glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                                      reinterpret_cast<const void*>(offsetof(Vertex, position))));
+        glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                                      reinterpret_cast<const void*>(offsetof(Vertex, texture_coords))));
 
         glCheck(glBindTexture(GL_TEXTURE_2D, component.texture->get()));
 
@@ -358,9 +353,99 @@ namespace ts
       return track_scene_;
     }
 
-    TrackScene& RenderScene::track_scene()
+    void RenderScene::update_layer_geometry(const resources::TrackLayer* layer, 
+                                            render_scene::TrackLayerData& layer_data,
+                                            const TrackScene::GeometryUpdate& geometry_update)
     {
-      return track_scene_;
+      if (auto scene_layer = track_scene_.find_layer(layer))
+      {
+        if (geometry_update.face_begin != geometry_update.face_end)
+        {
+          glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer.get()));
+
+          const auto& faces = scene_layer->faces();
+          auto data_size = faces.size() * sizeof(faces.front());
+
+          if (data_size > layer_data.index_buffer_size)
+          {  
+            layer_data.index_buffer_size = graphics::next_power_of_two(data_size);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer_size, nullptr, GL_STATIC_DRAW);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, data_size, faces.data());
+          }
+
+          else
+          {
+            auto range_start = geometry_update.face_begin * sizeof(faces.front());
+            auto range_size = geometry_update.face_end * sizeof(faces.front()) - range_start;
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, range_start, range_size,
+                            faces.data() + geometry_update.face_begin);
+          }
+
+          glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+        }
+
+
+        if (geometry_update.vertex_begin != geometry_update.vertex_end)
+        {
+          glCheck(glBindBuffer(GL_ARRAY_BUFFER, layer_data.vertex_buffer.get()));
+
+          const auto& vertices = scene_layer->vertices();
+          auto data_size = vertices.size() * sizeof(vertices.front());
+
+          if (data_size > layer_data.vertex_buffer_size)
+          {
+            layer_data.vertex_buffer_size = graphics::next_power_of_two(data_size);
+            glBufferData(GL_ARRAY_BUFFER, layer_data.vertex_buffer_size, nullptr, GL_STATIC_DRAW);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, data_size, vertices.data());
+          }
+
+          else
+          {
+            auto range_start = geometry_update.vertex_begin * sizeof(vertices.front());
+            auto range_size = geometry_update.vertex_end * sizeof(vertices.front()) - range_start;
+            glBufferSubData(GL_ARRAY_BUFFER, range_start, range_size,
+                            vertices.data() + geometry_update.vertex_begin);
+          }
+
+          glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
+        }
+      }
+    }
+
+    void RenderScene::reload_track_components()
+    {
+      using Face = resources::Face;
+
+      // Now, store the component information so that we can display the scene in the proper order.
+      for (const auto& component : track_scene_.components())
+      {
+        auto& layer_data = layers_[component.track_layer];
+
+        // Loop through the layer's components and store the information we need.
+        TrackComponent track_component;
+        track_component.element_buffer_offset = component.face_index * sizeof(Face);
+        track_component.element_count = component.face_count * 3;
+        track_component.level = component.level;
+        track_component.texture = component.texture;
+        track_component.layer_data = &layer_data;
+
+        track_components_.push_back(track_component);
+      }
+    }
+    
+    void RenderScene::add_tile(const resources::TrackLayer* layer, std::uint32_t tile_index,
+                               const resources::PlacedTile* tile_expansion, std::size_t sub_tile_count)
+    {
+      auto layer_it = layers_.find(layer);
+      if (layer_it != layers_.end())
+      {
+        auto geometry_update = track_scene_.add_tile_geometry(layer, tile_index, tile_expansion, sub_tile_count);
+
+        update_layer_geometry(layer, layer_it->second, geometry_update);
+
+        track_scene_.reload_components();
+        reload_track_components();
+      }     
     }
   }
 }

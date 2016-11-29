@@ -47,26 +47,24 @@ namespace ts
         std::uint32_t face_count;
       };
 
+      struct GeometryUpdate
+      {
+        std::uint32_t vertex_begin;
+        std::uint32_t vertex_end;
+        std::uint32_t face_begin;
+        std::uint32_t face_end;
+      };
+
       std::uint32_t base_level() const;
 
       const std::vector<Component>& components() const;
       const std::vector<vertex_type>& vertices() const;
       const std::vector<face_type>& faces() const;
 
-      struct GeometryUpdate
-      {
-        std::uint32_t face_begin;
-        std::uint32_t face_end;
-        std::uint32_t vertex_begin;
-        std::uint32_t vertex_end;
-        std::uint32_t component_begin;
-        std::uint32_t component_end;
-      };
-
       GeometryUpdate append_item_geometry(std::uint32_t item_index, const texture_type* texture,
-                                const vertex_type* vertices, std::uint32_t vertex_count,
-                                const face_type* faces, std::uint32_t face_count,
-                                std::uint32_t level);                                     
+                                          const vertex_type* vertices, std::uint32_t vertex_count,
+                                          const face_type* faces, std::uint32_t face_count,
+                                          std::uint32_t level);
 
       GeometryUpdate clear_item_geometry(std::uint32_t item_index, bool shift = true);
       
@@ -118,15 +116,17 @@ namespace ts
 
       const TextureMapping& texture_mapping() const;
 
-      void add_tile_geometry(const resources::TrackLayer* layer, std::uint32_t tile_id,
-                             const resources::PlacedTile* expanded_tile, std::size_t count);
+      using GeometryUpdate = TrackSceneLayer::GeometryUpdate;
+
+      GeometryUpdate add_tile_geometry(const resources::TrackLayer* layer, std::uint32_t tile_id,
+                                       const resources::PlacedTile* expanded_tile, std::size_t count);
 
       void clear_tile_geometry(const resources::TrackLayer* layer, std::uint32_t tile_id);
       
       using layer_range = boost::iterator_range<boost::indirect_iterator<const TrackSceneLayer* const*>>;
       layer_range layers() const;
 
-      const TrackSceneLayer* find_layer(LayerHandle) const;
+      const TrackSceneLayer* find_layer(LayerHandle) const;      
 
       struct Component
       {
@@ -143,11 +143,13 @@ namespace ts
       const std::vector<Component>& sort_components();
 
     private:
-      TrackSceneLayer* find_layer(LayerHandle);      
+      TrackSceneLayer* find_layer_internal(LayerHandle);
 
       std::unordered_map<LayerHandle, TrackSceneLayer> layer_map_;
       std::vector<TrackSceneLayer*> layer_list_;
       std::vector<Component> components_;
+      std::vector<resources::Vertex> vertex_cache_;
+      std::vector<resources::Face> face_cache_;
 
       TextureMapping texture_mapping_;
       Vector2i track_size_;

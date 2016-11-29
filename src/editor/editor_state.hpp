@@ -44,6 +44,7 @@ namespace ts
       void async_load_test_state();
 
       void update_loading_state();
+      void select_default_layer();
 
       virtual void active_tool_changed(ToolType previous, ToolType current) override;
       virtual void active_mode_changed(std::uint32_t previous, std::uint32_t current) override;

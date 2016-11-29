@@ -115,6 +115,7 @@ namespace ts
         {
           editor_scene_ = loading_future_.get();
 
+          select_default_layer();
           set_active_state(StateId::Editor);
         }
       }
@@ -488,6 +489,7 @@ namespace ts
 
       style.push(ImGuiStyleVar_WindowPadding, ImVec2(3, 3));
       style.push(ImGuiStyleVar_ItemSpacing, ImVec2(2, 2));
+
       ImGui::BeginChild("history_frame", ImVec2(window_size.x, 150), true);
       color.push(ImGuiCol_FrameBg, ImColor(0.45f, 0.45f, 0.5f, 1.0f));
 
@@ -548,7 +550,11 @@ namespace ts
       }
       ImGui::PopID();
 
+      color.pop();
+
       ImGui::ListBoxFooter();
+
+      color.pop();
       ImGui::EndChild();
     }
 
@@ -615,6 +621,8 @@ namespace ts
       }
 
       ImGui::ListBoxFooter();
+
+      color.pop(2);
       ImGui::EndChild();
     }
 
@@ -670,6 +678,15 @@ namespace ts
           break;
         }
       }
+    }
+
+    void EditorState::select_default_layer()
+    {
+      resources::TrackLayer* layer = nullptr;
+      const auto& layers = editor_scene_->track().layers();
+      if (!layers.empty()) layer = &layers.front();
+
+      working_state_.select_layer(layer);
     }
 
     void EditorState::active_tool_changed(ToolType previous, ToolType current)

@@ -38,6 +38,19 @@ namespace ts
         --count_;
       }
 
+      void pop(int count)
+      {
+        auto c = std::min(count, count_);
+        ImGui::PopStyleVar(c);
+        count_ -= c;        
+      }
+
+      void pop_all()
+      {
+        ImGui::PopStyleVar(count_);
+        count_ = 0;
+      }
+
     private:
       int count_ = 0;
     };
@@ -59,6 +72,19 @@ namespace ts
       {
         ImGui::PopStyleColor();
         --count_;
+      }
+
+      void pop(int count)
+      {
+        auto c = std::min(count, count_);
+        ImGui::PopStyleColor(c);
+        count_ -= c;
+      }
+
+      void pop_all()
+      {
+        ImGui::PopStyleColor(count_);
+        count_ = 0;
       }
 
     private:

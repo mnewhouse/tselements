@@ -504,11 +504,11 @@ namespace ts
         }
 
         glCheck(glBindTexture(GL_TEXTURE_2D, 0));
-
         auto texture_mapping = generate_resource_texture_map(track, placement_map, std::move(atlas_textures));
 
         TrackScene track_scene(track.size(), std::move(texture_mapping));
         scene::build_track_vertices(track, track_scene);
+        track_scene.reload_components();
         return track_scene;
       }
     }

@@ -22,6 +22,11 @@ namespace ts
       level_ = level;
     }
 
+    void TrackLayer::set_z_index(std::uint32_t z_index)
+    {
+      z_index_ = z_index;
+    }
+
     void TrackLayer::set_visible(bool show)
     {
       visible_ = show;

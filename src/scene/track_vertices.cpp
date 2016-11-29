@@ -135,16 +135,19 @@ namespace ts
         }
         */
 
+        track_scene.create_layer(&layer);
+
         std::uint32_t tile_index = 0;
         for (const auto& tile : layer.tiles())
         {
           placed_tiles.clear();
-          resources::expand_tiles(layer.tiles().begin(), layer.tiles().end(),
+          resources::expand_tiles(&tile, &tile + 1,
                                   tile_library, std::back_inserter(placed_tiles));
 
           track_scene.add_tile_geometry(&layer, tile_index, placed_tiles.data(), placed_tiles.size());
 
           ++tile_index;
+
         }       
       }
     }
