@@ -42,6 +42,43 @@ namespace ts
           }
         }
       }
+
+      if (event.type == sf::Event::JoystickMoved)
+      {
+        std::uint32_t stage_time = stage_->stage_time();
+
+        auto controlled_entities = control_center_->control_slot(0);
+        for (auto& controllable : controlled_entities)
+        {
+          auto v = event.joystickMove.position * 0.01f;
+
+          if (event.joystickMove.axis == sf::Joystick::Z)
+          {
+            float throttle = std::max(-v, 0.0f);
+            float brake = std::max(v, 0.0f);
+
+            controllable.set_control_state(controls::FreeControl::Throttle, throttle);
+            controllable.set_control_state(controls::FreeControl::Brake, brake);
+          }
+
+          else if (event.joystickMove.axis == sf::Joystick::U)
+          {            
+            float left = std::max(-v, 0.0f);
+            float right = std::max(v, 0.0f);
+
+            controllable.set_control_state(controls::FreeControl::Left, left);
+            controllable.set_control_state(controls::FreeControl::Right, right);
+          }
+
+          stage::messages::ControlUpdate controls_message;
+          controls_message.controllable_id = controllable.controllable_id();
+          controls_message.controls_mask = controllable.controls_mask();
+          controls_message.stage_time = stage_time;
+
+          message_dispatcher(controls_message);
+        }
+
+      }
     }
   }
 }

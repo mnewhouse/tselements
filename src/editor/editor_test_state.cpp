@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "editor_test_state.hpp"
 #include "test_state_essentials.hpp"
 

@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "server_message_forwarder.hpp"
 #include "server_cup_essentials.hpp"

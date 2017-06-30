@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "handling_physics.hpp"
 #include "car.hpp"
@@ -20,14 +19,16 @@
 namespace ts
 {
   namespace world
-  {
+  {   
+    /*
     CarUpdateState update_car_state(const Car& car, const resources::TerrainDefinition& terrain, double frame_duration)
     {
-      using controls::Control;
-      const bool is_accelerating = car.control_state(Control::Accelerate);
-      const bool is_braking = car.control_state(Control::Brake);
-      const bool is_turning_left = car.control_state(Control::Left);
-      const bool is_turning_right = car.control_state(Control::Right);
+      using Control = controls::FreeControl;
+      const auto acceleration_rate = car.control_state(Control::Throttle) / 255.f;
+      const auto braking_rate = car.control_state(Control::Brake) / 255.f;
+      const auto turning_left_rate = car.control_state(Control::Left) / 255.f;
+      const auto turning_right_rate = car.control_state(Control::Right) / 255.f;
+      const auto turning_rate = -turning_left_rate + turning_right_rate;
 
       auto rotation = car.rotation();
       auto facing_vector = transform_point({ 0.0, -1.0 }, rotation);
@@ -95,32 +96,29 @@ namespace ts
       auto applied_force = 0.0;
 
       Vector2<double> acceleration_force;
-      if (is_accelerating)
       {
         double tm = handling.torque_multiplier;
         double speed_factor = std::min(speed / handling.max_engine_revs, 1.0);
-        double torque_multiplier = std::max(tm - speed_factor * (tm - 1.0), 0.5);
+        double torque_multiplier = std::max(tm - speed_factor * (tm - 1.0), 0.5) * acceleration_rate;
         acceleration_force += handling.torque * torque_multiplier * terrain.acceleration * facing_vector;
         applied_force += handling.torque * torque_multiplier * stress_multiplier(handling.torque_stress);
       }
 
       Vector2<double> braking_force;
-      if (is_braking)
+
+      // TODO: Think of better way to detect reversing
+      if (speed != 0.0 && dot_product(heading, facing_vector) >= 0.0)
       {
-        // TODO: Think of better way to detect reversing
-        if (speed != 0.0 && dot_product(heading, facing_vector) >= 0.0)
-        {
-          auto braking = (handling.braking + downforce_traction * handling.downforce_brake_effect) * terrain.braking;
+        auto braking = (handling.braking + downforce_traction * handling.downforce_brake_effect) * terrain.braking;
 
-          braking_force -= braking * heading;
-          applied_force += braking * stress_multiplier(handling.braking_stress);
-        }
+        braking_force -= braking * braking_rate * heading;
+        applied_force += braking * braking_rate * stress_multiplier(handling.braking_stress);
+      }
 
-        else
-        {
-          acceleration_force -= handling.torque * terrain.acceleration * facing_vector;
-          applied_force += handling.torque * stress_multiplier(handling.torque_stress);          
-        }
+      else
+      {
+        acceleration_force -= handling.torque * terrain.acceleration * braking_rate * facing_vector;
+        applied_force += handling.torque * braking_rate * stress_multiplier(handling.torque_stress);          
       }
 
       auto base_steering = handling.steering * terrain.steering;
@@ -144,12 +142,8 @@ namespace ts
         std::max(handling.antislide * terrain.antislide, 1.0);
       auto absolute_turning_speed = base_steering - antislide_turning_reduction;     
 
-      auto turning_speed = 0.0;
-      if (is_turning_left) turning_speed -= absolute_turning_speed;
-      if (is_turning_right) turning_speed += absolute_turning_speed;
-
-      auto turning_force = 0.0;
-      if (is_turning_left || is_turning_right) turning_force = supported_turning_force;
+      auto turning_speed = turning_rate * absolute_turning_speed;
+      auto turning_force = supported_turning_force * std::abs(turning_rate);
 
       auto normalized_force = applied_force / traction_limit;
       auto normalized_turning_force = turning_force * turning_stress_root / traction_limit;
@@ -159,9 +153,7 @@ namespace ts
       if (traction_loss > 1.0)
       {
         traction_ratio = 1.0 / traction_loss;
-
-        if (is_turning_left) turning_speed += antislide_turning_reduction * (1.0 - traction_ratio);
-        if (is_turning_right) turning_speed -= antislide_turning_reduction * (1.0 - traction_ratio);
+        turning_speed -= turning_rate * antislide_turning_reduction * (1.0 - traction_ratio);
 
         acceleration_force *= traction_ratio;
         braking_force *= traction_ratio;
@@ -228,25 +220,24 @@ namespace ts
           auto torque_reduction = std::max(std::min(behavior.torque_reduction * inverse_traction, 1.0), 0.0);
           auto braking_reduction = std::max(std::min(behavior.braking_reduction * inverse_traction, 1.0), 0.0);
 
-          if (is_turning_left) turning_speed_adjustment -= antislide_reduction * antislide_turning_reduction;
-          if (is_turning_right) turning_speed_adjustment += antislide_reduction * antislide_turning_reduction;
-              
+          turning_speed_adjustment += turning_rate * antislide_reduction * antislide_turning_reduction;              
           turning_speed_adjustment -= turning_reduction * turning_speed;
+
           adjustment_force -= grip_reduction * redirect_force;
           adjustment_force -= torque_reduction * acceleration_force;
           adjustment_force -= braking_reduction * braking_force;
         };
 
         auto behavior = handling.slide_behavior;
-        if (is_braking)
+        if (braking_rate > 0.001f)
         {
           behavior = handling.lock_up_behavior;
         }
 
-        if (is_accelerating)
+        if (acceleration_rate > 0.001f)
         {
           auto& wheel_spin_behavior = handling.wheel_spin_behavior;
-          if (!is_braking) behavior = wheel_spin_behavior;
+          if (braking_rate > 0.001f) behavior = wheel_spin_behavior;
 
           // When braking *and* accelerating, make the effects accumulative.          
           behavior.antislide_reduction += wheel_spin_behavior.antislide_reduction;
@@ -297,7 +288,7 @@ namespace ts
       {
         auto frame_recovery = rev_recovery * frame_duration;
         auto target_revs = new_speed / handling.max_engine_revs;
-        if (is_accelerating) target_revs /= std::max(std::sqrt(traction), 0.25);
+        if (acceleration_rate > 0.001f) target_revs /= std::max(std::sqrt(traction), 0.25);
 
         target_revs = std::min(target_revs, 1.1);
 
@@ -322,5 +313,6 @@ namespace ts
 
       return update_state;
     }
+    */
   }
 }

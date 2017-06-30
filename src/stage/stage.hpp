@@ -23,6 +23,11 @@ namespace ts
     struct EventInterface;
   }
 
+  namespace controls
+  {
+    struct ControlsMask;
+  }
+
   namespace stage
   {
     // The Stage class is responsible for tying the game world to the event system.
@@ -45,7 +50,7 @@ namespace ts
 
       const RaceTracker* race_tracker() const;      
 
-      void set_controllable_state(std::uint16_t controllable_id, std::uint16_t controls_mask);
+      void set_controllable_state(std::uint16_t controllable_id, controls::ControlsMask controls_mask);
 
       void control_point_hit(const world::Entity* entity, std::uint16_t point_id, std::uint32_t point_flags,
                              std::uint32_t frame_offset, RaceEventInterface& event_interface);

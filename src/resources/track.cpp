@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "track.hpp"
 #include "default_start_points.hpp"
@@ -141,9 +140,7 @@ namespace ts
 
         std::uint32_t z_index = 0;
         for (auto layer : layer_order_) layer->set_z_index(z_index++);
-      }
-
-      
+      }      
     }
 
     std::int32_t Track::shift_towards_front(const TrackLayer* layer, std::int32_t shift_amount)

@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "cup_synchronizer.hpp"
 #include "cup.hpp"
 

@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "car_store.hpp"
 #include "car_loader.hpp"

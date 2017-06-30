@@ -106,8 +106,7 @@ namespace ts
           auto frame_ptr = result.data() + frame_id * frame_size;
           auto frame_rotation = degrees(frame_domain * frame_id);
 
-          auto sin = -std::sin(frame_rotation.radians());
-          auto cos = std::cos(frame_rotation.radians());
+          auto transform = make_transformation(frame_rotation);
 
           for (std::uint32_t dest_y = 0; dest_y != dest_size.y; ++dest_y)
           {
@@ -119,7 +118,7 @@ namespace ts
               for (std::uint32_t x_end = std::min(dest_x + word_bits, dest_size.x); dest_x != x_end; ++dest_x, bit <<= 1)
               {
                 auto dest_point = vector2_cast<double>(make_vector2(dest_x, dest_y));
-                auto source_point = transform_point(dest_point - dest_center, sin, cos) + source_center;
+                auto source_point = transform_point(dest_point - dest_center, transform) + source_center;
 
                 if (source_point.x >= 0.0 && source_point.y >= 0.0)
                 {

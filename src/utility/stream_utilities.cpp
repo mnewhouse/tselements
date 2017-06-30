@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "stream_utilities.hpp"
 #include "encoding.hpp"

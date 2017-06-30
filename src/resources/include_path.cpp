@@ -4,9 +4,10 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "include_path.hpp"
+
+#include <boost/filesystem/convenience.hpp>
 
 namespace ts
 {

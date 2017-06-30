@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "race_tracker.hpp"
 #include "race_messages.hpp"

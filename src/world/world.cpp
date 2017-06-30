@@ -4,10 +4,9 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "world.hpp"
-#include "car.hpp"
+#include "car_detail.hpp"
 #include "world_limits.hpp"
 #include "collisions.hpp"
 #include "control_point_manager_detail.hpp"
@@ -22,6 +21,7 @@
 #include "utility/random.hpp"
 #include "utility/line_plotter.hpp"
 #include "utility/debug_log.hpp"
+#include "utility/math_utilities.hpp"
 
 #include <boost/function_output_iterator.hpp>
 #include <boost/iterator/transform_iterator.hpp>
@@ -127,6 +127,8 @@ namespace ts
       {
         const auto& terrain_library = world_obj.track().terrain_library();
 
+        auto world_size = vector2_cast<std::int32_t>(world_obj.world_size());        
+
         auto old_position = vector2_cast<std::int32_t>(update_state.old_position) + position_offset;
         auto new_position = vector2_cast<std::int32_t>(update_state.new_position) + position_offset;
 
@@ -194,6 +196,9 @@ namespace ts
 
         for (auto position : position_range)
         {
+          if (position.x < 0 || position.x >= world_size.x ||
+              position.y < 0 || position.y >= world_size.y) continue;          
+
           if (auto collision_point = test_scenery_collision(collision_frame, scenery_frame, position))
           {
             collision.subject_state = &update_state;
@@ -406,13 +411,25 @@ namespace ts
     {
       double fd = frame_duration * 0.001;
 
+      auto max_corner = vector2_cast<std::int32_t>(world_size()) - make_vector2(1, 1);
+      
       entity_update_state_.clear();
       for (auto* car : cars_)
       {
         auto old_position = car->position();
         auto old_rotation = car->rotation();
 
-        car->update(terrain_at(old_position, car->z_level()), fd);
+        auto z_level = car->z_level();
+
+        auto terrain_func = [=](Vector2d position) -> decltype(auto)
+        {
+          auto x = utility::clamp(static_cast<std::int32_t>(position.x), 0, max_corner.x);
+          auto y = utility::clamp(static_cast<std::int32_t>(position.y), 0, max_corner.y);
+
+          return terrain_at(make_vector2(x, y), z_level);
+        };
+
+        car->update(terrain_func, fd);
 
         auto new_position = accomodate_position(car->position() + fd * car->velocity());
         auto new_rotation = radians(car->rotation().radians() + fd * car->rotating_speed());
@@ -489,6 +506,7 @@ namespace ts
                                                     object_range, {}, true);
 
         auto& collision = pass_info.collision;
+        collision.collided = false;
         if (collision)
         {
           if (previously_collided_[entity_id])

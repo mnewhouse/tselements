@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "editor_state.hpp"
 
 #include "game/loading_thread.hpp"
@@ -143,7 +142,7 @@ namespace ts
 
     void EditorState::update(const update_context& ctx)
     {
-      update_loading_state();    
+      update_loading_state();
 
       auto screen_size = context().render_window->size();
       auto old_state = active_state();
@@ -340,7 +339,7 @@ namespace ts
       color.push(ImGuiCol_ChildWindowBg, ImColor(0, 0, 0, 0));
       style.push(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
       style.push(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-      ImGui::SetNextWindowContentSize(ImVec2(content_size.x, content_size.y));
+      ImGui::SetNextWindowContentSize(ImVec2(static_cast<float>(content_size.x), static_cast<float>(content_size.y)));
       ImGui::BeginChild("canvas_window", ImVec2(0, 0), false,
                         ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
@@ -413,7 +412,7 @@ namespace ts
         auto window_center = make_vector2(window_pos.x, window_pos.y) + make_vector2(canvas_size.x, canvas_size.y) * 0.5;
         auto relative_mouse_pos = (make_vector2(mouse_pos.x, mouse_pos.y) - window_center) / zoom_level;
 
-        detail::zoom_camera(camera, io.MouseWheel, 1.08, min_zoom, 8.0, relative_mouse_pos);
+        detail::zoom_camera(camera, static_cast<int>(io.MouseWheel), 1.08, min_zoom, 8.0, relative_mouse_pos);
         detail::clamp_camera(view_port_, world_size);
 
         zoom_level = camera.zoom_level();
@@ -425,7 +424,7 @@ namespace ts
       ImGui::EndChild();
 
       // Now, recreate the window with its potentially new content size.
-      ImGui::SetNextWindowContentSize(ImVec2(content_size.x, content_size.y));
+      ImGui::SetNextWindowContentSize(ImVec2(static_cast<float>(content_size.x), static_cast<float>(content_size.y)));
       ImGui::BeginChild("canvas_window");
 
       // If the camera state was altered, adapt the scroll bar states to match the camera.
@@ -494,8 +493,6 @@ namespace ts
       color.push(ImGuiCol_FrameBg, ImColor(0.45f, 0.45f, 0.5f, 1.0f));
 
       ImGui::ListBoxHeader("", ImVec2(window_size.x - 6, 150 - 6));
-
-      char format_buffer[32];
 
       auto stack_size = action_history_.stack_size();
       auto current_index = action_history_.current_index();

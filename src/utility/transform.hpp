@@ -15,23 +15,41 @@
 namespace ts
 {
   template <typename T>
-  Vector2<T> transform_point(const Vector2<T>& point, T sin, T cos)
+  struct RotationTransformation
   {
-    return{ point.x * cos - sin * point.y, point.y * cos + sin * point.x };
-  }
+    T sin;
+    T cos;
+  };
 
   template <typename T>
-  Vector2<T> transform_point(const Vector2<T>& point, Rotation<T> rotation)
+  RotationTransformation<T> make_transformation(Rotation<T> rotation)
   {
+    auto rad = rotation.radians();
+
     using std::sin;
     using std::cos;
 
-    auto rad = rotation.radians();
-    return transform_point(point, sin(rad), cos(rad));
+    return{ sin(rad), cos(rad) };
   }
 
   template <typename T>
-  Rect<T> transform_rect(const Rect<T>& rect, T sin, T cos)
+  Vector2<T> transform_point(const Vector2<T>& point, const RotationTransformation<T>& transform)
+  {
+    return
+    {
+      point.x * transform.cos - transform.sin * point.y,
+      point.y * transform.cos + transform.sin * point.x
+    };
+  }
+
+  template <typename T>
+  auto transform_point(const Vector2<T>& point, Rotation<T> rotation)
+  {
+    return transform_point(point, make_transformation(rotation));
+  }
+
+  template <typename T>
+  Rect<T> transform_rect(const Rect<T>& rect, const RotationTransformation<T>& transform)
   {
     Vector2<T> center(rect.left + rect.width * 0.5, rect.top + rect.height * 0.5);
     T left = rect.left - center.x;
@@ -39,6 +57,8 @@ namespace ts
     T right = left + rect.width;
     T bottom = top + rect.height;
 
+
+    auto sin = transform.sin, cos = transform.cos;
     Vector2<T> points[4] =
     {
       transform_point<T>({ left, top }, sin, cos) + center,
@@ -64,12 +84,8 @@ namespace ts
   }
 
   template <typename T>
-  Rect<T> transform_rect(const Rect<T>& rect, Rotation<T> rotation)
+  auto transform_rect(const Rect<T>& rect, Rotation<T> rotation)
   {
-    using std::sin;
-    using std::cos;
-
-    auto rad = rotation.radians();
-    return transform_rect(rect, sin(rad), cos(rad));
+    return transform_rect(rect, make_transformation(rotation));
   }
 }

@@ -9,6 +9,7 @@
 #include "controls/key_mapping.hpp"
 
 #include <SFML/Window/Keyboard.hpp>
+#include <SFML/Window/Joystick.hpp>
 
 namespace ts
 {

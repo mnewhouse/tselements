@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "editor_scene.hpp"
 
 #include "resources/tile_expansion.hpp"
@@ -80,7 +79,7 @@ namespace ts
 
     void EditorScene::append_tile(resources::TrackLayer* layer, const resources::Tile& tile)
     {
-      auto tile_index = layer->tiles().size();
+      auto tile_index = static_cast<std::uint32_t>(layer->tiles().size());
       layer->tiles().push_back(tile);
 
       if (render_scene_)
@@ -99,6 +98,14 @@ namespace ts
       if (render_scene_)
       {
         render_scene_->remove_tile(layer, tile_index);
+      }
+    }
+
+    void EditorScene::remove_last_tile(resources::TrackLayer* layer)
+    {
+      if (!layer->tiles().empty())
+      {
+        remove_tile(layer, static_cast<std::uint32_t>(layer->tiles().size()) - 1);
       }
     }
   }

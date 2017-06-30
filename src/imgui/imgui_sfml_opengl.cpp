@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "imgui_sfml_opengl.hpp"
 #include "imgui.h"
@@ -15,6 +14,8 @@
 #include "graphics/buffer.hpp"
 #include "graphics/texture.hpp"
 #include "graphics/render_window.hpp"
+
+#include "utility/math_utilities.hpp"
 
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Graphics/Texture.hpp>
@@ -139,8 +140,8 @@ namespace ts
       glCheck(glVertexAttribPointer(color_location, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert),
                                     reinterpret_cast<const void*>(offsetof(ImDrawVert, col))));
 
-      vertex_buffer_size_ = graphics::next_power_of_two(0x2000 * sizeof(ImDrawVert));
-      index_buffer_size_ = graphics::next_power_of_two(0x10000 * sizeof(ImDrawIdx));
+      vertex_buffer_size_ = utility::next_power_of_two(0x2000 * sizeof(ImDrawVert));
+      index_buffer_size_ = utility::next_power_of_two(0x10000 * sizeof(ImDrawIdx));
 
       glCheck(glBufferData(GL_ARRAY_BUFFER, vertex_buffer_size_, nullptr, GL_DYNAMIC_DRAW));
       glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_buffer_size_, nullptr, GL_DYNAMIC_DRAW));
@@ -192,7 +193,7 @@ void main()
 
       draw_data->ScaleClipRects(io.DisplayFramebufferScale);
 
-      glCheck(glViewport(0, 0, fb_width, fb_height));
+      glCheck(glViewport(0, 0, static_cast<GLsizei>(fb_width), static_cast<GLsizei>(fb_height)));
       glCheck(glEnable(GL_BLEND));
       glCheck(glBlendEquation(GL_FUNC_ADD));
       glCheck(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
@@ -202,8 +203,7 @@ void main()
       glCheck(glEnable(GL_TEXTURE_2D));
       glCheck(glActiveTexture(GL_TEXTURE0));
 
-      auto matrix = glm::ortho(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f);
-      
+      auto matrix = glm::ortho(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f);      
       
       glCheck(glUseProgram(shader_program_.get()));
       glCheck(glUniform1i(texture_sampler_location_, 0));
@@ -228,8 +228,8 @@ void main()
       required_vertex_buffer_size *= sizeof(ImDrawVert);
       required_index_buffer_size *= sizeof(ImDrawIdx);
 
-      auto desired_vertex_buffer_size = graphics::next_power_of_two(required_vertex_buffer_size * 3);
-      auto desired_index_buffer_size = graphics::next_power_of_two(required_index_buffer_size * 3);
+      auto desired_vertex_buffer_size = utility::next_power_of_two(required_vertex_buffer_size * 3);
+      auto desired_index_buffer_size = utility::next_power_of_two(required_index_buffer_size * 3);
 
       if (desired_vertex_buffer_size > vertex_buffer_size_)
       {
@@ -256,10 +256,8 @@ void main()
       }
 
       auto buffer_offset = reinterpret_cast<ImDrawIdx*>(std::uintptr_t(index_buffer_write_offset_));
-      auto base_vertex = vertex_buffer_write_offset_ / sizeof(ImDrawVert);
+      auto base_vertex = static_cast<std::uint32_t>(vertex_buffer_write_offset_ / sizeof(ImDrawVert));
 
-      
-      
       for (auto i = 0; i < draw_data->CmdListsCount; ++i)
       {
         auto cmd_list = draw_data->CmdLists[i];
@@ -304,102 +302,16 @@ void main()
 
             const auto elem_type = sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
             glCheck(glDrawElementsBaseVertex(GL_TRIANGLES, static_cast<GLsizei>(command.ElemCount),
-                                             elem_type, buffer_offset, base_vertex));
+                                             elem_type, buffer_offset, base_vertex));            
+            
           }
 
           buffer_offset += command.ElemCount;
         }
 
-        base_vertex += vertices.size();
+        base_vertex += static_cast<std::uint32_t>(vertices.size());
       }
-
-      /*
-        auto vertex_range_size = cmd_list->VtxBuffer.size() * sizeof(ImDrawVert);
-        auto index_range_size = cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx);
-
-        glCheck(glBufferSubData(GL_ARRAY_BUFFER, vertex_buffer_offset, vertex_range_size, 
-                                &cmd_list->VtxBuffer.front()));
-
-        glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, index_buffer_offset, index_range_size, 
-                                &cmd_list->IdxBuffer.front()));
-
-        std::uintptr_t draw_offset = index_buffer_offset;
-        for (const auto& command : cmd_list->CmdBuffer)
-        {
-          if (command.UserCallback)
-          {
-            command.UserCallback(cmd_list, &command);
-          }
-
-          else
-          {
-            auto tex_id = static_cast<GLuint>(reinterpret_cast<std::uintptr_t>(command.TextureId));
-            glBindTexture(GL_TEXTURE_2D, tex_id);
-
-            auto clip_rect = command.ClipRect;
-            glScissor(static_cast<GLint>(clip_rect.x),
-                      static_cast<GLint>(fb_height - clip_rect.w),
-                      static_cast<GLint>(clip_rect.z - clip_rect.x),
-                      static_cast<GLint>(clip_rect.w - clip_rect.y));
-
-            glCheck(glDrawElementsBaseVertex(GL_TRIANGLES, static_cast<GLsizei>(command.ElemCount),
-                                             sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
-                                             reinterpret_cast<const void*>(draw_offset), base_vertex));
-          }
-
-          draw_offset += command.ElemCount + sizeof(ImDrawIdx);
-        }
-
-        vertex_buffer_offset += vertex_range_size;
-        index_buffer_offset += index_range_size;
-        base_vertex += cmd_list->VtxBuffer.size();
-      }
-
-      for (auto i = 0; i < draw_data->CmdListsCount; ++i)
-      {
-        auto cmd_list = draw_data->CmdLists[i];
-        const ImDrawIdx* index_buffer_offset = nullptr;
-
-        auto vertex_buffer_size = static_cast<GLsizeiptr>(cmd_list->VtxBuffer.size() * sizeof(ImDrawVert));
-        auto index_buffer_size = static_cast<GLsizeiptr>(cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx));
-
-        glCheck(glBufferData(GL_ARRAY_BUFFER, vertex_buffer_size,
-                             static_cast<const void*>(&cmd_list->VtxBuffer.front()), GL_STREAM_DRAW));
-
-        glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_buffer_size,
-                             static_cast<const void*>(&cmd_list->IdxBuffer.front()), GL_STREAM_DRAW));
-
-
-        for (const auto& command : cmd_list->CmdBuffer)
-        {
-          if (command.UserCallback)
-          {
-            command.UserCallback(cmd_list, &command);
-          }
-
-          else
-          {
-            auto tex_id = static_cast<GLuint>(reinterpret_cast<std::uintptr_t>(command.TextureId));
-            glBindTexture(GL_TEXTURE_2D, tex_id);
-
-            auto clip_rect = command.ClipRect;
-            glScissor(static_cast<GLint>(clip_rect.x),
-                      static_cast<GLint>(fb_height - clip_rect.w),
-                      static_cast<GLint>(clip_rect.z - clip_rect.x),
-                      static_cast<GLint>(clip_rect.w - clip_rect.y));
-
-            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(command.ElemCount),
-                           sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, index_buffer_offset);
-          }
-
-          glCheck(glInvalidateBufferData(vertex_buffer_.get()));
-          glCheck(glInvalidateBufferData(index_buffer_.get()));
-
-          index_buffer_offset += command.ElemCount;
-        }        
-      }
-      */
-
+      
       glCheck(glBindTexture(GL_TEXTURE_2D, 0));
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
       glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));

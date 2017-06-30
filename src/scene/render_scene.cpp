@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "render_scene.hpp"
 #include "scene_shaders.hpp"
@@ -16,11 +15,14 @@
 
 #include "world/world_limits.hpp"
 
+#include "utility/math_utilities.hpp"
+
 #include <GL/glew.h>
 #include <GL/GL.h>
 
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 
 namespace ts
 {
@@ -145,15 +147,15 @@ namespace ts
         layer_data.index_buffer = graphics::create_buffer();
         layer_data.vertex_buffer = graphics::create_buffer();
 
-        layer_data.index_buffer_size = graphics::next_power_of_two(index_data_size);
-        layer_data.vertex_buffer_size = graphics::next_power_of_two(vertex_data_size);
+        layer_data.index_buffer_size = utility::next_power_of_two(index_data_size);
+        layer_data.vertex_buffer_size = utility::next_power_of_two(vertex_data_size);
 
         glCheck(glBindBuffer(GL_ARRAY_BUFFER, layer_data.vertex_buffer.get()));
         glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer.get()));
 
         glCheck(glBufferData(GL_ARRAY_BUFFER, layer_data.vertex_buffer_size, nullptr, GL_STATIC_DRAW));
         glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer_size, nullptr, GL_STATIC_DRAW));
-
+        
         glCheck(glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_data_size, vertices.data()));
         glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, index_data_size, faces.data()));
       }
@@ -177,7 +179,7 @@ namespace ts
       glCheck(glViewport(screen_rect.left, screen_size.y - screen_rect.bottom(),
                          screen_rect.width, screen_rect.height));
 
-      graphics::scissor_box(screen_size, screen_rect);
+      graphics::scissor_box(screen_rect, screen_size);
 
       glCheck(glStencilMask(0xFF));
       glCheck(glClearColor(background_color_.r, background_color_.g, background_color_.b, background_color_.a));
@@ -240,52 +242,57 @@ namespace ts
 
         auto offset = reinterpret_cast<const void*>(static_cast<std::uintptr_t>(component.element_buffer_offset));
         glCheck(glDrawElements(GL_TRIANGLES, component.element_count, GL_UNSIGNED_INT, offset));
+
       }
 
-      glCheck(glUseProgram(car_shader_program_.get()));
-      glCheck(glUniform1i(car_uniform_locations_.texture_sampler, 0));
-      glCheck(glUniform1i(car_uniform_locations_.colorizer_sampler, 1));
-      glCheck(glUniform1f(car_uniform_locations_.frame_progress, static_cast<float>(frame_progress)));
-
-      glCheck(glUniformMatrix4fv(car_uniform_locations_.view_matrix, 1, GL_FALSE,
-                                 glm::value_ptr(view_matrix)));
-
-      glCheck(glEnableVertexAttribArray(2));
-
-      glCheck(glBindBuffer(GL_ARRAY_BUFFER, car_vertex_buffer_.get()));
-      glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, car_index_buffer_.get()));
-
-      using CarVertex = DrawableEntity::Vertex;
-      glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(CarVertex),
-                                    reinterpret_cast<const void*>(offsetof(CarVertex, position))));
-      glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(CarVertex),
-                                    reinterpret_cast<const void*>(offsetof(CarVertex, texture_coords))));
-      glCheck(glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(CarVertex),
-                                    reinterpret_cast<const void*>(offsetof(CarVertex, colorizer_coords))));
-
-      std::uintptr_t element_buffer_offset = 0;
-      for (const auto& e : drawable_entities_)
+      if (!drawable_entities_.empty())
       {
-        glCheck(glActiveTexture(GL_TEXTURE0));
-        glCheck(glBindTexture(GL_TEXTURE_2D, e.texture->get()));
+        glCheck(glUseProgram(car_shader_program_.get()));
+        glCheck(glUniform1i(car_uniform_locations_.texture_sampler, 0));
+        glCheck(glUniform1i(car_uniform_locations_.colorizer_sampler, 1));
+        glCheck(glUniform1f(car_uniform_locations_.frame_progress, static_cast<float>(frame_progress)));
 
-        // Bind colorizer texture
-        glCheck(glUniform4fv(car_uniform_locations_.car_colors, 3, e.colors.data()));
-        glCheck(glUniformMatrix4fv(car_uniform_locations_.model_matrix, 1, GL_FALSE,
-                                   glm::value_ptr(e.model_matrix)));
+        glCheck(glUniformMatrix4fv(car_uniform_locations_.view_matrix, 1, GL_FALSE,
+                                   glm::value_ptr(view_matrix)));
 
-        glCheck(glUniformMatrix4fv(car_uniform_locations_.new_model_matrix, 1, GL_FALSE,
-                                   glm::value_ptr(e.new_model_matrix)));
-        
-        glCheck(glUniformMatrix4fv(car_uniform_locations_.colorizer_matrix, 1, GL_FALSE,
-                                   glm::value_ptr(e.colorizer_matrix)));
+        glCheck(glEnableVertexAttribArray(2));
 
-        glCheck(glUniform4fv(car_uniform_locations_.car_colors, 3, e.colors.data()));
+        glCheck(glBindBuffer(GL_ARRAY_BUFFER, car_vertex_buffer_.get()));
+        glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, car_index_buffer_.get()));
 
-        glCheck(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 
-                               reinterpret_cast<const void*>(element_buffer_offset)));
 
-        element_buffer_offset += sizeof(std::uint32_t) * 6;
+        using CarVertex = DrawableEntity::Vertex;
+        glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(CarVertex),
+                                      reinterpret_cast<const void*>(offsetof(CarVertex, position))));
+        glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(CarVertex),
+                                      reinterpret_cast<const void*>(offsetof(CarVertex, texture_coords))));
+        glCheck(glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(CarVertex),
+                                      reinterpret_cast<const void*>(offsetof(CarVertex, colorizer_coords))));
+
+        std::uintptr_t element_buffer_offset = 0;
+        for (const auto& e : drawable_entities_)
+        {
+          glCheck(glActiveTexture(GL_TEXTURE0));
+          glCheck(glBindTexture(GL_TEXTURE_2D, e.texture->get()));
+
+          // Bind colorizer texture
+          glCheck(glUniform4fv(car_uniform_locations_.car_colors, 3, e.colors.data()));
+          glCheck(glUniformMatrix4fv(car_uniform_locations_.model_matrix, 1, GL_FALSE,
+                                      glm::value_ptr(e.model_matrix)));
+
+          glCheck(glUniformMatrix4fv(car_uniform_locations_.new_model_matrix, 1, GL_FALSE,
+                                      glm::value_ptr(e.new_model_matrix)));
+
+          glCheck(glUniformMatrix4fv(car_uniform_locations_.colorizer_matrix, 1, GL_FALSE,
+                                     glm::value_ptr(e.colorizer_matrix)));
+
+          glCheck(glUniform4fv(car_uniform_locations_.car_colors, 3, e.colors.data()));
+
+          glCheck(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT,
+                                  reinterpret_cast<const void*>(element_buffer_offset)));
+
+          element_buffer_offset += sizeof(std::uint32_t) * 6;
+        }
       }
 
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
@@ -310,11 +317,11 @@ namespace ts
 
       for (std::size_t instance_id = 0; instance_id != dynamic_scene.entity_count(); ++instance_id)
       {
-        auto drawable_entity = dynamic_scene.entity_info(instance_id);
+        auto drawable_entity = dynamic_scene.entity_info(instance_id);        
 
         drawable_entities_.emplace_back();
 
-        auto& entity_info = drawable_entities_.back();
+        auto& entity_info = drawable_entities_.back();        
         entity_info.texture = drawable_entity.texture;
         entity_info.model_matrix = drawable_entity.model_matrix;
         entity_info.new_model_matrix = drawable_entity.new_model_matrix;
@@ -335,7 +342,7 @@ namespace ts
 
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, car_vertex_buffer_.get()));
       glCheck(glBufferData(GL_ARRAY_BUFFER, car_vertex_buffer_cache_.size() * sizeof(car_vertex_buffer_cache_.front()),
-                           car_vertex_buffer_cache_.data(), GL_STREAM_DRAW));
+                           car_vertex_buffer_cache_.data(), GL_STATIC_DRAW));
     }
 
     void RenderScene::clear_dynamic_state()
@@ -368,7 +375,7 @@ namespace ts
 
           if (data_size > layer_data.index_buffer_size)
           {  
-            layer_data.index_buffer_size = graphics::next_power_of_two(data_size);
+            layer_data.index_buffer_size = utility::next_power_of_two(data_size);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer_size, nullptr, GL_STATIC_DRAW);
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, data_size, faces.data());
           }
@@ -394,7 +401,7 @@ namespace ts
 
           if (data_size > layer_data.vertex_buffer_size)
           {
-            layer_data.vertex_buffer_size = graphics::next_power_of_two(data_size);
+            layer_data.vertex_buffer_size = utility::next_power_of_two(data_size);
             glBufferData(GL_ARRAY_BUFFER, layer_data.vertex_buffer_size, nullptr, GL_STATIC_DRAW);
             glBufferSubData(GL_ARRAY_BUFFER, 0, data_size, vertices.data());
           }
@@ -415,6 +422,7 @@ namespace ts
     void RenderScene::reload_track_components()
     {
       using Face = resources::Face;
+      track_components_.clear();
 
       // Now, store the component information so that we can display the scene in the proper order.
       for (const auto& component : track_scene_.components())

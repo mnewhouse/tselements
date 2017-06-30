@@ -33,8 +33,8 @@ namespace ts
         graphics::Buffer vertex_buffer;
         graphics::Buffer index_buffer;
 
-        std::uint32_t vertex_buffer_size;
-        std::uint32_t index_buffer_size;
+        std::size_t vertex_buffer_size;
+        std::size_t index_buffer_size;
       };
 
       struct TrackComponent

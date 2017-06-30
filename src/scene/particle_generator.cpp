@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "particle_generator.hpp"
 
@@ -134,13 +133,16 @@ namespace ts
         auto level = car.z_level();
         auto& level_info = level_info_[level];
 
+        auto traction = 1.0f;
+
         const auto& terrain = world_->terrain_at(car.position(), level);
-        if (terrain.roughness >= 0.001 || (terrain.skid_mark && car.traction() < 0.8))
+        if (terrain.roughness >= 0.001 || (terrain.skid_mark && traction < 0.8))
         {
           auto rotation = static_cast<float>(car.rotation().radians());
           auto sin = std::sin(rotation), cos = std::cos(rotation);
 
-          auto speed = std::min(magnitude(car.velocity()), settings_.max_effect_speed);     
+          auto speed = std::min(magnitude(car.velocity()), settings_.max_effect_speed);
+          /*
           for (auto tyre_position : car.tyre_positions())
           {
             auto transformed_tyre_pos = transform_point(vector2_cast<float>(tyre_position), sin, cos);
@@ -170,9 +172,11 @@ namespace ts
               info.color = generate_color(base_color);
               info.end_ticks = tick_counter_ + settings_.display_time;
 
+
               add_particle(level_info, info);
             }
           }
+          */
         }
       }
     }

@@ -4,8 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
-
 #include "viewport.hpp"
 
 namespace ts

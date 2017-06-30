@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "pattern_loader.hpp"
 #include "pattern.hpp"

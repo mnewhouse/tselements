@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "viewport.hpp"
 
 #include <glm/gtx/transform.hpp>

@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "track_vertices.hpp"
 #include "texture_mapping.hpp"
 #include "track_scene.hpp"
@@ -30,8 +29,7 @@ namespace ts
 
       auto tile_rotation = degrees(static_cast<float>(tile.rotation));
 
-      float sin = std::sin(tile_rotation.radians());
-      float cos = std::cos(tile_rotation.radians());
+      auto transform = make_transformation(tile_rotation);
 
       auto pattern_size = vector2_cast<float>(size(pattern_rect));
 
@@ -50,10 +48,10 @@ namespace ts
 
       auto tex_coords = rect_cast<float>(texture_rect);
 
-      vertices[0].position = tile_position + transform_point(top_left, sin, cos);
-      vertices[1].position = tile_position + transform_point(bottom_left, sin, cos);
-      vertices[2].position = tile_position + transform_point(top_right, sin, cos);
-      vertices[3].position = tile_position + transform_point(bottom_right, sin, cos);
+      vertices[0].position = tile_position + transform_point(top_left, transform);
+      vertices[1].position = tile_position + transform_point(bottom_left, transform);
+      vertices[2].position = tile_position + transform_point(top_right, transform);
+      vertices[3].position = tile_position + transform_point(bottom_right, transform);
 
       auto tex_left = tex_coords.left + 0.5f;
       auto tex_top = tex_coords.top + 0.5f;
@@ -147,7 +145,6 @@ namespace ts
           track_scene.add_tile_geometry(&layer, tile_index, placed_tiles.data(), placed_tiles.size());
 
           ++tile_index;
-
         }       
       }
     }

@@ -21,15 +21,19 @@ namespace ts
       explicit Controllable(std::uint16_t controllable_id);
 
       bool set_control_state(Control control, bool state);
-      bool control_state(Control control) const;
+      bool set_control_state(FreeControl control, std::uint8_t value);
+      bool set_control_state(FreeControl control, float value);
 
-      void update_controls_mask(std::uint16_t controls_mask);
+      std::uint8_t control_state(FreeControl control) const;
+      std::uint8_t control_state(Control control) const;
 
-      std::uint16_t controls_mask() const;
+      void update_controls_mask(ControlsMask controls_mask);
+
+      ControlsMask controls_mask() const;
       std::uint16_t controllable_id() const;
 
     private:
-      std::uint16_t controls_mask_ = 0;
+      ControlsMask controls_mask_ = {};
       std::uint16_t controllable_id_;
     };
   }

@@ -8,6 +8,8 @@
 
 #include <cstdint>
 
+#include "controls/control.hpp"
+
 namespace ts
 {
   namespace stage
@@ -25,7 +27,7 @@ namespace ts
       {
         std::uint32_t stage_time;
         std::uint16_t controllable_id;
-        std::uint16_t controls_mask;
+        controls::ControlsMask controls_mask;
       };
     }
   }

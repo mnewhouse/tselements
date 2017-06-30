@@ -137,20 +137,13 @@ namespace ts
         face_buffer faces;
         if (stroke_properties.type == StrokeProperties::Border)
         {
-          auto bevel_width = stroke_properties.bevel_width;
-          auto bevel_strength = stroke_properties.bevel_strength;
-
           // If we have a border, we need an inner and an outer ring, so to speak.
           // The distance from the inner to the outer ring is equal to the stroke width.
-          auto outer = normal_3d * (width - bevel_width - stroke_offset);
-          auto next_outer = next_normal_3d * (next_width - bevel_width - next_stroke_offset);
+          auto outer = normal_3d * (width - stroke_offset);
+          auto next_outer = next_normal_3d * (next_width - next_stroke_offset);
 
-          auto inner = normal_3d * (width - stroke_offset - bevel_width - stroke_width);
-          auto next_inner = next_normal_3d * (next_width - bevel_width -
-                                              next_stroke_offset - next_stroke_width);
-
-          auto bevel = outer + normal_3d * bevel_width;
-          auto next_bevel = next_outer + next_normal_3d * bevel_width;
+          auto inner = normal_3d * (width - stroke_offset - stroke_width);
+          auto next_inner = next_normal_3d * (next_width - next_stroke_offset - next_stroke_width);
 
           auto add_vertices = [&](float d, std::uint32_t index)
           {
@@ -195,43 +188,7 @@ namespace ts
             second_side_vertex_index = current_index();
             add_vertices(1.0f, second_side_vertex_index);
           }
-
-          auto first_side_bevel_vertex_index = current_index();
-          auto second_side_bevel_vertex_index = current_index();
-
-          if (bevel_width != 0.0f)
-          {
-            auto add_bevel_vertices = [&](float d, std::uint32_t side_index, std::uint32_t new_index)
-            {
-              vertices.insert(vertices.end(),
-              {
-                make_vertex(point_3d + bevel * d,
-                calculate_normal(normal_3d * d, bevel_strength)),
-                              make_vertex(next_point_3d + next_bevel * d,
-                                          calculate_normal(next_normal_3d * d, bevel_strength))
-              });
-
-
-              faces.insert(faces.end(),
-              {
-                { side_index, side_index + 1, new_index },
-                { side_index + 1, new_index, new_index + 1 }
-              });
-            };
-
-            if (stroke_side != StrokeSegment::Second)
-            {
-              first_side_bevel_vertex_index = current_index();
-              add_bevel_vertices(-1.0f, first_side_vertex_index, first_side_bevel_vertex_index);
-            }
-
-            if (stroke_side != StrokeSegment::First)
-            {
-              second_side_bevel_vertex_index = current_index();
-              add_bevel_vertices(1.0f, second_side_vertex_index, second_side_bevel_vertex_index);
-            }
-          }
-
+          
           if (stroke_properties.texture_mode == StrokeProperties::Directional)
           {
             // If the texture mode is "directional", we need to adjust the texture
@@ -239,7 +196,7 @@ namespace ts
             // We need to get the distance from the first point to the second point, so
             // the textures are mapped in a uniform manner.
 
-            auto add_tex_coords = [&](float x_accumulator, std::uint32_t vertex_index, std::uint32_t bevel_pos_index)
+            auto add_tex_coords = [&](float x_accumulator, std::uint32_t vertex_index)
             {
               auto scale_inv = 1.0f / stroke_properties.texture_scale;
               auto v = &vertices[vertex_index];
@@ -247,8 +204,8 @@ namespace ts
                                  distance(v[2].position, v[3].position)) * 0.5f) * scale_inv;
               auto new_accumulator = x_accumulator + x_advance;
 
-              auto y_coord = (width - bevel_width) * scale_inv;
-              auto next_y_coord = (next_width - bevel_width) * scale_inv;
+              auto y_coord = width * scale_inv;
+              auto next_y_coord = next_width * scale_inv;
 
               using std::begin;
               using std::end;
@@ -268,42 +225,21 @@ namespace ts
                   ++idx;
                 }
               }
-
-              if (bevel_width != 0.0f)
-              {
-                auto bevel_y_coord = width * scale_inv;
-                auto bevel_next_y_coord = next_width * scale_inv;
-
-                const Vector3f bevel_coords[] =
-                {
-                  { x_accumulator, bevel_y_coord, texture_z },
-                  { new_accumulator, bevel_next_y_coord, texture_z }
-                };
-
-                std::size_t idx = vertex_index;
-                for (auto coord : bevel_coords)
-                {
-                  vertices[idx].tex_coords = coord;
-                  ++idx;
-                }
-              }
-
+              
               return new_accumulator;
             };
 
             if (stroke_side != StrokeSegment::Second)
             {
               tex_coord_x_accumulator.first = add_tex_coords(tex_coord_x_accumulator.first,
-                                                             first_side_vertex_index,
-                                                             first_side_bevel_vertex_index);
+                                                             first_side_vertex_index);
 
             }
 
             if (stroke_side != StrokeSegment::First)
             {
               tex_coord_x_accumulator.second = add_tex_coords(tex_coord_x_accumulator.second,
-                                                              second_side_vertex_index,
-                                                              second_side_bevel_vertex_index);
+                                                              second_side_vertex_index);
             }
           }
 
@@ -550,411 +486,6 @@ namespace ts
         }
       }
     }
-
-    namespace detail
-    {
-      void find_cell_edge_intersections(Vector2f a, Vector2f b,
-                                        std::uint32_t edge_index,
-                                        const PathCellAlignment& cell_alignment,
-                                        std::vector<EdgeIntersection>& edge_intersections);
-
-      void add_cell_corner_intersections(const std::array<Vector2f, 4>& points,
-                                         const std::array<std::pair<int, int>, 4>& edges,
-                                         const PathCellAlignment& cell_alignment,
-                                         std::vector<EdgeIntersection>& edge_intersections);
-
-      void add_quad_corner_intersections(const std::array<Vector2f, 4>& points,
-                                         const PathCellAlignment& cell_alignment,
-                                         std::vector<EdgeIntersection>& edge_intersections);
-
-      template <typename VertexType, typename VertexTransform>
-      void add_edge_intersection_vertices(std::vector<EdgeIntersection>& edge_intersections,
-                                          std::size_t start_index,
-                                          resources::BasicGeometry<VertexType>& output_geometry,
-                                          VertexTransform&& transform_vertex)
-      {
-        auto& output_vertices = output_model.vertices;
-        auto vertex_index = static_cast<std::uint32_t>(output_vertices.size());
-        
-        for (auto it = edge_intersections.begin() + start_index; it != edge_intersections.end(); ++it)
-        {
-          it->vertex_index = vertex_index;
-          output_geometry.vertices.push_back(transform_vertex(it->intersection));
-          ++vertex_index;
-        }
-      }
-
-      template <typename VertexType, typename VertexTransform>
-      void add_edge_intersection_faces(const std::array<Vector2f, 4>& quad_points,
-                                       const std::array<std::pair<int, int>, 4>& edges,
-                                       const PathCellAlignment& cell_alignment,
-                                       const std::vector<EdgeIntersection>& intersection_buffer,
-                                       resources::BasicGeometry<VertexType>& geometry,
-                                       VertexTransform&& transform_vertex)
-      {
-        const std::array<std::pair<Vector2f, Vector2f>, 4> edge_points =
-        {{
-          { quad_points[edges[0].first], quad_points[edges[0].second] },
-          { quad_points[edges[1].first], quad_points[edges[1].second] },
-          { quad_points[edges[2].first], quad_points[edges[2].second] },
-          { quad_points[edges[3].first], quad_points[edges[3].second] },
-        }};
-
-        auto cell_size = cell_alignment.cell_size;
-        auto real_cell_size = static_cast<float>(cell_size);
-
-        auto& output_vertices = geometry.vertices;
-        auto& output_faces = geometry.faces;
-
-
-        enum CellEdge
-        {
-          Left, Top, Right, Bottom, Diagonal
-        };
-
-        auto find_adjacent_quad_edges = [=](const EdgeIntersection& e)
-        {
-          boost::container::small_vector<std::uint32_t, 4> result;
-
-          switch (e.type)
-          {
-          case EdgeIntersection::QuadCorner:
-          {
-            std::uint32_t edge_index = 0;
-            for (auto edge : edges)
-            {
-              if (edge.first == e.edge_index || edge.second == e.edge_index)
-              {
-                result.push_back(edge_index);
-              }
-
-              ++edge_index;
-            }
-
-            break;
-          }
-
-          default:
-            result.push_back(e.edge_index);
-          }
-
-          return result;
-        };
-
-        auto find_adjacent_cell_edges = [](const EdgeIntersection& e)
-          -> boost::container::small_vector<CellEdge, 4>
-        {
-          switch (e.type)
-          {
-          case EdgeIntersection::CellCorner:
-            switch (e.edge_index)
-            {
-            case EdgeIntersection::TopLeft: return{ Left, Top, Diagonal };
-            case EdgeIntersection::BottomLeft: return{ Left, Bottom };
-            case EdgeIntersection::TopRight: return{ Right, Top };
-            case EdgeIntersection::BottomRight: return{ Right, Bottom, Diagonal };
-            default: return{};
-            }
-
-          case EdgeIntersection::Horizontal:
-            if (e.cell_offset == 0) { return{ Top }; }
-            else return{ Bottom };
-
-          case EdgeIntersection::Vertical:
-            if (e.cell_offset == 0) { return{ Left }; }
-            else { return{ Right }; }
-
-          case EdgeIntersection::Diagonal:
-            return{ Diagonal };
-
-          default:
-            return{};
-          }
-        };
-
-        // Now, loop through all intersecting grid cells, starting on the left, moving over to the right,
-        // and going from top to bottom for each column.
-        for (auto it = intersection_buffer.begin(); it != intersection_buffer.end(); )
-        {
-          const auto& edge_intersection = *it;
-          auto cell = edge_intersection.cell;
-
-          // Find the first intersection entry that does not match up with our current grid cell.
-          auto range_end = std::find_if(std::next(it), intersection_buffer.end(),
-                                        [=](const EdgeIntersection& e)
-          {
-            return e.cell != cell;
-          });
-
-          auto top_left = vector2_cast<float>(cell) * real_cell_size;        
-
-          Vector2f cell_corners[4] =
-          {
-            top_left, top_left, top_left, top_left
-          };
-
-          // 0 = top left
-          cell_corners[1].x += real_cell_size; // Top right
-          cell_corners[2].y += real_cell_size; // Bottom left
-          cell_corners[3] += real_cell_size; // Bottom right
-
-          boost::optional<std::uint32_t> cell_corner_vertices[4] = {};
-          
-          // Grid cell consists of two triangles. For each triangle, add the faces that we need to.
-          auto make_triangle_faces = [&](int horizontal_edge, int vertical_edge, 
-                                         std::uint32_t excluded_corner, std::uint32_t triangle_id)
-          {
-            boost::container::small_vector<EdgeIntersection, 16> intersection_buffer;
-            std::copy_if(it, range_end, std::back_inserter(intersection_buffer),
-                         [=](const EdgeIntersection& e)
-            {
-              switch (e.type)
-              {
-              case EdgeIntersection::Diagonal: return true;
-              case EdgeIntersection::Horizontal: return e.cell_offset == horizontal_edge;
-              case EdgeIntersection::Vertical: return e.cell_offset == vertical_edge;
-              case EdgeIntersection::CellCorner: return e.edge_index != excluded_corner;
-              case EdgeIntersection::QuadCorner: return e.cell_offset == triangle_id;
-              default: return false;                
-              }
-            });
-
-            auto buffer_begin = intersection_buffer.begin();
-            auto buffer_end = intersection_buffer.end();
-
-            // Establish a "base" point that has two adjacent edges and one opposing edge.
-            // Start with the triangle these edges represent, then keep expanding by creating
-            // the triangles adjacent to the previous ones.
-
-            auto find_adjacent_edge_intersections = [=](const EdgeIntersection& e, auto begin, auto end)
-            {
-              auto quad_edges = find_adjacent_quad_edges(e);
-              auto cell_edges = find_adjacent_cell_edges(e);
-
-              using iterator_type = decltype(begin);
-              boost::container::small_vector<iterator_type, 16> result;
-              for (auto it = begin; it != end; ++it)
-              {
-                const auto& other = *it;
-                if (&e == &other) continue;
-
-                auto is_adjacent = [&]()
-                {
-                  for (auto edge : find_adjacent_cell_edges(other))
-                  {
-                    if (std::find(cell_edges.begin(), cell_edges.end(), edge) != cell_edges.end()) return true;
-                  }
-
-                  for (auto edge : find_adjacent_quad_edges(other))
-                  {
-                    if (std::find(quad_edges.begin(), quad_edges.end(), edge) != quad_edges.end()) return true;
-                  }
-
-                  return false;
-                };
-
-                if (is_adjacent())
-                {
-                  result.push_back(it);
-                }
-              }
-
-              return result;
-            };
-
-            auto find_base_point = [&]()
-            {
-              using result_type = decltype(find_adjacent_edge_intersections(*buffer_begin, buffer_begin, buffer_end));
-              for (auto it = buffer_begin; it != buffer_end; ++it)
-              {
-                auto result = find_adjacent_edge_intersections(*it, buffer_begin, buffer_end);
-                if (result.size() == 2) return std::make_pair(it, result);
-              }
-
-              return std::make_pair(buffer_end, result_type());
-            };
-
-            auto buffer_size = intersection_buffer.size();
-            if (buffer_size >= 3)
-            {
-              auto base_point = find_base_point();
-              if (base_point.first != buffer_end)
-              {
-                auto first_point = buffer_begin + 1;
-                auto second_point = buffer_begin + 2;
-
-                // Found a base point. Now, reorder the buffer such that every three consecutive points
-                // represent a path face.
-                std::iter_swap(base_point.first, buffer_begin);
-                std::iter_swap(base_point.second.front(), first_point);
-                std::iter_swap(base_point.second.back(), second_point);
-
-                // Get the location of the next intersection point, and then find a point that's adjacent
-                // to one of the ones we already have.
-                for (; std::distance(second_point, buffer_end) >= 2; ++first_point, ++second_point)
-                {
-                  auto range_start = std::next(second_point);
-                  auto adjacent_points = find_adjacent_edge_intersections(*first_point, range_start, buffer_end);
-                  if (adjacent_points.empty())
-                  {
-                    adjacent_points = find_adjacent_edge_intersections(*second_point, range_start, buffer_end);
-                  }
-
-                  if (!adjacent_points.empty())
-                  {
-                    std::iter_swap(range_start, adjacent_points.front());
-                  }
-                }
-
-                for (std::uint32_t idx = 0; idx + 2 < buffer_size; ++idx)
-                {
-                  output_faces.push_back({
-                    buffer_begin[idx].vertex_index,
-                    buffer_begin[idx + 1].vertex_index,
-                    buffer_begin[idx + 2].vertex_index
-                  });
-                }
-              }
-            }
-          };
-
-          make_triangle_faces(1, 0, EdgeIntersection::TopRight, 0);
-          make_triangle_faces(0, 1, EdgeIntersection::BottomLeft, 1);
-
-          it = range_end;
-        }
-      }
-    }
-
-    /*
-    template <typename VertexType, typename VertexFunc>
-    void generate_path_vertices2(const resources_3d::TrackPath& path,
-                                 const resources_3d::StrokeProperties& stroke_properties,
-                                 const std::vector<PathVertexPoint>& points,
-                                 float texture_size, float texture_z,
-                                 const PathCellAlignment& cell_alignment,
-                                 resources_3d::BasicModel<VertexType>& output_model,
-                                 VertexFunc&& vertex_func)
-    {
-      using resources_3d::TrackPathNode;
-      using resources_3d::StrokeProperties;
-      using resources_3d::StrokeSegment;
-
-      std::vector<detail::EdgeIntersection> intersections;
-
-      if (stroke_properties.type == StrokeProperties::Default)
-      {
-        auto point_it = points.begin();
-        if (point_it != points.end())
-        {
-          auto texture_scale = 1.0f / (stroke_properties.texture_scale * texture_size);
-          auto width = resources_3d::path_width_at(*point_it->first, *point_it->second, 
-                                                   point_it->time_point) * 0.5f;
-
-          auto make_vertex = [&](Vector2f position)
-          {
-            PathVertex vertex;
-            vertex.position = position;
-            vertex.color = stroke_properties.color;
-            vertex.normal = { 0.0f, 0.0f, 1.0f };
-            vertex.tex_coords.x = position.x * texture_scale;
-            vertex.tex_coords.y = position.y * texture_scale;
-            vertex.tex_coords.z = texture_z;
-            return vertex;
-          };
-
-          auto make_transformed_vertex = [&](Vector2f position)
-          {
-            return vertex_func(make_vertex(position));
-          };
-
-          auto intersection_cmp = [](const auto& a, const auto& b)
-          {
-            return std::tie(a.cell.x, a.cell.y) < std::tie(b.cell.x, b.cell.y);
-          };
-
-          auto& output_vertices = output_model.vertices;
-
-          std::array<Vector2f, 4> quad_points =
-          {
-            point_it->point + point_it->normal * width,
-            point_it->point - point_it->normal * width,
-            Vector2f(),
-            Vector2f()
-          };
-
-          const std::array<std::pair<int, int>, 4> edges =
-          { {
-            { 0, 1 },
-            { 0, 2 },
-            { 1, 3 },
-            { 2, 3 }
-          } };
-
-          std::uint32_t edge_index_start = 0;
-          std::uint32_t edge_index_end = 4;
-
-          for (auto next_point_it = std::next(point_it); next_point_it != points.end(); ++next_point_it, ++point_it)
-          {
-            if (distance(point_it->point, next_point_it->point) < 0.001f) continue;
-
-            const auto& next_point = *next_point_it;
-            auto next_width = resources_3d::path_width_at(*next_point.first, *next_point.second,
-                                                          next_point.time_point) * 0.5f;
-
-            quad_points[2] = next_point.point + next_point.normal * next_width;
-            quad_points[3] = next_point.point - next_point.normal * next_width;
-
-            auto vertex_offset = intersections.size();
-            for (auto edge_index = edge_index_start; edge_index != edge_index_end; ++edge_index)
-            {
-              auto edge = edges[edge_index];
-              const auto& p1 = quad_points[edge.first];
-              const auto& p2 = quad_points[edge.second];
-
-              detail::find_cell_edge_intersections(p1, p2, edge_index, cell_alignment, intersections);
-            }
-
-            detail::add_quad_corner_intersections(quad_points, cell_alignment, intersections);
-            detail::add_cell_corner_intersections(quad_points, edges, cell_alignment, intersections);
-
-            // Sort the intersections by cell. We need to do this in order to loop through the grid cells
-            // in the desired manner.
-
-            detail::add_edge_intersection_vertices(intersections, vertex_offset, output_model, make_transformed_vertex);
-
-            std::sort(intersections.begin(), intersections.end(), intersection_cmp);
-            detail::add_edge_intersection_faces(quad_points, edges,
-                                                cell_alignment, intersections,
-                                                output_model, make_transformed_vertex);
-
-            // Remove all the edge intersections except for the ones with edge index 3,
-            // because we're going to need those in the next iteration
-            intersections.erase(std::remove_if(intersections.begin(), intersections.end(),
-                                               [](const detail::EdgeIntersection& e)
-            {
-              return e.type == detail::EdgeIntersection::QuadCorner || 
-                e.type == detail::EdgeIntersection::CellCorner ||
-                e.edge_index != 3;
-            }), intersections.end());
-
-            // And transform the edge index to 0, because we the only remaining intersections
-            // will have edge index 3, which translates to 0 in the next iteration.
-            for (auto& intersection : intersections)
-            {
-              intersection.edge_index = 0;
-            }
-
-            // Make sure we don't use the first edge for all but the first iteration.
-            edge_index_start = 1;
-
-            quad_points[0] = quad_points[2];
-            quad_points[1] = quad_points[3];
-          }
-        }
-      }
-    }
-    */
 
     template <typename VertexType, typename VertexTransform>
     void generate_path_vertices(const resources::TrackPath& path,

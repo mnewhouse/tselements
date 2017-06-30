@@ -14,6 +14,7 @@
 
 #include "game/main_loop.hpp"
 #include "game/game_state.hpp"
+#include "game/process_priority.hpp"
 #include "game/loading_thread.hpp"
 
 #include "utility/debug_log.hpp"
@@ -26,9 +27,6 @@
 
 #include "cup/cup_settings.hpp"
 #include "client/player_settings.hpp"
-
-#include "fonts/builtin_fonts.hpp"
-#include "fonts/font_library.hpp"
 
 #include <string>
 #include <thread>
@@ -45,17 +43,21 @@ int main(int argc, char* argv[])
 
   try
   {
+    game::elevate_process_priority();
+
     int screen_width = 1280, screen_height = 800;
-    graphics::RenderWindow window("Project \"Free Like Bird\" - Editor",
+    graphics::RenderWindow window("Pocket Wheels - Editor",
                                   screen_width, screen_height, graphics::WindowMode::Windowed);
 
     window.set_vsync_enabled(false);
+    window.set_framerate_limit(240);
 
-    graphics::initialize_glew();
+    graphics::initialize_glew();    
 
     window.activate();
     window.clear();
     window.display();
+
 
     imgui::Context gui_context(&window);
     imgui::push_default_style();

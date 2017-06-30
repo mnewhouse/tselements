@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "track_loader.hpp"
 #include "tile_library.hpp"
@@ -444,11 +443,11 @@ namespace ts
         else if (read_property("acceleration", terrain_def.acceleration)) {}
         else if (read_property("braking", terrain_def.braking)) {}
         else if (read_property("steering", terrain_def.steering)) {}
-        else if (read_property("grip", terrain_def.grip)) {}
+        else if (read_property("cornering", terrain_def.cornering)) {}
         else if (read_property("traction", terrain_def.traction)) {}
         else if (read_property("roughness", terrain_def.roughness)) {}
         else if (read_property("bounciness", terrain_def.bounciness)) {}
-        else if (read_property("grip", terrain_def.jump)) {}
+        else if (read_property("jump", terrain_def.jump)) {}
         else if (read_property("tyremark", terrain_def.tyre_mark)) {}
         else if (read_property("skidmark", terrain_def.skid_mark)) {}
         else if (read_property("iswall", terrain_def.is_wall)) {}

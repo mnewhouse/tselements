@@ -17,7 +17,7 @@ namespace ts
     enum class Control : std::uint16_t
     {
       None = 0,
-      Accelerate = 1,
+      Throttle = 1,
       Brake = 2,
       Left = 4,
       Right = 8,
@@ -25,35 +25,22 @@ namespace ts
       AltFire = 32
     };
 
-    // A few utility functions to facilitate working with control bitmasks.
-    inline std::uint16_t& operator|=(std::uint16_t& mask, Control control)
+    enum class FreeControl : std::uint16_t
     {
-      return mask |= static_cast<std::uint16_t>(control);
-    }
+      None = 0,
+      Throttle = 1,
+      Brake = 2,
+      Left = 4,
+      Right = 8
+    };
 
-    inline std::uint16_t operator|(std::uint16_t mask, Control control)
+    struct ControlsMask
     {
-      return mask |= control;
-    }
-
-    inline std::uint16_t& operator^=(std::uint16_t& mask, Control control)
-    {
-      return mask ^= static_cast<std::uint16_t>(control);
-    }
-
-    inline std::uint16_t operator^(std::uint16_t mask, Control control)
-    {
-      return mask |= control;
-    }
-
-    inline std::uint16_t& operator&=(std::uint16_t& mask, Control control)
-    {
-      return mask &= static_cast<std::uint16_t>(control);      
-    }
-
-    inline std::uint16_t operator&(std::uint16_t mask, Control control)
-    {
-      return mask &= control;
-    }
+      std::uint8_t left = 0;
+      std::uint8_t right = 0;
+      std::uint8_t throttle = 0;
+      std::uint8_t brake = 0;
+      std::uint16_t other = 0;
+    };
   }
 }

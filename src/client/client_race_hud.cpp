@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "client_race_hud.hpp"
 
 #include "stage/race_tracker.hpp"

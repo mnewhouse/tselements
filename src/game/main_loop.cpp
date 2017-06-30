@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "main_loop.hpp"
 #include "game_state.hpp"
@@ -35,44 +34,29 @@ namespace ts
 
       const double frame_progress_multiplier = 1.0 / update_context.frame_duration;
 
-      std::uint64_t update_count = 0;
-      std::uint64_t update_lag = 0;
+      auto start_time = high_resolution_clock::now(), last_frame = start_time;
 
-      auto start_time = high_resolution_clock::now(), last_update = start_time, last_display = start_time;
       auto frame_duration = milliseconds(update_context.frame_duration);
 
-      if (window) window->activate();
+      high_resolution_clock::duration accumulator = frame_duration;
+
+      std::uint64_t frame_id = 0;
+
+      if (window) window->activate();     
 
       while (state_machine)
       {
         auto time_point = high_resolution_clock::now();
-        auto render_time = (time_point - last_display);
 
-        if (render_time >= milliseconds(20))
-        {
-          std::printf("%llu\n", render_time.count());
-        }
+        auto frame_time = (time_point - last_frame);
+        last_frame = time_point;
 
-        last_display = time_point;
-        time_point += render_time;        
+        accumulator += frame_time;
+        auto frame_accumulator = accumulator + microseconds(16667);
 
-        auto frame_progress = time_point - last_update;
-        auto next_update = start_time + frame_duration * (update_count + update_lag);  
-
-        // See if the time point plus the expected render time is later than the next scheduled update.
-        if (time_point >= next_update)
+        if (frame_accumulator >= frame_duration)
         {
           auto state_transition_guard = state_machine.transition_guard();
-
-          ++update_count;
-          last_update = next_update;
-
-          auto duration = time_point - last_update;
-          while (duration >= frame_duration)
-          {
-            duration -= frame_duration;
-            ++update_lag;
-          }
 
           if (window)
           {
@@ -97,28 +81,34 @@ namespace ts
             }
           }
 
-          frame_progress = duration;
+          
 
-          if (gui_context) gui_context->new_frame(update_context.frame_duration);
+          while (frame_accumulator >= frame_duration)
+          {
+            accumulator -= frame_duration;
+            frame_accumulator -= frame_duration;
 
-          state_machine->update(update_context);                  
+            if (gui_context) gui_context->new_frame(update_context.frame_duration);
+            state_machine->update(update_context);
+          }          
         }
 
         if (window)
         {
           game::RenderContext render_context;
           render_context.screen_size = window->size();
-          render_context.frame_progress = duration_cast<milliseconds>(frame_progress).count() * frame_progress_multiplier;
-          if (render_context.frame_progress > 1.0) render_context.frame_progress = 1.0;
+
+          auto ms_elapsed = duration_cast<milliseconds>(frame_accumulator).count();
+          render_context.frame_progress = ms_elapsed * frame_progress_multiplier;          
 
           window->clear();
 
           if (state_machine) state_machine->render(render_context);
-          if (gui_context) gui_context->render();
+          if (gui_context) gui_context->render();  
 
           window->display();
         }
       }
-    }
+    }    
   }
 }

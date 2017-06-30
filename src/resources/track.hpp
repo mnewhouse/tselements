@@ -12,6 +12,7 @@
 #include "track_layer.hpp"
 #include "start_point.hpp"
 #include "control_point.hpp"
+#include "track_path.hpp"
 
 #include "utility/vector2.hpp"
 
@@ -58,8 +59,6 @@ namespace ts
       const TerrainLibrary& terrain_library() const noexcept;
 
       using LayerId = std::uint32_t;
-      //TrackLayer* get_layer_by_id(LayerId layer_id);
-      //const TrackLayer* get_layer_by_id(LayerId layer_id) const;
 
       TrackLayer* create_layer(std::string layer_name, std::uint32_t level, TrackLayerType type = TrackLayerType::Tiles);
       std::size_t layer_count() const noexcept;

@@ -22,11 +22,6 @@
 
 namespace ts
 {
-  namespace race
-  {
-    class LapTracker;
-  }
-
   namespace client
   {
     class LocalPlayerRoster;
@@ -75,8 +70,6 @@ namespace ts
       void collision_event(const world::messages::SceneryCollision& collision);
       void collision_event(const world::messages::EntityCollision& collision);
 
-      void register_lap_tracker(const race::LapTracker* lap_tracker);
-
       scene::Scene& scene_object();
       const scene::Scene& scene_object() const;
 
@@ -91,7 +84,6 @@ namespace ts
       ControlEventTranslator control_event_translator_;
       scene::ViewportArrangement viewport_arrangement_;
 
-      const race::LapTracker* lap_tracker_;
       RaceHUD race_hud_;
 
       detail::ActionStateGuard<MessageDispatcher> action_state_;

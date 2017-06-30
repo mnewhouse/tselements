@@ -4,9 +4,10 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "editor_interface_state.hpp"
+
+#include <cstddef>
 
 namespace ts
 {

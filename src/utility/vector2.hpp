@@ -200,6 +200,12 @@ namespace ts
     return a.x * b.x + a.y * b.y;
   }
 
+  template <typename T, typename U>
+  auto cross_product(const Vector2<T>& a, const Vector2<U>& b)
+  {
+    return a.x * b.y - a.y * b.x;
+  }
+
   template <typename T>
   auto normalize(Vector2<T> vec)
   {
@@ -275,6 +281,8 @@ namespace ts
 
   using Vector2u = Vector2<std::uint32_t>;
   using Vector2i = Vector2<std::int32_t>;
+  using Vector2i32 = Vector2<std::int32_t>;
+  using Vector2i64 = Vector2<std::int64_t>;
   using Vector2f = Vector2<float>;
   using Vector2d = Vector2<double>;
 }

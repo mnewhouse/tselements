@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "dynamic_scene.hpp"
 #include "drawable_entity.hpp"
@@ -325,7 +324,7 @@ namespace ts
 
       drawable_entity.vertices = cache_entry.vertices;
       drawable_entity.colorizer_matrix = cache_entry.colorizer_matrix;
-      drawable_entity.model_matrix = translation * cache_entry.model_matrix;
+      drawable_entity.model_matrix = translation * cache_entry.model_matrix;      
       drawable_entity.new_model_matrix = new_translation * cache_entry.model_matrix;
 
       // Loop through vertices to assign colorizer texture z-coord.

@@ -4,8 +4,9 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "entity.hpp"
+
+#include "utility/math_utilities.hpp"
 
 namespace ts
 {
@@ -20,32 +21,47 @@ namespace ts
 
     Vector2<double> Entity::position() const
     {
-      return position_;
+      return raw_state_.position / 32768.0;
     }
 
     Vector2<double> Entity::velocity() const
     {
-      return velocity_;
+      auto result = make_vector2((raw_state_.velocity.x & ~(1U << 31)) / 32768.0,
+                                 (raw_state_.velocity.y & ~(1U << 31)) / 32768.0);
+
+      if (raw_state_.velocity.x & (1U << 31)) result.x = -result.x;
+      if (raw_state_.velocity.y & (1U << 31)) result.y = -result.y;
+
+      return result;
     }
 
     Rotation<double> Entity::rotation() const
     {
-      return rotation_;
+      auto rad = (raw_state_.rotation & ~(1U << 23)) / 8388607.0 * Rotation<double>::pi;
+      if (raw_state_.rotation & (1U << 23)) rad = -rad;
+      
+      return radians(rad);
     }
 
     double Entity::rotating_speed() const
     {
-      return rotating_speed_;
+      auto result = (raw_state_.rotating_speed & ~(1U << 23)) / 32768.0;
+      if (raw_state_.rotating_speed & (1U << 23)) result = -result;
+
+      return result;
     }
 
     double Entity::z_speed() const
     {
-      return z_speed_;
+      auto result = (raw_state_.z_speed & ~(1U << 15)) / 256.0;
+      if (raw_state_.z_speed & (1U << 15)) result = -result;
+
+      return result;
     }
 
     double Entity::z_position() const
     {
-      return z_position_;
+      return raw_state_.z_position / 1024.0;
     }
 
     bool Entity::is_flying() const
@@ -70,32 +86,62 @@ namespace ts
 
     void Entity::set_position(Vector2<double> position)
     {
-      position_ = position;
+      position.x = utility::clamp(position.x, 0.0, 32767.0);
+      position.y = utility::clamp(position.y, 0.0, 32767.0);
+
+      raw_state_.position = vector2_cast<std::uint32_t>(position * 32768.0);
     }
 
     void Entity::set_velocity(Vector2<double> velocity)
     {
-      velocity_ = velocity;
+      velocity.x = utility::clamp(velocity.x, -32767.0, 32767.0);
+      velocity.y = utility::clamp(velocity.y, -32767.0, 32767.0);
+
+      raw_state_.velocity.x = static_cast<std::uint32_t>(std::abs(velocity.x) * 32768.0);
+      raw_state_.velocity.y = static_cast<std::uint32_t>(std::abs(velocity.y) * 32768.0);
+
+      if (velocity.x < 0.0) raw_state_.velocity.x |= (1U << 31);
+      if (velocity.y < 0.0) raw_state_.velocity.y |= (1U << 31);
     }
 
     void Entity::set_rotation(Rotation<double> rotation)
     {
-      rotation_ = rotation;
+      rotation.normalize();
+
+      raw_state_.rotation = static_cast<std::uint32_t>(std::abs(rotation.radians() / Rotation<double>::pi) * 8388607.0);
+
+      if (rotation.radians() < 0) raw_state_.rotation |= (1U << 23);
     }
 
     void Entity::set_rotating_speed(double rotating_speed)
     {
-      rotating_speed_ = rotating_speed;
+      rotating_speed = utility::clamp(rotating_speed, -255.0, 255.0);
+      
+      raw_state_.rotating_speed = static_cast<std::uint32_t>(std::abs(rotating_speed) * 32768.0);
+
+      if (rotating_speed < 0.0)
+      {
+        raw_state_.rotating_speed |= (1U << 23);
+      }
     }
 
     void Entity::set_z_speed(double z_speed)
     {
-      z_speed_ = z_speed;
+      z_speed = utility::clamp(z_speed, -255.0, 255.0);
+
+      raw_state_.z_speed = static_cast<std::uint16_t>(std::abs(z_speed * 256.0));
+
+      if (z_speed < 0.0)
+      {
+        raw_state_.z_speed |= (1U < 15);
+      }
     }
 
     void Entity::set_z_position(double z)
     {
-      z_position_ = z;
+      z = utility::clamp(z, 0.0, 63.0);
+
+      raw_state_.z_position = static_cast<std::uint16_t>(z * 1024.0);
     }
 
     EntityType Entity::type() const

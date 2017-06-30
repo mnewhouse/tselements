@@ -4,9 +4,11 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
-
 #include "geometry.hpp"
+
+#include "utility/math_utilities.hpp"
+
+#include <numeric>
 
 namespace ts
 {
@@ -83,7 +85,7 @@ namespace ts
           return acc + component.vertices.size();
         });
 
-        buffer_size_ = graphics::next_power_of_two(total_vertex_count * sizeof(vertex_type));
+        buffer_size_ = utility::next_power_of_two(total_vertex_count * sizeof(vertex_type));
         glBufferData(GL_ARRAY_BUFFER, buffer_size_,
                      nullptr, GL_STATIC_DRAW);
 
@@ -123,7 +125,9 @@ namespace ts
         if (texture) glBindTexture(GL_TEXTURE_2D, texture->get());
         else glBindTexture(GL_TEXTURE_2D, dummy_texture_.get());
 
-        glDrawArrays(GL_TRIANGLES, component.buffer_offset, component.vertices.size());
+        auto num_vertices = static_cast<std::uint32_t>(component.vertices.size());
+        auto buffer_offset = static_cast<std::uint32_t>(component.buffer_offset);
+        glDrawArrays(GL_TRIANGLES, buffer_offset, num_vertices);
       }
 
       glDisableVertexAttribArray(0);

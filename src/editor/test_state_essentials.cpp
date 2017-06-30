@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "test_state_essentials.hpp"
 
 #include "client/states/action_state_detail.hpp"

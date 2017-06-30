@@ -17,14 +17,6 @@ namespace ts
 {
   namespace graphics
   {
-    inline std::size_t next_power_of_two(std::size_t n)
-    {
-      std::size_t result = 1;
-      while (result < n) result <<= 1;
-
-      return result;
-    }
-
     namespace detail
     {
       struct VertexArrayDeleter
@@ -102,6 +94,26 @@ namespace ts
       GLuint vao;
       glCheck(glGenVertexArrays(1, &vao));
       return VertexArray(vao);
+    }
+
+    inline void bind_array_buffer(GLuint b)
+    {
+      glCheck(glBindBuffer(GL_ARRAY_BUFFER, b));
+    }
+
+    inline void bind_array_buffer(const Buffer& b)
+    {
+      bind_array_buffer(b.get());
+    }
+
+    inline void bind_element_array_buffer(GLuint b)
+    {
+      glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, b));
+    }
+
+    inline void bind_element_array_buffer(const Buffer& b)
+    {
+      bind_element_array_buffer(b.get());
     }
   }
 }

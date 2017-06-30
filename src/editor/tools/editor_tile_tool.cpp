@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "editor_tile_tool.hpp"
 
 #include "editor/editor_scene.hpp"
@@ -80,7 +79,7 @@ namespace ts
       ImGui::BeginChild("Tile Selection", ImVec2(ImGui::GetWindowSize().x, 200), true);
 
       ImGui::PushItemWidth(ImGui::GetWindowSize().x - 5.0f);      
-      ImGui::Combo("##tile_category_filter", &selected_tile_category_, all, std::end(all) - all);
+      ImGui::Combo("##tile_category_filter", &selected_tile_category_, all, static_cast<int>(std::end(all) - all));
       ImGui::PopItemWidth();
 
       if (auto render_scene = context.scene.render_scene())
@@ -396,7 +395,7 @@ namespace ts
         tile.rotation = placement_tile_rotation_;
 
         auto layer = selected_layer_;
-        auto tile_index = layer->tiles().size();
+        auto tile_index = static_cast<std::uint32_t>(layer->tiles().size());
 
         auto action = [=]()
         {
@@ -511,9 +510,28 @@ namespace ts
     {
       update_selected_layer(context);
 
-      if (selected_layer_)
+      if (auto layer = selected_layer_)
       {
+        if (!layer->tiles().empty())
+        {
+          auto last_tile = layer->tiles().back();
 
+          auto action = [=]()
+          {
+            select_layer(layer, context);
+
+            context.scene.remove_last_tile(layer);
+          };
+
+          auto undo_action = [=]()
+          {
+            select_layer(layer, context);
+
+            context.scene.append_tile(layer, last_tile);
+          };
+
+          context.action_history.push_action("Remove tile", action, undo_action);
+        }
       }
     }
 

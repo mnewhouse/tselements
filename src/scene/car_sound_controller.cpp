@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "car_sound_controller.hpp"
 
@@ -74,21 +73,38 @@ namespace ts
     {
       for (auto& car_info : cars_)
       {
+        const auto& car = *car_info.car;
+        const auto& handling_state = car.handling_state();
+        auto rev_speed = handling_state.engine_rev_speed;
+
         if (car_info.engine_sound)
         {
-          auto pitch = static_cast<float>(0.25 + car_info.car->engine_rev_speed() * 0.75);
-          auto volume = pitch * pitch;
+          auto pitch = std::min(0.3 + rev_speed * 0.7, 1.1);
+          auto target_volume = 0.3 + car.control_state(controls::Control::Throttle) / 255.0 * 0.25;
 
-          car_info.engine_sound.set_volume(std::min(volume, 1.0f));
-          car_info.engine_sound.set_pitch(std::min(pitch, 1.1f));
+          auto frame_increment = frame_duration * 0.0001;
+
+          auto volume = std::max(static_cast<double>(car_info.engine_sound.volume()), 0.3);
+          if (target_volume > volume)
+          {
+            volume = std::min(volume + frame_increment, target_volume);
+          }
+
+          else
+          {
+            volume = std::max(volume - frame_increment, target_volume);
+          }
+
+          car_info.engine_sound.set_volume(std::min(volume, 1.0));
+          car_info.engine_sound.set_pitch(std::min(pitch, 1.1));
         }
 
-        auto traction = car_info.car->traction();
+        auto traction = handling_state.traction;
+
         if (traction < 0.95)
-        {
-          auto rev_speed = car_info.car->engine_rev_speed();
-          auto volume = static_cast<float>(std::max(rev_speed, 0.25) * std::sqrt(1.0 - traction) * 2.0);
-          volume = std::min(volume, 1.0f);
+        {          
+          auto volume = std::min(magnitude(car.velocity()) * 0.004, 1.0) *
+            std::sqrt(1.0 - std::max(traction, 0.5)) * 0.5;
 
           if (!car_info.skid_sound)
           {
@@ -98,7 +114,7 @@ namespace ts
 
           if (car_info.skid_sound)
           {
-            car_info.skid_sound.set_volume(volume * volume * 0.6f);
+            car_info.skid_sound.set_volume(volume * volume * 0.6);
           }          
         }
 

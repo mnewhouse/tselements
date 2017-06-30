@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "client_viewport_arrangement.hpp"
 
 #include "stage/stage.hpp"

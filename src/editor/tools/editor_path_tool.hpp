@@ -10,6 +10,8 @@
 
 #include "resources/track_path.hpp"
 
+#include <boost/optional.hpp>
+
 #include <cstddef>
 
 namespace ts

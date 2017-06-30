@@ -181,12 +181,6 @@ namespace ts
     }
 
     template <typename MessageDispatcher>
-    void ActionEssentials<MessageDispatcher>::register_lap_tracker(const race::LapTracker* lap_tracker)
-    {
-      lap_tracker_ = lap_tracker;
-    }
-
-    template <typename MessageDispatcher>
     scene::Scene& ActionEssentials<MessageDispatcher>::scene_object()
     {
       return scene_;

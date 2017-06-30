@@ -51,7 +51,24 @@
 #include <locale>
 
 #include <boost/container/small_vector.hpp>
+#include <boost/container/flat_set.hpp>
+
 #include <boost/utility/string_ref.hpp>
+
 #include <boost/iterator.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/iterator/iterator_facade.hpp>
+
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
+#include <boost/range.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/functional.hpp>
+
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/device/array.hpp>
+#include <boost/interprocess/streams/vectorstream.hpp>
+#include <boost/function_output_iterator.hpp>
+
+#include <boost/geometry/index/rtree.hpp>
+

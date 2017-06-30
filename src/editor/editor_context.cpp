@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "editor_context.hpp"
 
 #include "scene/viewport.hpp"

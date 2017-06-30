@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "local_client.hpp"
 #include "client_base_detail.hpp"
 #include "client_cup_essentials_detail.hpp"

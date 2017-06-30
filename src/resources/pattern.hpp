@@ -9,6 +9,9 @@
 #include "utility/vector2.hpp"
 #include "utility/rect.hpp"
 
+#include <vector>
+#include <cstdint>
+
 namespace ts
 {
   namespace resources

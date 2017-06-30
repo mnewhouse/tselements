@@ -4,10 +4,11 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "stage.hpp"
 #include "stage_creation.hpp"
+
+#include "controls/control.hpp"
 
 #include "world/car.hpp"
 
@@ -18,7 +19,7 @@ namespace ts
     Stage::Stage(world::World world_obj, StageDescription stage_description)
       : world_(std::move(world_obj)),
         stage_description_(std::move(stage_description)),
-        race_tracker_(100, world_.track().control_points().size())
+        race_tracker_(100, static_cast<std::uint16_t>(world_.track().control_points().size()))
     {
       create_stage_entities();
     }
@@ -67,12 +68,12 @@ namespace ts
       race_tracker_.control_point_hit(entity, point_id, point_flags, frame_offset, event_interface);
     }
 
-    void Stage::set_controllable_state(std::uint16_t controllable_id, std::uint16_t controls_mask)
+    void Stage::set_controllable_state(std::uint16_t controllable_id, controls::ControlsMask mask)
     {
       // TODO: if controllable id represents a car
       if (auto car = world_.find_car(static_cast<std::uint8_t>(controllable_id)))
       {
-        car->update_controls_mask(controls_mask);
+        car->update_controls_mask(mask);
       }
     }
   }

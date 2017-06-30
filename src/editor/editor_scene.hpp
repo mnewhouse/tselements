@@ -41,6 +41,7 @@ namespace ts
 
       void append_tile(resources::TrackLayer* track_layer, const resources::Tile& tile);
       void remove_tile(resources::TrackLayer* track_layer, std::uint32_t tile_index);
+      void remove_last_tile(resources::TrackLayer* track_layer);
 
     private:
       const std::vector<resources::PlacedTile>& expand_tile(const resources::Tile& tile) const;

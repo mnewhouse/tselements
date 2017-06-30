@@ -11,7 +11,7 @@
 #include <boost/container/small_vector.hpp>
 #include <boost/range/iterator_range.hpp>
 
-#include <unordered_map>
+#include <map>
 
 namespace ts
 {
@@ -33,9 +33,9 @@ namespace ts
       entry_range controls_by_key(KeyCode key_code) const;
 
       void define_control(KeyCode key_code, Control control, std::uint32_t slot);
-
+      
     private:
-      std::unordered_map<KeyCode, boost::container::small_vector<Entry, 16>> key_mapping_;
+      std::map<KeyCode, boost::container::small_vector<Entry, 16>> key_mapping_;
     };
 
     template <typename KeyCode>

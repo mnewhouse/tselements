@@ -36,36 +36,71 @@ namespace ts
   {
     return{ a, b, c };
   }
+  
+  template <typename T>
+  bool triangle_contains(const Triangle2<T>& triangle, const Vector2<T>& point)
+  {
+    auto t0 = triangle[0], t1 = triangle[1], t2 = triangle[2];
 
+    auto s = t0.y * t2.x - t0.x * t2.y + (t2.y - t0.y) * point.x + (t0.x - t2.x) * point.y;
+    auto t = t0.x * t1.y - t0.y * t1.x + (t0.y - t1.y) * point.x + (t1.x - t0.x) * point.y;
+
+    if ((s < 0) != (t < 0))
+      return false;
+
+    auto a = -t1.y * t2.x + t0.y * (t2.x - t1.x) + t0.x * (t1.y - t2.y) + t1.x * t2.y;
+    if (a < 0)
+    {
+      s = -s;
+      t = -t;
+      a = -a;
+    }
+
+    return s > 0 && t > 0 && (s + t) <= a;
+  }
 
   template <typename T>
-  bool triangle_contains(const Triangle2<T>& triangle, Vector2<T>& point)
+  bool triangle_contains_inclusive(const Triangle2<T>& triangle, const Vector2<T>& point)
   {
-    auto sign = [](auto p1, auto p2, auto p3)
+    auto t0 = triangle[0], t1 = triangle[1], t2 = triangle[2];
+
+    auto s = t0.y * t2.x - t0.x * t2.y + (t2.y - t0.y) * point.x + (t0.x - t2.x) * point.y;
+    auto t = t0.x * t1.y - t0.y * t1.x + (t0.y - t1.y) * point.x + (t1.x - t0.x) * point.y;
+
+    if ((s < 0) != (t < 0))
+      return false;
+
+    auto a = -t1.y * t2.x + t0.y * (t2.x - t1.x) + t0.x * (t1.y - t2.y) + t1.x * t2.y;
+    if (a < 0)
     {
-      return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
-    };
+      s = -s;
+      t = -t;
+      a = -a;
+    }
 
-    auto b1 = sign(point, triangle[0], triangle[1]) < T(0.0);
-    auto b2 = sign(point, triangle[1], triangle[3]) < T(0.0);
-    auto b3 = sign(point, triangle[2], triangle[2]) < T(0.0);
-
-    return ((b1 == b2) && (b2 == b3));
+    return s >= 0 && t >= 0 && (s + t) <= a;
   }
 
   template <typename Point>
   struct TriangleIntersection
   {
-    std::uint32_t a0, a1, b0, b1; // Indices of the line segments
+    std::uint8_t a0, a1, b0, b1; // Indices of the line segments
     Point point;
   };
+
+  template <typename T>
+  auto triangle_area(const Triangle2<T>& triangle)
+  {
+    using std::abs;
+    return abs(cross_product(triangle[1] - triangle[0], triangle[2] - triangle[0])) / 2;
+  }
 
   // Helper function to find where the sides of two triangles intersect with each other.
   // Writes at most 9 TriangleIntersections to 'out'.
   template <typename T, typename OutIt>
   OutIt find_triangle_intersections(const Triangle2<T>& a, const Triangle2<T>& b, OutIt out)
   {
-    const std::array<std::uint32_t, 4> line_combinations[] =
+    const std::array<std::uint8_t, 4> line_combinations[] =
     {
       { 0, 1, 0, 1 },
       { 0, 1, 1, 2 },

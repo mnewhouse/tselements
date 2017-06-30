@@ -21,17 +21,17 @@ namespace ts
       void test_finish_line_intersection(Vector2<double> old_position, Vector2<double> new_position,
                                          const ControlPoint& point, EventCallback&& event_callback)
       {
-        auto intersection = find_line_intersection(old_position, new_position,
-                                                   vector2_cast<double>(point.start),
-                                                   vector2_cast<double>(point.end));
+        auto intersection = find_line_segment_intersection(old_position, new_position,
+                                                           vector2_cast<double>(point.start),
+                                                           vector2_cast<double>(point.end));
         if (intersection)
         {
           auto x_diff = new_position.x - old_position.x;
           auto y_diff = new_position.y - old_position.y;
 
           double time_point = std::abs(x_diff) < std::abs(y_diff) ?
-            (intersection->y - old_position.y) / y_diff :
-            (intersection->x - old_position.x) / x_diff;
+            (intersection.point.y - old_position.y) / y_diff :
+            (intersection.point.x - old_position.x) / x_diff;
 
           event_callback(point, time_point);
         }

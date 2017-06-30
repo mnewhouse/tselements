@@ -9,6 +9,8 @@
 #include "utility/vector2.hpp"
 #include "utility/rotation.hpp"
 
+#include "resources/handling.hpp"
+
 namespace ts
 {
   namespace resources
@@ -20,16 +22,24 @@ namespace ts
   {
     class Car;
 
-    struct CarUpdateState
+    struct CarUpdateState_v0
     {
-      Vector2<double> velocity;
-      Rotation<double> rotation;
-      double rotating_speed;
-      double engine_rev_speed;
-      double traction;
-      double load_balance;
+      Vector2<double> velocity = {};
+      Rotation<double> rotation = {};
+      double rotating_speed = 0.0;      
+
+      resources::HandlingState handling_state;
     };
 
-    CarUpdateState update_car_state(const Car& car, const resources::TerrainDefinition& terrain, double frame_duration);
+    struct CarUpdateState
+    {
+      Vector2<double> velocity = {};
+      double rotating_speed = 0.0;
+
+      resources::HandlingState handling_state;
+    };
+
+    template <typename TerrainFunc>
+    CarUpdateState update_car_state(const Car& car, TerrainFunc&& terrain_at, double frame_duration);
   }
 }

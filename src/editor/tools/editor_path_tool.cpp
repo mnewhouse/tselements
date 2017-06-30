@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "editor_path_tool.hpp"
 
 #include "editor/editor_context.hpp"
@@ -159,7 +158,7 @@ namespace ts
 
             if (!node_transformation_ && hover && ImGui::IsMouseClicked(0))
             {
-              auto node_id = &node - nodes.data();
+              auto node_id = static_cast<std::uint32_t>(&node - nodes.data());
 
               NodeTransformation transformation;
               transformation.control = control;
@@ -192,7 +191,7 @@ namespace ts
             NodeTransformation transformation{};
             transformation.original_state = nodes.back();
             transformation.action = NodeTransformation::Append;
-            transformation.id = nodes.size() - 1;
+            transformation.id = static_cast<std::uint32_t>(nodes.size() - 1);
             transformation.control = NodeTransformation::Base;
 
             node_transformation_.emplace(transformation);

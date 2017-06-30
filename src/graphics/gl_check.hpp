@@ -14,7 +14,7 @@
 
 #else
 
-#define glCheck(call) (call)
+#define glCheck(call) call
 
 #endif
 

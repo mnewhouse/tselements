@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "action_state.hpp"
 #include "action_state_detail.hpp"
 

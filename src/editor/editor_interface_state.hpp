@@ -9,6 +9,7 @@
 #include "editor_tool_types.hpp"
 
 #include <cstdint>
+#include <cstddef>
 
 namespace ts
 {

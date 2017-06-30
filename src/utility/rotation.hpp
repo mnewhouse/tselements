@@ -33,6 +33,11 @@ namespace ts
     static constexpr T inverse_pi = static_cast<T>(1 / 3.14159265358979323846264338327950L);
     static constexpr T inverse_180 = static_cast<T>(1 / 180.0L);
 
+    Rotation& operator-=(const Rotation& rhs);
+    Rotation& operator+=(const Rotation& rhs);
+
+    Rotation<T> operator-() const;
+
   private:
     T radians_ = T();
   };
@@ -53,6 +58,26 @@ namespace ts
   Rotation<T>::Rotation(T degrees, rotation_units::degrees_t)
     : radians_(degrees * inverse_180 * pi)
   {
+  }
+
+  template <typename T>
+  Rotation<T>& Rotation<T>::operator-=(const Rotation<T>& rhs)
+  {
+    radians_ -= rhs.radians_;
+    return *this;
+  }
+
+  template <typename T>
+  Rotation<T>& Rotation<T>::operator+=(const Rotation<T>& rhs)
+  {
+    radians_ += rhs.radians_;
+    return *this;
+  }
+
+  template <typename T>
+  Rotation<T> Rotation<T>::operator-() const
+  {
+    return Rotation<T>(-radians_);
   }
 
   template <typename T>
@@ -111,13 +136,17 @@ namespace ts
   template <typename T>
   Rotation<T> operator+(const Rotation<T>& a, const Rotation<T>& b)
   {
-    return radians(a.radians() + b.radians());
+    auto temp = a;
+    temp += b;
+    return temp;
   }
 
   template <typename T>
   Rotation<T> operator-(const Rotation<T>& a, const Rotation<T>& b)
   {
-    return radians(a.radians() - b.radians());
+    auto temp = a;
+    temp -= b;
+    return temp;
   }
 
   using Rotationf = Rotation<float>;

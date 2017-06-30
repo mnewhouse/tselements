@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "pattern.hpp"
 #include "terrain_library.hpp"
@@ -258,7 +257,7 @@ namespace ts
                    PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
       auto palette = create_palette(terrain_library);
-      png_set_PLTE(png_ptr, info_ptr, palette.data(), palette.size());
+      png_set_PLTE(png_ptr, info_ptr, palette.data(), static_cast<int>(palette.size()));
 
       png_write_info(png_ptr, info_ptr);
       png_write_image(png_ptr, pattern_rows.data());

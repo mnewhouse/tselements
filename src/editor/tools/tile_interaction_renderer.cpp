@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "tile_interaction_renderer.hpp"
 
 #include "resources/tiles.hpp"
@@ -111,12 +110,12 @@ namespace ts
           auto vertices = scene::generate_tile_vertices(tile, *tile.definition, mapping.texture_rect, mapping.fragment_offset,
                                                         1.0f / mapping.texture->size());
 
-          auto faces = scene::generate_tile_faces(vertex_cache_.size());
+          auto faces = scene::generate_tile_faces(static_cast<std::uint32_t>(vertex_cache_.size()));
           
           vertex_cache_.insert(vertex_cache_.end(), vertices.begin(), vertices.end());
           face_cache_.insert(face_cache_.end(), faces.begin(), faces.end());
 
-          auto element_count = faces.size() * 3;
+          auto element_count = static_cast<std::uint32_t>(faces.size() * 3);
 
           if (render_components_.empty() || render_components_.back().texture != mapping.texture)
           {

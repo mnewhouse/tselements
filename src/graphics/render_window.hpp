@@ -23,7 +23,7 @@ namespace ts
     {
       Windowed,
       FullScreen,
-      FullScreenDesktop
+      Borderless
     };
 
     // The RenderWindow represents the game's window.

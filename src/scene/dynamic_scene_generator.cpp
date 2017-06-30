@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "dynamic_scene_generator.hpp"
 #include "dynamic_scene.hpp"

@@ -18,7 +18,7 @@ namespace ts
 {
   namespace graphics
   {
-    inline void scissor_box(Vector2i screen_size, IntRect view_port)
+    inline void scissor_box(IntRect view_port, Vector2i screen_size)
     {
       glCheck(glEnable(GL_SCISSOR_TEST));
       glCheck(glScissor(view_port.left, screen_size.y - view_port.height - view_port.top, view_port.width,

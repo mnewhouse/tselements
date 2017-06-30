@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "car_loader.hpp"
 #include "pattern.hpp"
@@ -38,7 +37,12 @@ namespace ts
       car_def.car_name.assign(car_name.begin(), car_name.end());
       auto& handling = car_def.handling;
 
-      for (std::string directive; directive != "end" && line_it != lines_end; ++line_it)
+      enum ReaderState
+      {
+        Main, DownforceEffect, StressFactor, End
+      } reader_state = Main;
+
+      for (std::string directive; reader_state != End && line_it != lines_end; ++line_it)
       {
         boost::string_ref trimmed_line = remove_leading_spaces(*line_it);
         boost::string_ref directive_view = extract_word(trimmed_line);
@@ -60,49 +64,39 @@ namespace ts
           return false;
         };
 
-        auto read_traction_loss_behavior = [&](const char* property, auto& result)
+        auto read_property_1000 = [&](const char* property, auto& value)
         {
-          Handling::TractionLossBehavior behavior = {};
-          if (directive == property)
-          {
-            if (ArrayStream(remainder) >> behavior.torque_reduction >> behavior.braking_reduction >>
-                behavior.turning_reduction >> behavior.grip_reduction >> behavior.antislide_reduction)
-            {
-              result = behavior;
-              return true;
-            }
+          auto result = read_property(property, value);
+          if (result) value *= 1000;
 
-            else insufficient_parameters(car_name, directive_view);
-          }
-
-          return false;
+          return result;
         };
 
-        auto read_stress_factor = [&](const char* property, auto& result)
+        if (reader_state == DownforceEffect)
         {
-          ArrayStream stream(remainder);
-          Handling::StressFactor stress;
-          if (directive == property)
-          {
-            if (stream >> stress.front)
-            {
-              if (!(stream >> stress.neutral >> stress.rear))
-              {
-                stress.neutral = stress.front;
-                stress.rear = stress.front;
-              }
+          if (directive == "end") reader_state = Main;
+          else if (read_property("tractionlimit", handling.downforce_effect.traction_limit)) {}
+          else if (read_property("braking", handling.downforce_effect.braking)) {}
+          else if (read_property("cornering", handling.downforce_effect.cornering)) {}
+          else if (read_property("antislide", handling.downforce_effect.antislide)) {}
+          else if (read_property("rollingresistance", handling.downforce_effect.rolling_resistance)) {}
+        }
 
-              result = stress;
-              return true;
-            }
+        else if (reader_state == StressFactor)
+        {
+          if (directive == "end") reader_state = Main;
+          else if (read_property("torque", handling.stress_factor.torque)) {}
+          else if (read_property("braking", handling.stress_factor.braking)) {}
+          else if (read_property("cornering", handling.stress_factor.cornering)) {}
+          else if (read_property("antislide", handling.stress_factor.antislide)) {}
+        }
 
-            else insufficient_parameters(car_name, directive_view);
-          }
-          
-          return false;
-        };
+        else if (directive == "end")
+        {
+          reader_state = End;        
+        }
 
-        if (directive == "image" || directive == "rotimage")
+        else if (directive == "image" || directive == "rotimage")
         {
           std::string image_path;
           IntRect rect;
@@ -189,44 +183,42 @@ namespace ts
           }
         }
 
-        else if (directive == "tire")
+        else if (directive == "downforceeffect")
         {
-          Vector2i position;
-          if (ArrayStream(remainder) >> position.x >> position.y)
-          {
-            car_def.tyre_positions.push_back(position);
-          }
-
-          else insufficient_parameters(car_name, directive_view);
+          reader_state = DownforceEffect;
         }
 
-        else if (read_property("torque", handling.torque)) { handling.torque *= 1000.0; }
-        else if (read_property("braking", handling.braking)) { handling.braking *= 1000.0; }
-        else if (read_property("grip", handling.grip)) { handling.grip *= 1000.0; }
-        else if (read_property("steering", handling.steering)) {}        
-        else if (read_property("antislide", handling.antislide)) {}
-        else if (read_property("tractionlimit", handling.traction_limit)) { handling.traction_limit *= 1000.0; }
-        else if (read_property("tractionrecovery", handling.traction_recovery)) {}
-        else if (read_property("dragcoefficient", handling.drag_coefficient)) {}
-        else if (read_property("rollingcoefficient", handling.rolling_coefficient)) {}
-        else if (read_property("downforcecoefficient", handling.downforce_coefficient)) {}
-        else if (read_property("downforcebrakeeffect", handling.downforce_brake_effect)) {}
-        else if (read_property("downforceturningeffect", handling.downforce_turning_effect)) {}
-        else if (read_property("downforcegripeffect", handling.downforce_grip_effect)) {}
-        else if (read_property("slidefriction", handling.slide_friction)) {}        
-        else if (read_property("mass", handling.mass)) {}
+        else if (directive == "stressfactor")
+        {
+          reader_state = StressFactor;
+        }
+
+        else if (read_property_1000("torque", handling.torque)) {}
+        else if (read_property("extratorque", handling.extra_torque)) {}
         else if (read_property("maxenginerevs", handling.max_engine_revs)) {}
-        else if (read_property("torquemultiplier", handling.torque_multiplier)) {}
-        else if (read_property("loadbalancelimit", handling.load_balance_limit)) { handling.load_balance_limit *= 1000.0; }
-        else if (read_property("balanceshiftfactor", handling.balance_shift_factor)) {}
 
-        else if (read_stress_factor("torquestress", handling.torque_stress)) {}
-        else if (read_stress_factor("brakingstress", handling.braking_stress)) {}
-        else if (read_stress_factor("turningstress", handling.turning_stress)) {}
+        else if (read_property_1000("braking", handling.braking)) {}       
 
-        else if (read_traction_loss_behavior("lockupbehavior", handling.lock_up_behavior)) {}
-        else if (read_traction_loss_behavior("wheelspinbehavior", handling.wheel_spin_behavior)) {}
-        else if (read_traction_loss_behavior("slide_behavior", handling.slide_behavior)) {}
+        else if (read_property("steering", handling.steering)) {}
+        else if (read_property("minturningradius", handling.min_turning_radius)) {}
+
+        else if (read_property_1000("cornering", handling.cornering)) {}
+        else if (read_property_1000("antislide", handling.antislide)) {}     
+
+        else if (read_property_1000("tractionlimit", handling.traction_limit)) {}
+
+        else if (read_property("downforcecoefficient", handling.downforce_coefficient)) {}  
+
+        else if (read_property("dragcoefficient", handling.drag_coefficient)) {}
+        else if (read_property_1000("rollingresistance", handling.rolling_resistance)) {}
+
+        else if (read_property("inputmoderation", handling.input_moderation)) {}
+
+        else if (read_property("mass", handling.mass)) {}
+
+        else if (read_property("loadtransfer", handling.load_transfer)) {}
+
+        else if (read_property("reversegear", handling.reverse_gear_ratio)) {}
       }
 
       return line_it;

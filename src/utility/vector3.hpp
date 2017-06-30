@@ -8,6 +8,7 @@
 
 #include "vector2.hpp"
 
+#include <iosfwd>
 #include <cstdint>
 #include <type_traits>
 
@@ -132,6 +133,12 @@ namespace ts
   }
 
   template <typename T>
+  auto dot_product(const Vector3<T>& a, const Vector3<T>& b)
+  {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+  }
+
+  template <typename T>
   auto cross_product(const Vector3<T>& a, const Vector3<T>& b)
   {
     return Vector3<T>(a.y * b.z - b.y * a.z, a.z * b.x - b.z * a.x, a.x * b.y - b.x * a.y);
@@ -161,6 +168,26 @@ namespace ts
     return make_vector3(static_cast<To>(v.x), static_cast<To>(v.y), static_cast<To>(v.z));
   }
 
+  template <typename T>
+  bool operator==(const Vector3<T>& a, const Vector3<T>& b)
+  {
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+  }
+
+  template <typename T>
+  bool operator!=(const Vector3<T>& a, const Vector3<T>& b)
+  {
+    return !(a == b);
+  }
+
   using Vector3f = Vector3<float>;
   using Vector3u = Vector3<std::uint32_t>;
+  using Vector3i = Vector3<std::int32_t>;
+
+  template <typename T>
+  std::ostream& operator<<(std::ostream& stream, const Vector3<T>& v)
+  {
+    return stream << v.x << ", " << v.y << ", " << v.z;
+  }
 }
+

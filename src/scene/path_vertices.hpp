@@ -36,45 +36,10 @@ namespace ts
       Colorb color;
     };
 
-    struct PathCellAlignment
-    {
-      bool align = true;
-      std::int32_t cell_size;
-
-      enum TriangleOrientation
-      {
-        TopLeft,
-        BottomLeft
-      } triangle_orientation;
-    };
-
-    namespace detail
-    {
-      struct EdgeIntersection
-      {
-        enum Type : std::int16_t
-        {
-          Horizontal, Vertical, Diagonal, CellCorner, QuadCorner
-        };
-
-        Vector2f intersection;
-        Vector2i cell;
-        Type type;
-        std::int16_t cell_offset;
-        std::uint32_t edge_index;
-        std::uint32_t vertex_index = std::numeric_limits<std::uint32_t>::max();
-
-        enum CornerIndex : std::uint32_t
-        {
-          TopLeft = 0x10001, BottomLeft, TopRight, BottomRight
-        };
-      };
-    }
-
     // Precompute the points at which path vertices will be generated.
     // This is useful when a path has more than one stroke type, 
     // Lower tolerance values will give smoother results at the cost of more vertices.
-    // 0.0 < tolerance <= 1.0, but it should not be too close to zero. (i.e. not below +- 0.01)
+    // 0.0 < tolerance <= 1.0, but it should not be too close to zero. (i.e. not below approx. 0.01)
     void compute_path_vertex_points(PathNodeIterator node_it,
                                     PathNodeIterator node_end,
                                     float tolerance,

@@ -8,6 +8,8 @@
 
 #include "imgui.h"
 
+#include <array>
+
 namespace ts
 {
   namespace imgui

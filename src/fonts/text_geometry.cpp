@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "text_geometry.hpp"
 #include "bitmap_font.hpp"

@@ -41,8 +41,6 @@ namespace ts
       std::uint32_t num_rotations = 1;
       double image_scale = 2.0;
 
-      boost::container::small_vector<Vector2i, 4> tyre_positions;
-
       std::shared_ptr<CollisionMask> collision_mask;
       double bounciness = 1.0;
       

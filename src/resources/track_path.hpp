@@ -35,12 +35,6 @@ namespace ts
       float offset = 0.0f;
       float texture_scale = 0.5f;
 
-      float inner_normal = 0.0f;
-      float outer_normal = 0.0f;
-      
-      float bevel_width = 0.0f;
-      float bevel_strength = 0.5f;
-
       enum TextureMode
       {
         Tiled,

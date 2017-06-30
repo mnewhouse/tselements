@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "pattern_builder.hpp"
 #include "pattern_loader.hpp"
@@ -109,8 +108,7 @@ namespace ts
                        IntRect rect, Vector2i position, std::int32_t rotation_degrees)
     {
       auto rotation = degrees(static_cast<double>(rotation_degrees));
-      double sin = -std::sin(rotation.radians());
-      double cos = std::cos(rotation.radians());
+      auto transform = make_transformation(rotation);
 
       Vector2i world_size(dest.size().x, dest.size().y);
       Vector2i pattern_size(source.size().x, dest.size().y);
@@ -121,10 +119,10 @@ namespace ts
         double x = source_size.x * 0.5;
         double y = source_size.y * 0.5;
 
-        double cx = x * cos;
-        double cy = y * cos;
-        double sx = x * sin;
-        double sy = y * sin;
+        double cx = x * transform.cos;
+        double cy = y * transform.cos;
+        double sx = x * transform.sin;
+        double sy = y * transform.sin;
 
         double half_width = std::abs(cx) + std::abs(sy);
         double half_height = std::abs(cy) + std::abs(sx);
@@ -157,7 +155,7 @@ namespace ts
 
           if (absolute_x >= 0 && absolute_y >= 0 && absolute_x < world_size.x && absolute_y < world_size.y)
           {
-            auto source_point = transform_point<double>(dest_point, sin, cos) + source_center;
+            auto source_point = transform_point<double>(dest_point, transform) + source_center;
             source_point += { 0.5, 0.5 };
 
             auto point = vector2_cast<std::int32_t>(source_point);

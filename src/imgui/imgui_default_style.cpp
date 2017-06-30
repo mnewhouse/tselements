@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "imgui_default_style.hpp"
 #include "imgui.h"
 

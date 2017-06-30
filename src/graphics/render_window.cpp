@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "render_window.hpp"
 #include "gl_context.hpp"
@@ -29,8 +28,8 @@ namespace ts
       {
         sf::ContextSettings context_settings;
         context_settings.majorVersion = gl_version::major;
-        context_settings.minorVersion = gl_version::minor;
-        context_settings.antialiasingLevel = 0;
+        context_settings.minorVersion = gl_version::minor;        
+        context_settings.antialiasingLevel = 2;
         context_settings.depthBits = 0;
         context_settings.stencilBits = 8;
 
@@ -40,7 +39,7 @@ namespace ts
           style = sf::Style::Fullscreen;
         }
 
-        else if (window_mode == WindowMode::FullScreenDesktop)
+        else if (window_mode == WindowMode::Borderless)
         {
           const auto& modes = sf::VideoMode::getFullscreenModes();
           style = sf::Style::None;

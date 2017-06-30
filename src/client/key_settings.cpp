@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "key_settings.hpp"
 
 namespace ts
@@ -18,7 +17,7 @@ namespace ts
 
       using controls::Control;    
       using sf::Keyboard;
-      key_mapping.define_control(Keyboard::Up, Control::Accelerate, 0);
+      key_mapping.define_control(Keyboard::Up, Control::Throttle, 0);
       key_mapping.define_control(Keyboard::Down, Control::Brake, 0);
       key_mapping.define_control(Keyboard::Left, Control::Left, 0);
       key_mapping.define_control(Keyboard::Right, Control::Right, 0);

@@ -71,7 +71,24 @@ namespace ts
 
       void update_z_speed(double frame_duration);
 
+      struct RawState
+      {
+        Vector2<std::uint32_t> position = {};
+        Vector2<std::uint32_t> velocity = {};
+
+        std::uint32_t rotating_speed = 0;
+        std::uint32_t rotation = 0;
+
+        std::uint16_t z_speed = 0;
+        std::uint16_t z_position = 0;
+      };
+
+      RawState raw_state() const;
+      void load_raw_state(RawState state);
+
     private:
+      RawState raw_state_;
+
       Vector2<double> position_;
       Vector2<double> velocity_;
       Rotation<double> rotation_;

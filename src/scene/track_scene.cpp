@@ -4,11 +4,12 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 #include "track_scene.hpp"
 #include "track_vertices.hpp"
 
 #include "resources/track_layer.hpp"
+
+#include <boost/range/iterator_range.hpp>
 
 #include <algorithm>
 
@@ -19,16 +20,37 @@ namespace ts
     namespace detail
     {
       template <typename Components>
-      auto find_component(Components& components, std::uint32_t face_index)
+      auto component_range(Components& components, std::uint32_t face_index, std::uint32_t face_count)
       {
         using std::begin;
         using std::end;
 
-        // Find the matching component
-        return std::lower_bound(begin(components), end(components), face_index,
-                                [](const auto& component, std::uint32_t face_index)
+        auto first = std::lower_bound(begin(components), end(components), face_index, 
+                                      [](const auto& component, auto face_index)
         {
           return component.face_index + component.face_count < face_index;
+        });
+
+        auto last = std::upper_bound(begin(components), end(components), face_index + face_count,
+                                     [](auto face_index, const auto& component)
+        {
+          return face_index < component.face_index + component.face_count;
+        });
+
+        // Find the matching component
+        return boost::make_iterator_range(first, last);
+      }
+
+      template <typename Components>
+      auto find_component(Components& component_range, const graphics::Texture* texture)
+      {
+        using std::begin;
+        using std::end;
+
+        return std::find_if(begin(component_range), end(component_range), 
+                            [=](const auto& component)
+        {
+          return component.texture == texture;
         });
       }
 
@@ -150,8 +172,8 @@ namespace ts
         items_.reserve(items_.size() + items_.size() / 2 + 10);
       }
 
-      auto vertex_index = vertices_.size();
-      auto face_index = faces_.size();
+      auto vertex_index = static_cast<std::uint32_t>(vertices_.size());
+      auto face_index = static_cast<std::uint32_t>(faces_.size());
 
       auto item_it = detail::find_item(items_, item_index, level);
 
@@ -183,71 +205,40 @@ namespace ts
       }      
 
       // Increment the geometry counters
-      item_it->vertex_count += vertex_count;
-      item_it->face_count += face_count;
+
+      auto component_range = detail::component_range(components_, item_it->face_index, item_it->face_count);
 
       // Look up the component by the face index.
-      auto component_it = detail::find_component(components_, item_it->face_index);
+      auto component_it = detail::find_component(component_range, texture);
 
       GeometryUpdate geometry_update;
       geometry_update.face_begin = face_index;
       geometry_update.vertex_begin = vertex_index;     
 
-      // If we have a matching one, increment the face count and be done with it.
-      if (component_it != components_.end() && component_it->texture == texture && component_it->level == level)
+      // If we have a matching component, increment the face count and be done with it.
+      if (component_it != component_range.end())
       {
         component_it->face_count += face_count;
       }
 
-      // Otherwise, if we found a component but it doesn't match up...
-      else if (component_it != components_.end())
+      // Otherwise, create a new component at the end of the component range.
+      else
       {
-        component_it->face_count = item_it->face_index - component_it->face_index;
-
         Component new_component;
-        new_component.face_index = item_it->face_index;
+        new_component.face_index = item_it->face_index + item_it->face_count;
         new_component.face_count = face_count;
         new_component.level = level;
         new_component.texture = texture;        
 
-        // Split the component into two parts and insert a new one in the middle.
-        auto split_component = *component_it;
-        split_component.face_index = item_it->face_index; // Will be incremented later.
-        split_component.face_count -= component_it->face_count;       
-       
-        if (split_component.face_count != 0)
-        {
-          component_it = components_.insert(std::next(component_it), { new_component, split_component });
-        }
-
-        else
-        {
-          component_it = components_.insert(std::next(component_it), new_component);
-        }
+        component_it = components_.insert(component_range.end(), new_component);
       }
 
-      // If we got an end iterator but the component before that matches up perfectly,
-      // simply add the new faces to it.
-      else if (!components_.empty() && components_.back().texture == texture && components_.back().level == level)
-      {        
-        component_it = std::prev(components_.end());
-        component_it->face_count += face_count;
-      }
-
-      else
-      {
-        // Otherwise, we need to create a new component.
-        Component new_component;
-        new_component.face_index = item_it->face_index;
-        new_component.face_count = item_it->face_count;
-        new_component.level = level;
-        new_component.texture = texture;
-        component_it = components_.insert(component_it, new_component);
-      }
+      item_it->vertex_count += vertex_count;
+      item_it->face_count += face_count;
 
       // Transform all components that come after the inserted/modified one.
       std::transform(std::next(component_it), components_.end(), std::next(component_it),
-                      [=](Component component)
+                     [=](Component component)
       {
         component.face_index += face_count;
         return component;
@@ -284,8 +275,8 @@ namespace ts
         return face;
       });
 
-      geometry_update.face_end = faces_.size();
-      geometry_update.vertex_end = vertices_.size();      
+      geometry_update.face_end = static_cast<std::uint32_t>(faces_.size());
+      geometry_update.vertex_end = static_cast<std::uint32_t>(vertices_.size());
       return geometry_update;
     }
 
@@ -308,6 +299,9 @@ namespace ts
       {
         auto face_it = faces_.begin() + item_it->face_index;
         auto vertex_it = vertices_.begin() + item_it->vertex_index;
+
+        face_it = faces_.erase(face_it, face_it + item_it->face_count);
+        vertex_it = vertices_.erase(vertex_it, vertex_it + item_it->vertex_count);
         
         // Change faces' indices to account for the removal of vertices
         std::transform(face_it, faces_.end(), face_it,
@@ -317,50 +311,35 @@ namespace ts
           return face;
         });
 
-        // Find the matching component and remove the item from it.
-        auto component_it = detail::find_component(components_, item_it->face_index);
-        if (component_it != components_.end())
+        auto component_range = detail::component_range(components_, item_it->face_index, item_it->face_count);
+        auto removal_range = component_range;
+
+        // Find the components within the range of the item's faces.
+        if (!component_range.empty())
         {
-          component_it->face_count -= item_it->face_count;
-          if (component_it->face_count == 0)
+          auto& front = component_range.front();
+          front.face_count = item_it->face_index - front.face_index;
+          if (front.face_count != 0) removal_range.advance_begin(1);
+
+          if (!component_range.size() != 1)
           {
-            component_it = components_.erase(component_it);
+            auto& back = component_range.back();
+            auto index = item_it->face_index + item_it->face_count;
+            back.face_count -= index - back.face_index;
+            back.face_index = index;
 
-            // If the component that took our place has the same properties as one of its neighbours,
-            // then merge them together.
-            if (component_it != components_.begin())
-            {
-              auto prev = std::prev(component_it);
-              if (prev->level == component_it->level && prev->texture == component_it->texture)
-              {
-                prev->face_count += component_it->face_count;
-                component_it = components_.erase(component_it);
-              }
-            }
-
-            if (component_it < std::prev(components_.end()))
-            {
-              auto next = std::next(component_it);
-              if (next->level == component_it->level && next->texture == component_it->texture)
-              {
-                component_it->face_count += next->face_count;
-                components_.erase(next);
-              }
-            }
+            if (back.face_count != 0) removal_range.drop_back();
           }
-
-          else
-          {
-            component_it = std::next(component_it);
-          }
-
-          std::transform(component_it, components_.end(), component_it,
-                         [=](Component component)
-          {
-            component.face_index -= item_it->face_count;
-            return component;
-          });
         }
+
+        auto component_it = components_.erase(removal_range.begin(), removal_range.end());        
+
+        std::transform(component_it, components_.end(), component_it,
+                       [=](Component component)
+        {
+          component.face_index -= item_it->face_count;
+          return component;
+        });
 
         std::transform(std::next(item_it), items_.end(), std::next(item_it),
                        [=](ItemInfo item)
@@ -372,16 +351,14 @@ namespace ts
         });
 
         // Erase vertices and faces belonging to item
-        faces_.erase(face_it, face_it + item_it->face_count);
-        vertices_.erase(vertex_it, vertex_it + item_it->vertex_count);
 
         item_it = std::find_if(std::next(item_it), items_.end(), pred);
       }
 
       items_.erase(std::remove_if(items_.begin(), items_.end(), pred), items_.end());
       
-      geometry_update.face_end = faces_.size();
-      geometry_update.vertex_end = vertices_.size();
+      geometry_update.face_end = static_cast<std::uint32_t>(faces_.size());
+      geometry_update.vertex_end = static_cast<std::uint32_t>(vertices_.size());
 
       return geometry_update;
     }
@@ -438,8 +415,8 @@ namespace ts
         auto commit_geometry = [&]()
         {
           auto update = scene_layer->append_item_geometry(tile_index, current_texture,
-                                                          vertex_cache_.data(), vertex_cache_.size(),
-                                                          face_cache_.data(), face_cache_.size(),
+                                                          vertex_cache_.data(), static_cast<std::uint32_t>(vertex_cache_.size()),
+                                                          face_cache_.data(), static_cast<std::uint32_t>(face_cache_.size()),
                                                           current_level);
 
           detail::apply_geometry_update(result, update);
@@ -461,7 +438,7 @@ namespace ts
                                                    mapping.texture_rect, mapping.fragment_offset,
                                                    1.0f / mapping.texture->size());
 
-            auto faces = generate_tile_faces(vertex_cache_.size());
+            auto faces = generate_tile_faces(static_cast<std::uint32_t>(vertex_cache_.size()));
 
             vertex_cache_.insert(vertex_cache_.end(), vertices.begin(), vertices.end());
             face_cache_.insert(face_cache_.end(), faces.begin(), faces.end());    
@@ -503,8 +480,8 @@ namespace ts
 
     const std::vector<TrackScene::Component>& TrackScene::sort_components()
     {
-      std::sort(components_.begin(), components_.end(), 
-                [](const Component& a, const Component& b)
+      std::stable_sort(components_.begin(), components_.end(), 
+                       [](const Component& a, const Component& b)
       {
         auto a_level = a.level + a.track_layer->level();
         auto b_level = b.level + b.track_layer->level();

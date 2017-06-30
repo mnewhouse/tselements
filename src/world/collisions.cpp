@@ -4,7 +4,6 @@
 * Released under the MIT license.
 */
 
-#include "stdinc.hpp"
 
 #include "collisions.hpp"
 #include "entity.hpp"
@@ -189,16 +188,16 @@ namespace ts
 
       const bool pixels[8] =
       {
-        (left_valid & top_valid & frame(left, top)) != 0,
-        (top_valid & frame(local_point.x, top)) != 0,
-        (right_valid & top_valid & frame(right, top)) != 0,
+        left_valid && top_valid &&frame(left, top),
+        top_valid && frame(local_point.x, top),
+        right_valid && top_valid && frame(right, top),
 
-        (left_valid & frame(left, local_point.y)) != 0,
-        (right_valid & frame(right, local_point.y)) != 0,
+        left_valid && frame(left, local_point.y),
+        right_valid && frame(right, local_point.y),
         
-        (left_valid & bottom_valid & frame(left, bottom)) != 0,
-        (bottom_valid & frame(local_point.x, bottom)) != 0,
-        (right_valid & bottom_valid & frame(right, bottom)) != 0
+        left_valid && bottom_valid && frame(left, bottom),
+        bottom_valid && frame(local_point.x, bottom),
+        right_valid && bottom_valid && frame(right, bottom)
       };
       
       switch (direction)
