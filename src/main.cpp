@@ -1,6 +1,6 @@
 /*
  * TS Elements
- * Copyright 2015-2016 M. Newhouse
+ * Copyright 2015-2018 M. Newhouse
  * Released under the MIT license.
  */
 
@@ -20,7 +20,6 @@
 #include "cup/cup_settings.hpp"
 
 #include "client/player_settings.hpp"
-#include "client/states/local_cup_state.hpp"
 
 #include "controls/control_center.hpp"
 
@@ -42,6 +41,8 @@ using namespace ts;
 
 int main(int argc, char** argv)
 {
+  /*
+
   debug::DebugConfig debug_config;
   debug_config.debug_level = debug::level::auxiliary;
   debug::ScopedLogger debug_log(debug_config, "debug.txt");
@@ -172,6 +173,7 @@ int main(int argc, char** argv)
     // TODO: Do something better than crash
     throw;
   }
+  */
 
   return 0;
 }

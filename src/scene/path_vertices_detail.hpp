@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -15,6 +15,7 @@
 #include <array>
 #include <cstdint>
 
+/*
 namespace ts
 {
   namespace scene
@@ -46,14 +47,14 @@ namespace ts
       template <typename VertexType, typename VertexFunc>
       auto generate_point_vertices(const PathVertexPoint& point,
                                    const PathVertexPoint& next_point,
-                                   const resources::StrokeProperties& stroke_properties,
+                                   const resources::StrokeStyle& stroke_properties,
                                    resources::StrokeSegment::Side stroke_side,
                                    float texture_size, float texture_z,
                                    TexCoordAccumulator& tex_coord_x_accumulator,
                                    resources::BasicGeometry<VertexType>& output_model,
                                    VertexFunc&& vertex_func)
       {
-        using resources::StrokeProperties;
+        using resources::StrokeStyle;
         using resources::TrackPathNode;
         using resources::StrokeSegment;
 
@@ -135,7 +136,7 @@ namespace ts
 
         vertex_buffer vertices;
         face_buffer faces;
-        if (stroke_properties.type == StrokeProperties::Border)
+        if (stroke_properties.type == StrokeStyle::Border)
         {
           // If we have a border, we need an inner and an outer ring, so to speak.
           // The distance from the inner to the outer ring is equal to the stroke width.
@@ -189,7 +190,7 @@ namespace ts
             add_vertices(1.0f, second_side_vertex_index);
           }
           
-          if (stroke_properties.texture_mode == StrokeProperties::Directional)
+          if (stroke_properties.texture_mode == StrokeStyle::Directional)
           {
             // If the texture mode is "directional", we need to adjust the texture
             // coordinates based on the direction of the path.
@@ -280,7 +281,7 @@ namespace ts
             { 4, 5, 3 }
           };
 
-          if (stroke_properties.texture_mode == StrokeProperties::Directional)
+          if (stroke_properties.texture_mode == StrokeStyle::Directional)
           {
             // TODO
           }
@@ -298,7 +299,7 @@ namespace ts
       template <typename VertexType, typename VertexTransform>
       auto generate_stroke_segment(const resources::TrackPath& path,
                                    const resources::StrokeSegment& segment,
-                                   const resources::StrokeProperties& stroke_properties,
+                                   const resources::StrokeStyle& stroke_properties,
                                    const std::vector<PathVertexPoint>& points,
                                    float texture_size, float texture_z,
                                    resources::BasicGeometry<VertexType>& output_model,
@@ -407,7 +408,7 @@ namespace ts
 
       template <typename VertexType, typename VertexTransform>
       void generate_path_vertices(const resources::TrackPath& path,
-                                  const resources::SegmentedStroke& stroke,
+                                  const resources::SegmentedStrokeStyle& stroke,
                                   const std::vector<PathVertexPoint>& points,                                  
                                   float texture_size, 
                                   float texture_z,
@@ -415,7 +416,7 @@ namespace ts
                                   VertexTransform&& vertex_transform)
       {
         using resources::TrackPathNode;
-        using resources::StrokeProperties;
+        using resources::StrokeStyle;
         using resources::StrokeSegment;
 
         auto first_node = path.nodes.begin();
@@ -489,14 +490,14 @@ namespace ts
 
     template <typename VertexType, typename VertexTransform>
     void generate_path_vertices(const resources::TrackPath& path,
-                                const resources::StrokeProperties& stroke_properties,
+                                const resources::StrokeStyle& stroke_properties,
                                 const std::vector<PathVertexPoint>& points,
                                 float texture_size, float texture_z,
                                 resources::BasicGeometry<VertexType>& geometry,
                                 VertexTransform&& transform_vertex)
     {
       using resources::TrackPathNode;
-      using resources::StrokeProperties;
+      using resources::StrokeStyle;
       using resources::StrokeSegment;
 
       detail::TexCoordAccumulator tex_coord_x_accumulator;
@@ -517,7 +518,7 @@ namespace ts
 
     template <typename VertexType, typename VertexTransform>
     void generate_path_vertices(const resources::TrackPath& path,
-                                const resources::SegmentedStroke& stroke,
+                                const resources::SegmentedStrokeStyle& stroke,
                                 const std::vector<PathVertexPoint>& points,
                                 float texture_size, float texture_z,
                                 resources::BasicGeometry<VertexType>& geometry,
@@ -539,3 +540,4 @@ namespace ts
     }
   }
 }
+*/

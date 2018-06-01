@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -9,6 +9,7 @@
 #include "tile_library.hpp"
 #include "terrain_library.hpp"
 #include "texture_library.hpp"
+#include "path_library.hpp"
 #include "track_layer.hpp"
 #include "start_point.hpp"
 #include "control_point.hpp"
@@ -17,8 +18,11 @@
 #include "utility/vector2.hpp"
 
 #include <boost/range/iterator_range.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 
+#include <vector>
+#include <list>
 #include <memory>
 #include <string>
 #include <cstdint>
@@ -29,6 +33,25 @@ namespace ts
 {
   namespace resources
   {
+    namespace detail
+    {
+      struct ConstPathRangeTransform
+      {
+        const resources::TrackPath* operator()(const std::unique_ptr<TrackPath>& p) const
+        {
+          return p.get();
+        }
+      };
+
+      struct PathRangeTransform
+      {
+        resources::TrackPath* operator()(const std::unique_ptr<TrackPath>& p) const
+        {
+          return p.get();
+        }
+      };      
+    }
+
     // The track class is a complete representation of a track.
     // It encompasses tiles, terrains, textures, vertices, control points, start points,
     // and more.
@@ -36,6 +59,12 @@ namespace ts
     {
     public:
       Track() = default;
+
+      Track(const Track&) = default;
+      Track& operator=(const Track&) = default;
+
+      Track(Track&&) = default;
+      Track& operator=(Track&&) = default;
 
       void set_path(const std::string& path);
       const std::string& path() const noexcept;
@@ -58,9 +87,12 @@ namespace ts
       TerrainLibrary& terrain_library() noexcept;
       const TerrainLibrary& terrain_library() const noexcept;
 
-      using LayerId = std::uint32_t;
+      PathLibrary& path_library() noexcept;
+      const PathLibrary& path_library() const noexcept;
 
-      TrackLayer* create_layer(std::string layer_name, std::uint32_t level, TrackLayerType type = TrackLayerType::Tiles);
+      using LayerId = std::uint32_t;
+      TrackLayer* create_layer(TrackLayerType type, std::string layer_name, std::uint32_t level);
+
       std::size_t layer_count() const noexcept;
 
       void set_layer_level(TrackLayer* layer, std::uint32_t level);
@@ -68,10 +100,10 @@ namespace ts
       std::int32_t shift_towards_back(const TrackLayer* layer, std::int32_t amount = 1);
 
       using LayerOrderInterface = boost::iterator_range<boost::indirect_iterator<TrackLayer* const*>>;
-      using ImmutableLayerOrderInterface = boost::iterator_range<boost::indirect_iterator<const TrackLayer* const*>>;
+      using ConstLayerOrderInterface = boost::iterator_range<boost::indirect_iterator<const TrackLayer* const*>>;
 
       LayerOrderInterface layers();
-      ImmutableLayerOrderInterface layers() const;
+      ConstLayerOrderInterface layers() const;      
 
       void add_control_point(const ControlPoint& point);
       const std::vector<ControlPoint>& control_points() const;
@@ -85,12 +117,13 @@ namespace ts
       std::string path_;
       std::string author_;
 
-      Vector2i size_;
-      std::int32_t height_level_count_;
+      Vector2i size_ = {};
+      std::int32_t height_level_count_ = 1;
 
       TileLibrary tile_library_;
       TerrainLibrary terrain_library_;
       TextureLibrary texture_library_;
+      PathLibrary path_library_;
 
       std::map<LayerId, TrackLayer> layers_;
       std::vector<TrackLayer*> layer_order_;

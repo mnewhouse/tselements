@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -29,6 +29,12 @@ namespace ts
   namespace scene
   {
     using namespace render_scene;
+
+    render_scene::TrackLayerData::TrackLayerData()
+      : index_buffer(graphics::create_buffer()),
+        vertex_buffer(graphics::create_buffer())
+    {
+    }
 
     RenderScene::RenderScene(TrackScene track_scene)
       : track_scene_(std::move(track_scene))
@@ -168,6 +174,7 @@ namespace ts
     {
       glCheck(glDisable(GL_CULL_FACE));
       glCheck(glEnable(GL_BLEND));
+      glCheck(glEnable(GL_MULTISAMPLE));
       glCheck(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
       glCheck(glDisable(GL_DEPTH_TEST));
@@ -216,16 +223,17 @@ namespace ts
       glCheck(glStencilFunc(GL_EQUAL, 1, 0xFF));
       glCheck(glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
 
-      glCheck(glUseProgram(track_shader_program_.get()));
+      glCheck(glUseProgram(track_shader_program_.get()));   
 
       glCheck(glUniformMatrix4fv(track_component_uniform_locations_.view_matrix, 1, GL_FALSE,
                                  glm::value_ptr(view_matrix)));
 
       glCheck(glUniform1i(track_component_uniform_locations_.texture_sampler, 0));
-
-      glCheck(glActiveTexture(GL_TEXTURE0));
+      
       for (const auto& component : track_components_)
       {
+        glUseProgram(track_shader_program_.get());
+
         glCheck(glBindBuffer(GL_ARRAY_BUFFER, component.layer_data->vertex_buffer.get()));
         glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, component.layer_data->index_buffer.get()));
 
@@ -238,6 +246,7 @@ namespace ts
         glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                                       reinterpret_cast<const void*>(offsetof(Vertex, texture_coords))));
 
+        glCheck(glActiveTexture(GL_TEXTURE0));
         glCheck(glBindTexture(GL_TEXTURE_2D, component.texture->get()));
 
         auto offset = reinterpret_cast<const void*>(static_cast<std::uintptr_t>(component.element_buffer_offset));
@@ -367,7 +376,7 @@ namespace ts
       if (auto scene_layer = track_scene_.find_layer(layer))
       {
         if (geometry_update.face_begin != geometry_update.face_end)
-        {
+        {  
           glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer.get()));
 
           const auto& faces = scene_layer->faces();
@@ -444,30 +453,35 @@ namespace ts
     void RenderScene::add_tile(const resources::TrackLayer* layer, std::uint32_t tile_index,
                                const resources::PlacedTile* tile_expansion, std::size_t sub_tile_count)
     {
-      auto layer_it = layers_.find(layer);
-      if (layer_it != layers_.end())
-      {
-        auto geometry_update = track_scene_.add_tile_geometry(layer, tile_index, tile_expansion, sub_tile_count);
+      auto& layer_data = layers_[layer];
+      auto geometry_update = track_scene_.add_tile_geometry(layer, tile_index, tile_expansion, sub_tile_count);
 
-        update_layer_geometry(layer, layer_it->second, geometry_update);
-
-        track_scene_.reload_components();
-        reload_track_components();
-      }     
+      update_layer_geometry(layer, layer_data, geometry_update);
+      
+      track_scene_.reload_components();
+      reload_track_components();      
     }
 
     void RenderScene::remove_tile(const resources::TrackLayer* layer, std::uint32_t tile_index)
     {
-      auto layer_it = layers_.find(layer);
-      if (layer_it != layers_.end())
-      {
-        auto geometry_update = track_scene_.remove_item_geometry(layer, tile_index);
+      auto& layer_data = layers_[layer];
+      auto geometry_update = track_scene_.remove_item_geometry(layer, tile_index);
 
-        update_layer_geometry(layer, layer_it->second, geometry_update);
+      update_layer_geometry(layer, layer_data, geometry_update);
 
-        track_scene_.reload_components();
-        reload_track_components();
-      }
+      track_scene_.reload_components();
+      reload_track_components();      
+    }
+
+    void RenderScene::rebuild_path_layer_geometry(const resources::TrackLayer* path_layer)
+    {
+      auto& layer_data = layers_[path_layer];
+
+      auto geometry_update = track_scene_.rebuild_path_layer_geometry(path_layer);
+      update_layer_geometry(path_layer, layer_data, geometry_update);
+
+      track_scene_.reload_components();
+      reload_track_components();    
     }
   }
 }

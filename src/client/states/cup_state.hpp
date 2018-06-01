@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -21,13 +21,10 @@ namespace ts
   {
     // The CupState class template holds a Client<> object and everything that encompasses.
     // It does no more than forwarding the events and calls to said object.
-    template <typename MessageDispatcher>
     class CupState
       : public game::GameState
     {
     public:
-      
-
       // Args: the arguments that the Client<MessageDispatcher> member object is constructed with.
       // If omitted, client is constructed with a game context.
       template <typename... Args>
@@ -43,7 +40,7 @@ namespace ts
       virtual void update(const update_context&) override;
 
     private:
-      Client<MessageDispatcher> client_;
+      Client client_;
     };
   }
 }

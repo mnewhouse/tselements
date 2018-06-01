@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -16,6 +16,9 @@
 #include <memory>
 
 #include <SFML/Graphics/Image.hpp>
+
+#include <gli/texture2d.hpp>
+#include <gli/texture2d_array.hpp>
 
 #include <GL/glew.h>
 
@@ -39,43 +42,29 @@ namespace ts
     {
     public:
       Texture() = default;
-      explicit Texture(const sf::Image& image);
-      explicit Texture(Vector2u texture_size);
-      explicit Texture(GLuint texture, Vector2u texture_size);
+      explicit Texture(Vector2u texture_size, std::uint32_t num_levels = 1, std::uint32_t num_layers = 1);
+      explicit Texture(GLuint texture, Vector2u texture_size,
+                       std::uint32_t num_levels = 1, std::uint32_t num_layers = 1);
 
       GLuint get() const { return texture_.get(); }
       Vector2u size() const { return texture_size_; }
 
-      void update(Vector2i pos, const sf::Image& image);
-      void update(Vector2i pos, const std::uint8_t* data, Vector2u data_size);
+      GLenum target() const { return target_; };
+      std::uint32_t layers() const { return num_layers_; }
+      std::uint32_t levels() const { return num_levels_; }
 
     private:
-      std::unique_ptr<GLuint, detail::TextureDeleter> texture_;
+      std::unique_ptr<GLuint, detail::TextureDeleter> texture_;      
       Vector2u texture_size_;
+      std::uint32_t num_layers_;
+      std::uint32_t num_levels_;
+      GLenum target_ = GL_TEXTURE_2D;
     };
 
-    class TextureArray
-    {
-    public:
-      TextureArray() = default;
-      explicit TextureArray(GLuint name, Vector3u texture_size);
+    Texture create_texture(const sf::Image& image);
+    Texture create_texture(const gli::texture2d& texture);
+    Texture create_texture_array(const gli::texture2d* layers, std::size_t num_layers);
 
-      GLuint get() const { return texture_array_.get(); }
-      Vector3u size() const { return texture_size_; }
-
-    private:
-      std::unique_ptr<GLuint, detail::TextureDeleter> texture_array_;
-      Vector3u texture_size_;
-    };
-
-    Texture create_texture_from_image(const sf::Image& image);
     GLint max_texture_size();
-
-    inline Texture create_texture()
-    {
-      GLuint texture{};
-      glCheck(glGenTextures(1, &texture));
-      return Texture(texture, { 0, 0 });
-    }
   }
 }

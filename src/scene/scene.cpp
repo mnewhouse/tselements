@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -18,19 +18,16 @@ namespace ts
     struct Scene::Impl
       : SceneComponents
     {
-      Impl(SceneComponents components, RenderScene render_scene)
-        : SceneComponents(std::move(components)),
-          render_scene_(std::move(render_scene))
+      Impl(SceneComponents components)
+        : SceneComponents(std::move(components))
       {
       }
-
-      RenderScene render_scene_;
     };
 
     
 
-    Scene::Scene(SceneComponents components, RenderScene render_scene)
-      : impl_(std::make_unique<Impl>(std::move(components), std::move(render_scene)))
+    Scene::Scene(SceneComponents components)
+      : impl_(std::make_unique<Impl>(std::move(components)))
     {
 
     }
@@ -71,18 +68,18 @@ namespace ts
 
     void Scene::handle_collision(const world::messages::SceneryCollision& collision)
     {
-      impl_->sound_effect_controller_.play_collision_sound(*collision.entity, collision.collision);
+      //impl_->sound_effect_controller_.play_collision_sound(*collision.entity, collision.collision);
     }
 
     void Scene::handle_collision(const world::messages::EntityCollision& collision)
     {
-      impl_->sound_effect_controller_.play_collision_sound(*collision.subject, *collision.object,
-                                                          collision.collision);
+      //impl_->sound_effect_controller_.play_collision_sound(*collision.subject, *collision.object,
+      //                                                    collision.collision);
     }
 
-    RenderScene Scene::steal_render_scene()
+    SceneComponents Scene::release()
     {
-      return std::move(impl_->render_scene_);
+      return std::move(*impl_);
     }
   }
 }

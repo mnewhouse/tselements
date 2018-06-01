@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -8,6 +8,8 @@
 #include "camera.hpp"
 
 #include "world/entity.hpp"
+
+#include <algorithm>
 
 namespace ts
 {
@@ -73,7 +75,9 @@ namespace ts
 
       if (camera.followed_entity())
       {
-        position += (camera.followed_entity()->position() - position) * frame_progress;
+        auto p = camera.followed_entity()->position();
+
+        position += (p - position) * frame_progress;
       }
 
       // If edges of the screen are outside the world bounds, move the center.

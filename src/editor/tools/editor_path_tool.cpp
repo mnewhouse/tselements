@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -42,44 +42,52 @@ namespace ts
 
     void PathTool::update_selection(const WorkingState& working_state)
     {
-      auto selected_layer = working_state.selected_layer();
-      if (selected_layer_ != selected_layer && selected_layer->type() == resources::TrackLayerType::Paths)
+      auto path = working_state.selected_path();
+      if (path != selected_path_)
       {
-        selected_layer_ = selected_layer;
-        selected_path_index_ = 0;
-
+        selected_path_ = path;
         reload_working_path();
+      }
+
+      auto layer = working_state.selected_layer();
+      if (layer != selected_layer_)
+      {
+        selected_layer_ = layer;
       }
     }
 
-    void PathTool::ensure_path_layer_exists(const EditorContext& context)
+    void PathTool::ensure_path_exists(const EditorContext& context)
     {
       // If we have a node transformation but no selected layer, create and select a layer.
-      if (selected_layer_ == nullptr)
+      if (selected_path_ == nullptr)
       {
         auto& track = context.scene.track();
-        auto layer = track.create_layer("Path Layer", 0, resources::TrackLayerType::Paths);
-        layer->paths().emplace_back();
+        auto path = track.path_library().create_path();
 
-        select_path(layer, 0, context.working_state);
-      }
+        auto layer = track.create_layer(resources::TrackLayerType::PathStyle, "wtf", 0);
+        auto styles = layer->path_styles();
+        styles->path = path;
 
-      // Otherwise, we might not have a path with the selected index. Need to fix that.
-      else if (selected_path_index_ >= selected_layer_->paths().size())
-      {
-        auto index = selected_layer_->paths().size();
-        selected_layer_->paths().emplace_back();
+        resources::BorderStyle edge;
+        edge.texture_id = 15;
+        edge.width = 1.0f;
 
-        select_path(selected_layer_, index, context.working_state);
+        resources::PathStyle style;
+        style.border_styles.push_back(edge);
+        style.texture_id = 2;        
+        styles->styles.push_back(style);       
+
+
+        select_path(path, context.working_state);
       }
     }
 
     void PathTool::reload_working_path()
     {
-      if (selected_layer_ && selected_path_index_ < selected_layer_->paths().size())
+      if (selected_path_)
       {
         // Reload the working path.
-        working_path_ = selected_layer_->paths()[selected_path_index_];
+        working_path_ = *selected_path_;
       }
 
       else
@@ -157,16 +165,24 @@ namespace ts
             draw_list->AddCircle(screen_pos, control_size, color, 12, 2.0f);
 
             if (!node_transformation_ && hover && ImGui::IsMouseClicked(0))
-            {
-              auto node_id = static_cast<std::uint32_t>(&node - nodes.data());
+            {              
+              if (!working_path_.closed && &node == &nodes.front())
+              {
+                close_working_path(context);
+              }
 
-              NodeTransformation transformation;
-              transformation.control = control;
-              transformation.id = node_id;
-              transformation.action = NodeTransformation::Move;
-              transformation.original_state = node;
+              else
+              {
+                auto node_id = static_cast<std::uint32_t>(&node - nodes.data());
 
-              node_transformation_.emplace(transformation);
+                NodeTransformation transformation;
+                transformation.control = control;
+                transformation.id = node_id;
+                transformation.action = NodeTransformation::Move;
+                transformation.original_state = node;
+
+                node_transformation_.emplace(transformation);
+              }
             }
           };
 
@@ -177,24 +193,27 @@ namespace ts
 
         if (!node_transformation_)
         {
-          if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered())
+          if (context.canvas_focus && ImGui::IsMouseClicked(0))
           {
             // Begin the addition of a new node.
             // Let's make sure a path layer exists first.
-            ensure_path_layer_exists(context);
+            ensure_path_exists(context);
 
-            Node node;
-            node.first_control = node.position = node.second_control = world_pos;
-            node.width = path_width_;
-            nodes.push_back(node);
+            if (!working_path_.closed)
+            {
+              Node node;
+              node.first_control = node.position = node.second_control = world_pos;
+              node.width = default_path_width_;
+              nodes.push_back(node);
 
-            NodeTransformation transformation{};
-            transformation.original_state = nodes.back();
-            transformation.action = NodeTransformation::Append;
-            transformation.id = static_cast<std::uint32_t>(nodes.size() - 1);
-            transformation.control = NodeTransformation::Base;
+              NodeTransformation transformation{};
+              transformation.original_state = nodes.back();
+              transformation.action = NodeTransformation::Append;
+              transformation.id = static_cast<std::uint32_t>(nodes.size() - 1);
+              transformation.control = NodeTransformation::Base;
 
-            node_transformation_.emplace(transformation);
+              node_transformation_.emplace(transformation);
+            }
           }
         }
 
@@ -215,6 +234,8 @@ namespace ts
           auto node_it = nodes.begin();
           auto node_end = nodes.end();
           auto next_it = std::next(node_it);
+
+          std::uint32_t color = ImColor(0.5f, 1.0f, 1.0f, 1.0f);
           for (; next_it != node_end; ++node_it, ++next_it)
           {
             auto p1 = transform_pos(node_it->position);
@@ -222,7 +243,15 @@ namespace ts
             auto p3 = transform_pos(next_it->first_control);
             auto p4 = transform_pos(next_it->position);
 
-            std::uint32_t color = ImColor(0.5f, 1.0f, 1.0f, 1.0f);
+            draw_list->AddBezierCurve(p1, p2, p3, p4, color, 2.0f);
+          }
+
+          if (working_path_.closed)
+          {
+            auto p1 = transform_pos(nodes.back().position);
+            auto p2 = transform_pos(nodes.back().second_control);
+            auto p3 = transform_pos(nodes.front().first_control);
+            auto p4 = transform_pos(nodes.front().position);            
 
             draw_list->AddBezierCurve(p1, p2, p3, p4, color, 2.0f);
           }
@@ -233,6 +262,29 @@ namespace ts
       {
 
       }
+    }
+
+    void PathTool::close_working_path(const EditorContext& context)
+    {
+      auto path = selected_path_;
+
+      auto action = [=]()
+      {
+        select_path(path, context.working_state);
+
+        working_path_.closed = true;
+        commit_working_path(context.scene);
+      };      
+
+      auto undo_action = [=]()
+      {
+        select_path(path, context.working_state);
+
+        working_path_.closed = false;
+        commit_working_path(context.scene);
+      };
+
+      context.action_history.push_action("Close path", action, undo_action);
     }
 
     void PathTool::apply_node_transformation(Vector2f final_position)
@@ -297,8 +349,7 @@ namespace ts
     {
       auto& transformation = *node_transformation_;
 
-      auto selected_layer = selected_layer_;
-      auto path_index = selected_path_index_;
+      auto path = selected_path_;
 
       switch (transformation.action)
       {
@@ -308,7 +359,7 @@ namespace ts
 
         auto action = [=]()
         {
-          select_path(selected_layer, path_index, context.working_state);
+          select_path(path, context.working_state);
 
           working_path_.nodes.push_back(node);
           commit_working_path(context.scene);
@@ -316,7 +367,7 @@ namespace ts
 
         auto undo_action = [=]()
         {
-          select_path(selected_layer, path_index, context.working_state);
+          select_path(path, context.working_state);
 
           assert(!working_path_.nodes.empty());
 
@@ -334,7 +385,7 @@ namespace ts
 
         auto action = [=]()
         {
-          select_path(selected_layer, path_index, context.working_state);
+          select_path(path, context.working_state);
 
           working_path_.nodes[transformation.id] = new_node;
           commit_working_path(context.scene);
@@ -342,7 +393,7 @@ namespace ts
 
         auto undo_action = [=]()
         {
-          select_path(selected_layer, path_index, context.working_state);
+          select_path(path, context.working_state);
 
           assert(!working_path_.nodes.empty());
 
@@ -362,59 +413,71 @@ namespace ts
       node_transformation_ = boost::none;
     }
 
-    void PathTool::select_path(resources::TrackLayer* layer, std::size_t path_index, WorkingState& working_state)
+    void PathTool::select_path(resources::TrackPath* path, WorkingState& working_state)
     {
-      working_state.select_layer(layer);
+      working_state.select_path(path);
 
-      if (layer && layer->type() != resources::TrackLayerType::Paths)
+      if (path != selected_path_)
       {
-        layer = nullptr;
-        path_index = 0;
-      }
-
-      if (layer != selected_layer_ || selected_path_index_ != path_index)
-      {
-        selected_layer_ = layer;
-        selected_path_index_ = path_index;
+        selected_path_ = path;        
 
         reload_working_path();
       }
     }
 
-    void PathTool::commit_working_path(const EditorScene& scene)
+    void PathTool::commit_working_path(EditorScene& scene)
     {
-      if (selected_layer_ && selected_path_index_)
-      {
-        // scene.commit_working_path(selected_layer_, selected_path_index_, working_path_);
+      if (selected_path_)
+      {       
+        *selected_path_ = working_path_;
 
-        auto& paths = selected_layer_->paths();
-        if (selected_path_index_ < paths.size()) paths[selected_path_index_] = working_path_;
+        scene.rebuild_path_geometry(selected_path_);
       }
     }
 
     void PathTool::delete_last(const EditorContext& editor_context)
     {
-      auto layer = selected_layer_;
-      auto index = selected_path_index_;
-
-      if (!working_path_.nodes.empty() && layer && index < layer->paths().size())
-      {
-        auto action = [=]()
+      auto path = selected_path_;
+      if (!working_path_.nodes.empty() && path)
+      {     
+        if (!working_path_.closed)
         {
-          select_path(layer, index, editor_context.working_state);
-          working_path_.nodes.pop_back();
-          commit_working_path(editor_context.scene);
-        };
+          auto action = [=]()
+          {
+            select_path(path, editor_context.working_state);
+            working_path_.nodes.pop_back();
+            commit_working_path(editor_context.scene);
+          };
 
-        const auto& node = working_path_.nodes.back();
-        auto undo_action = [=]()
+          const auto& node = working_path_.nodes.back();
+          auto undo_action = [=]()
+          {
+            select_path(path, editor_context.working_state);
+            working_path_.nodes.push_back(node);
+            commit_working_path(editor_context.scene);
+          };
+
+          editor_context.action_history.push_action("Remove node", action, undo_action);
+        }
+
+        else
         {
-          select_path(layer, index, editor_context.working_state);
-          working_path_.nodes.push_back(node);
-          commit_working_path(editor_context.scene);
-        };
+          auto action = [=]()
+          {
+            select_path(path, editor_context.working_state);
+            working_path_.closed = false;
+            commit_working_path(editor_context.scene);
+          };
 
-        editor_context.action_history.push_action("Remove node", action, undo_action);
+          auto undo_action = [=]()
+          {
+            select_path(path, editor_context.working_state);
+            working_path_.closed = true;
+            commit_working_path(editor_context.scene);
+          };
+
+          editor_context.action_history.push_action("Unclose path", action, undo_action);
+        }
       }
     }
 

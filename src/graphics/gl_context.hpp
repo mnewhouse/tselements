@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -15,7 +15,7 @@ namespace ts
     namespace gl_version
     {
       static constexpr int major = 3;
-      static constexpr int minor = 2;
+      static constexpr int minor = 0;
     }
 
     class RenderWindow;

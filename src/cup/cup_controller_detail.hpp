@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -41,7 +41,7 @@ namespace ts
       detail::forward_to(cup_synchronizer_, std::forward<MessageType>(message));
 
       // Then, tell the outside world about it.
-      message_dispatcher_(std::forward<MessageType>(message));     
+      message_dispatcher_.send(std::forward<MessageType>(message));     
     }
 
     template <typename MessageDispatcher>

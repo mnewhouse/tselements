@@ -3,17 +3,20 @@ project(tselements)
 
 set(STATIC_STD_LIBS OFF)
 set(TSELEMENTS_DEBUG_INFO ON)
-add_definitions(-DTS_GL_DEBUG)
+
+#add_definitions(-DTS_GL_DEBUG)
 
 if(MSVC)
     set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
-    add_definitions(-DUNICODE -D_UNICODE)
+    add_definitions(-DUNICODE -D_UNICODE -D_CRT_SECURE_NO_WARNINGS)
+
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /wd\"4503\"")
 
 	if(TSELEMENTS_DEBUG_INFO)
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF")	
-    endif()	
+    endif()
 endif()    
     
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -50,15 +53,13 @@ set(LIB_SOURCES
     src/audio/sound_sample.cpp
 	src/audio/sound_sample_loader.cpp
 
-	src/client/states/local_cup_state.cpp
-	src/client/states/local_action_state.cpp
-
+	src/client/action_state.cpp
+	src/client/client_message_conveyor.cpp
 	src/client/client_race_hud.cpp
 	src/client/client_viewport_arrangement.cpp
+	src/client/standalone_action_state.cpp
 
 	src/client/key_settings.cpp
-	src/client/local_client.cpp
-	src/client/local_message_dispatcher.cpp
 	src/client/local_player_roster.cpp
 	src/client/control_event_translator.cpp	
 
@@ -72,7 +73,6 @@ set(LIB_SOURCES
 	src/editor/editor_action_history.cpp
 	src/editor/editor_context.cpp
 	src/editor/editor_scene.cpp
-	src/editor/test_state_essentials.cpp
 	src/editor/editor_state.cpp
 	src/editor/editor_interface_state.cpp
 	src/editor/editor_test_state.cpp
@@ -82,13 +82,9 @@ set(LIB_SOURCES
 	src/editor/tools/editor_tile_tool.cpp
 	src/editor/tools/tile_interaction_renderer.cpp
 
-	src/fonts/bitmap_font.cpp
-	src/fonts/font_library.cpp
-	src/fonts/font_renderer.cpp
-	src/fonts/text_geometry.cpp
-
 	src/game/loading_thread.cpp
 	src/game/main_loop.cpp
+	src/game/process_priority.cpp
 
 	src/graphics/geometry.cpp
 	src/graphics/geometry_renderer.cpp
@@ -110,9 +106,9 @@ set(LIB_SOURCES
 	src/resources/include_path.cpp
 	src/resources/resource_store.cpp
 	src/resources/settings.cpp
-	src/resources/pattern.cpp
-	src/resources/pattern_builder.cpp
-	src/resources/pattern_loader.cpp
+	src/resources/path_library.cpp
+	src/resources/pattern.cpp	
+	src/resources/pattern_store.cpp
 	src/resources/terrain_library.cpp
 	src/resources/texture_library.cpp
 	src/resources/tile_library.cpp
@@ -125,6 +121,7 @@ set(LIB_SOURCES
 	src/scene/dynamic_scene_generator.cpp
 	src/scene/car_sound_controller.cpp
 	src/scene/particle_generator.cpp
+	src/scene/path_geometry.cpp
 	src/scene/render_scene.cpp
 	src/scene/scene.cpp
 	src/scene/scene_loader.cpp
@@ -136,15 +133,14 @@ set(LIB_SOURCES
 	src/scene/track_vertices.cpp
 	src/scene/view_matrix.cpp
 	src/scene/viewport.cpp
-	src/scene/viewport_arrangement.cpp	
+	src/scene/viewport_arrangement.cpp
 	
 	src/server/server.cpp
-	src/server/server_cup_essentials.cpp
+	src/server/server_cup.cpp
 	src/server/server_cup_controller.cpp	
 	src/server/server_interaction_host.cpp
-	src/server/server_message_dispatcher.cpp
-	src/server/server_message_forwarder.cpp
-	src/server/server_stage_essentials.cpp
+	src/server/server_message_conveyor.cpp
+	src/server/server_stage.cpp
 	src/server/remote_client.cpp
 	src/server/remote_client_map.cpp	
 
@@ -162,14 +158,16 @@ set(LIB_SOURCES
 	src/utility/texture_atlas.cpp
 
 	src/world/car.cpp
-	src/world/collisions.cpp
 	src/world/control_point_manager.cpp
 	src/world/entity.cpp
 	src/world/handling_physics.cpp
+	src/world/terrain_map.cpp
+	src/world/terrain_map_builder.cpp
 	src/world/world.cpp
-)
+	)
 
 file(GLOB_RECURSE LIB_HEADERS *.hpp *.h *.inl)
+
 
 set(PRECOMPILED_SOURCE "src/stdinc.cpp")
 if(MSVC)
@@ -194,9 +192,11 @@ set(Boost_USE_MULTITHREADED ON)
 
 set(ZLIB_PATH "dependencies/zlib-1.2.8")
 set(PNG_PATH "dependencies/libpng-1.2.51")
+set(CHIPMUNK_PATH "dependencies/chipmunk-7.0.2")
 
 add_subdirectory("${PROJECT_SOURCE_DIR}/${ZLIB_PATH}")
 add_subdirectory("${PROJECT_SOURCE_DIR}/${PNG_PATH}")
+add_subdirectory("${PROJECT_SOURCE_DIR}/${CHIPMUNK_PATH}")
 
 set(ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/${ZLIB_PATH}" "${PROJECT_BINARY_DIR}/${ZLIB_PATH}")
 set(PNG_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/${PNG_PATH}" "${PROJECT_BINARY_DIR}/${PNG_PATH}")
@@ -213,6 +213,8 @@ include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/include")
 include_directories("${PROJECT_SOURCE_DIR}/dependencies/catch/single_include")
 include_directories("${PROJECT_SOURCE_DIR}/dependencies/glm")
+include_directories("${PROJECT_SOURCE_DIR}/dependencies/gli")
+include_directories("${PROJECT_SOURCE_DIR}/${CHIPMUNK_PATH}/include")
 
 include_directories(${Boost_INCLUDE_DIR})
 include_directories(${SFML_INCLUDE_DIR})
@@ -233,6 +235,7 @@ target_link_libraries(libtselements ${GLEW_LIBRARIES})
 
 target_link_libraries(libtselements ${ZLIB_LIBRARY})
 target_link_libraries(libtselements ${PNG_LIBRARY})
+target_link_libraries(libtselements chipmunk_static)
 
 target_link_libraries(tselements libtselements)
 target_link_libraries(editor libtselements)

@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -175,7 +175,7 @@ namespace ts
         {
           auto file_name = (directory_name / page).string();
           auto image = graphics::load_image(file_name.data(), file_name.size());
-          result.pages_.push_back(graphics::create_texture_from_image(image));
+          result.pages_.push_back(graphics::create_texture(image));
         }        
         
         return result;

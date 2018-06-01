@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -8,6 +8,7 @@
 
 #include "entity.hpp"
 #include "control_point_manager.hpp"
+#include "terrain_map.hpp"
 
 #include "resources/track.hpp"
 #include "resources/pattern.hpp"
@@ -48,40 +49,32 @@ namespace ts
 
     struct EventInterface;
 
-    namespace detail
+    class PhysicsSpace
     {
-      struct EntityCollisionFrame
+    public:
+      explicit PhysicsSpace(Vector2d size);
+
+      void update(std::uint32_t frame_duration);
+
+      void add_entity(Entity* entity);
+
+      void add_static_circle();
+      void add_static_polygon();
+      
+      struct UserData
       {
-        Entity* entity;
-        Vector2i position;
-        resources::CollisionMaskFrame collision_frame;
+        Vector2d size;
       };
 
-      struct EntityUpdateState;
-
-      struct EntityUpdateBoundingBox
+    private:
+      struct Deleter
       {
-        EntityUpdateState* update_state;
-        IntRect bounding_box;
-      };
-
-      struct EntityUpdateState
-      {
-        Entity* entity;
-        Rotation<double> old_rotation;
-        Rotation<double> new_rotation;
-        Vector2<double> old_position;
-        Vector2<double> new_position;
-
-        double old_z_position;
-        double new_z_position;
-        std::uint32_t z_level;
-        Vector2i current_position;
-
-        resources::CollisionMaskFrame old_frame;
-        resources::CollisionMaskFrame new_frame;
-      };
-    }
+        void operator()(void*) const;
+      };      
+      
+      std::unique_ptr<void, Deleter> physics_space_;
+      std::unique_ptr<UserData> user_data_;
+    };
 
     // The World class manages all objects related to the physical state of the game.
     // Track terrains, cars, projectiles, dynamic scenery objects, and maybe more?
@@ -89,9 +82,9 @@ namespace ts
     class World
     {
     public:
-      World(resources::Track track, resources::Pattern pattern);
+      World(resources::Track track, TerrainMap terrain_map);
 
-      Vector2<double> world_size() const;
+      Vector2d world_size() const;
 
       void update(std::uint32_t frame_duration, world::EventInterface& event_interface);
 
@@ -105,10 +98,11 @@ namespace ts
       
       const resources::Track& track() const noexcept;
 
-      const resources::TerrainDefinition& terrain_at(Vector2i position) const;
-      const resources::TerrainDefinition& terrain_at(Vector2<double> position) const;
-      const resources::TerrainDefinition& terrain_at(Vector2<double> position, std::uint32_t level) const;
-      const resources::TerrainDefinition& terrain_at(Vector2i position, std::uint32_t level) const;
+      resources::TerrainDefinition terrain_at(Vector2i position) const;
+      resources::TerrainDefinition terrain_at(Vector2i position, std::int32_t level) const;
+
+      resources::TerrainDefinition terrain_at(Vector2d position) const;
+      resources::TerrainDefinition terrain_at(Vector2d position, std::int32_t level) const;
 
     private:
       Vector2<double> accomodate_position(Vector2<double> position) const;
@@ -118,14 +112,10 @@ namespace ts
       std::vector<std::unique_ptr<Entity>> entity_map_;
 
       resources::Track track_;
-      resources::Pattern pattern_;
-
-      resources::CollisionMask collision_mask_;
+      TerrainMap terrain_map_;
       ControlPointManager control_point_manager_;
 
-      std::vector<bool> previously_collided_;
-      std::vector<detail::EntityUpdateState> entity_update_state_;
-      std::vector<detail::EntityUpdateBoundingBox> bounding_box_cache_;
+      PhysicsSpace physics_space_;
     };
   }
 }

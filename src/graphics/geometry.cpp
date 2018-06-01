@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -20,10 +20,9 @@ namespace ts
       glCreateBuffers(1, &buffer);
       buffer_.reset(buffer);
 
-      dummy_texture_ = Texture({ 1U, 1U });
-
-      std::uint8_t data[] = { 255, 255, 255, 255 };
-      dummy_texture_.update({ 0, 0 }, data, { 1U, 1U });
+      sf::Image image;
+      image.create(1, 1, sf::Color::White);
+      dummy_texture_ = create_texture(image);
     }
 
     void Geometry::clear()

@@ -1,46 +1,40 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 #pragma once
 
-#include "messages/message_conveyor.hpp"
-
-#include "client_message_forwarder.hpp"
+#include "world/world_message_fwd.hpp"
 
 namespace ts
 {
   namespace client
   {
-    template <typename MessageDispatcher>
-    class CupEssentials;
+    class ActionState;
 
-    template <typename MessageDispatcher>
-    struct MessageContext
-    {
-      CupEssentials<MessageDispatcher>* cup_essentials;
-    };
-
-    // The MessageConveyor class is responsible for forwarding messages to the
-    // client's logical components. It does this by calling forward_message defined below,
-    // which uses the MessageForwarder class template.
-    template <typename MessageDispatcher>
     class MessageConveyor
-      : public ts::messages::MessageConveyor<MessageContext<MessageDispatcher>>
     {
-      using ts::messages::MessageConveyor<MessageContext<MessageDispatcher>>::MessageConveyor;
-    };
-  }
+    public:
+      explicit MessageConveyor(ActionState* action_state)
+        : action_state_(action_state)
+      {
+      }
 
-  namespace client
-  {
-    template <typename MessageDispatcher, typename MessageType>
-    void forward_message(const MessageContext<MessageDispatcher>& context, const MessageType& message)
-    {
-      MessageForwarder<MessageDispatcher> forwarder(context.cup_essentials);
-      forwarder.forward(message);
-    }
+      MessageConveyor() = default;
+
+      template <typename MessageType>
+      void process(const MessageType& message) const
+      {
+        this->process_internal(message);
+      }
+
+    private:
+      template <typename MessageType>
+      void process_internal(const MessageType& message) const;
+
+      ActionState* action_state_ = nullptr;
+    };
   }
 }

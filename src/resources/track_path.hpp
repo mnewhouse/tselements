@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -21,30 +21,18 @@ namespace ts
       Vector2f position;      
       Vector2f second_control;
 
-      float width = 0.0;
+      float width = 0.0f;
     };
 
-    struct StrokeProperties
+    struct TrackPath
     {
-      std::uint16_t texture_id;
-      Colorb color = { 255, 255, 255, 255 };
+      using Node = TrackPathNode;
+      bool closed = false;
 
-      bool is_segmented = false;
-      bool use_relative_size = true;
-      float width = 1.0f;
-      float offset = 0.0f;
-      float texture_scale = 0.5f;
+      float min_width = 56.0f;
+      float max_width = 56.0f;
 
-      enum TextureMode
-      {
-        Tiled,
-        Directional
-      } texture_mode = Tiled;
-
-      enum Type
-      {
-        Default, Border
-      } type = Default;
+      std::vector<Node> nodes;
     };
 
     struct StrokeSegment
@@ -63,27 +51,37 @@ namespace ts
       } side;
     };
 
-    struct SegmentedStroke
+    struct BaseStyle
     {
-      SegmentedStroke() = default;
-      SegmentedStroke(StrokeProperties properties_)
-        : properties(std::move(properties_))
-      {}
+      std::uint32_t texture_id;
+      std::uint32_t terrain_id;
+      Colorb color = { 255, 255, 255, 255 };
+      bool is_segmented = false;
+      bool relative_width = true;
+      float width = 1.0f;
+      float texture_scale = 4.0f;
 
-      StrokeProperties properties;
+      enum TextureMode
+      {
+        Tiled,
+        Directional
+      } texture_mode = Tiled;
       std::vector<StrokeSegment> segments;
     };
 
-    struct TrackPath
+    struct BorderStyle
+      : BaseStyle
     {
-      using Node = TrackPathNode;
-      bool closed = false;
+      bool relative_offset = false;
+      float offset = 0.0f;
+      std::vector<StrokeSegment> segments;
+    };
 
-      float min_width = 56.0f;
-      float max_width = 56.0f;
-
-      std::vector<Node> nodes;
-      std::vector<SegmentedStroke> strokes;
+    struct PathStyle
+      : BaseStyle
+    {
+      std::vector<BorderStyle> border_styles;
+      std::vector<StrokeSegment> segments;
     };
 
     // Interpolate the position on a path between two path nodes
@@ -99,7 +97,9 @@ namespace ts
     }
 
     // Compute the normal of a path segment at the specified time point.
-    inline Vector2f path_normal_at(const TrackPathNode& a, const TrackPathNode& b, float time_point)
+
+
+    inline Vector2f path_direction_at(const TrackPathNode& a, const TrackPathNode& b, float time_point)
     {
       auto t = time_point, r = 1.0f - time_point;
       auto tt = t * t, rr = r * r;
@@ -107,6 +107,12 @@ namespace ts
       auto d = 3.0f * rr * (a.second_control - a.position) + 6.0f * r * t * (b.first_control - a.second_control)
         + 3.0f * tt * (b.position - b.first_control);
 
+      return normalize(d);
+    }
+
+    inline Vector2f path_normal_at(const TrackPathNode& a, const TrackPathNode& b, float time_point)
+    {
+      auto d = path_direction_at(a, b, time_point);
       return normalize(make_vector2(-d.y, d.x));
     }
 

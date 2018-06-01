@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -42,6 +42,8 @@ namespace ts
       void append_tile(resources::TrackLayer* track_layer, const resources::Tile& tile);
       void remove_tile(resources::TrackLayer* track_layer, std::uint32_t tile_index);
       void remove_last_tile(resources::TrackLayer* track_layer);
+
+      void rebuild_path_geometry(resources::TrackPath* path);
 
     private:
       const std::vector<resources::PlacedTile>& expand_tile(const resources::Tile& tile) const;

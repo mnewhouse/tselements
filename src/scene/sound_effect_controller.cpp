@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -8,8 +8,6 @@
 #include "sound_effect_controller.hpp"
 
 #include "core/config.hpp"
-
-#include "world/collisions.hpp"
 
 namespace ts
 {
@@ -27,6 +25,7 @@ namespace ts
     void SoundEffectController::play_collision_sound(const world::Entity& entity,
                                                      const world::CollisionResult& collision_result)
     {
+      /*
       if (scenery_collision_sample_)
       {
         audio::PlaybackProperties properties;
@@ -35,12 +34,13 @@ namespace ts
         properties.volume = std::min(impact, 1.0f);
 
         playback_controller_.play_sound_effect(*scenery_collision_sample_, properties, 1);
-      }
+      }*/
     }
 
     void SoundEffectController::play_collision_sound(const world::Entity& subject, const world::Entity& object,
                                                      const world::CollisionResult& collision_result)
     {
+      /*
       if (entity_collision_sample_)
       {
         audio::PlaybackProperties properties;
@@ -50,6 +50,7 @@ namespace ts
 
         playback_controller_.play_sound_effect(*entity_collision_sample_, properties, 1);
       }
+      */
     }
   }
 }

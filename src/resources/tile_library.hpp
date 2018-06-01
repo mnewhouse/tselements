@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -8,6 +8,7 @@
 
 #include "tiles.hpp"
 #include "resource_library_interface.hpp"
+#include "collision_shape.hpp"
 
 #include <boost/iterator.hpp>
 #include <boost/utility/string_ref.hpp>
@@ -66,6 +67,8 @@ namespace ts
       TileDefinitionInterface define_tile_set(boost::string_ref pattern_file, boost::string_ref image_file);
 
       tile_group_iterator define_tile_group(const TileGroupDefinition& tile_group_def);
+
+      void define_collision_shape(TileId tile_id, CollisionShape collision_shape);
 
       tile_interface_type tiles() const;
       tile_group_interface_type tile_groups() const;     

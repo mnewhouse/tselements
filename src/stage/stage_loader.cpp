@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -10,8 +10,9 @@
 #include "stage_creation.hpp"
 
 #include "resources/track_loader.hpp"
-#include "resources/pattern_loader.hpp"
-#include "resources/pattern_builder.hpp"
+#include "resources/pattern_store.hpp"
+
+#include "world/terrain_map_builder.hpp"
 
 namespace ts
 {
@@ -34,17 +35,16 @@ namespace ts
       set_loading_state(LoadingState::LoadingTrack);
 
       resources::TrackLoader track_loader;
-      track_loader.load_from_file(stage_desc.track.path);
-
-      set_loading_state(LoadingState::CreatingEntities);
+      track_loader.load_from_file(stage_desc.track.path);      
 
       auto track = track_loader.get_result();
+      set_loading_state(LoadingState::BuildingPattern);      
 
-      auto pattern_loader = preload_pattern_files(track);
-      auto pattern = build_track_pattern(track, pattern_loader);
+      auto terrain_map = world::build_terrain_map(track);
 
-      world::World world_obj(std::move(track), std::move(pattern));
+      world::World world_obj(std::move(track), std::move(terrain_map));
 
+      set_loading_state(LoadingState::CreatingEntities);
       auto stage_ptr = std::make_unique<stage::Stage>(std::move(world_obj), std::move(stage_desc));
 
       return stage_ptr;

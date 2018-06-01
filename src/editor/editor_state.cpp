@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -86,7 +86,7 @@ namespace ts
     {
       test_loading_future_ = context().loading_thread->async_task([=]()
       {
-        return std::make_unique<TestState>(editor_scene_->track(), context().resource_store->settings());
+        return load_test_stage_components(editor_scene_->track(), context().resource_store->settings());
       });
     }
 
@@ -105,7 +105,6 @@ namespace ts
         editor_scene_->render(view_port_, ctx.screen_size, ctx.frame_progress, callback);
       }
     }
-
     void EditorState::update_loading_state()
     {
       if (loading_future_.valid())
@@ -122,21 +121,22 @@ namespace ts
       if (test_loading_future_.valid() && editor_scene_)
       {
         if (test_loading_future_.wait_for(std::chrono::seconds(0)) != std::future_status::timeout)
-        {
-          test_state_ = test_loading_future_.get();
-          set_active_state(StateId::Test);
+        { 
+          auto stage_components = test_loading_future_.get();
+          adopt_render_scene(stage_components, editor_scene_->steal_render_scene());
 
-          test_state_->launch(context(), editor_scene_->steal_render_scene());
+          set_active_state(StateId::Test);
+          auto test_state = context().state_machine->create_state<TestState>(context(), std::move(stage_components));          
         }
       }
     }
 
     void EditorState::on_activate()
-    {
-      if (test_state_ && editor_scene_)
+    {      
+      auto test_state = context().state_machine->find_state<TestState>();
+      if (test_state && editor_scene_)
       {
-        editor_scene_->adopt_render_scene(test_state_->steal_render_scene());
-        test_state_ = nullptr;
+        test_state->release_scene(*editor_scene_);       
       }
     }
 
@@ -302,7 +302,7 @@ namespace ts
       }
 
       ImGui::Begin("editor_window", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
-                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoInputs);
 
       if (editor_scene_)
       {
@@ -341,7 +341,9 @@ namespace ts
       style.push(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
       ImGui::SetNextWindowContentSize(ImVec2(static_cast<float>(content_size.x), static_cast<float>(content_size.y)));
       ImGui::BeginChild("canvas_window", ImVec2(0, 0), false,
-                        ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+                        ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
+                        ImGuiWindowFlags_NoCollapse |
+                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 
       // Calculate the client area.
       auto window_pos = ImGui::GetWindowPos();
@@ -374,51 +376,55 @@ namespace ts
         old_camera_state = camera;
       }
 
-      if (ImGui::IsMouseClicked(1) && ImGui::IsWindowHovered())
+      canvas_hover_state_ = contains(canvas_rect, Vector2i(mouse_pos.x, mouse_pos.y));
+      canvas_focus_state_ = !ImGui::IsAnyItemActive() && !ImGui::IsAnyItemHovered() && canvas_hover_state_;
+      if (canvas_focus_state_)
       {
-        canvas_drag_state_ = true;
-        ImGui::SetWindowFocus();
-      }
-
-      else if (ImGui::IsMouseReleased(1))
-      {
-        canvas_drag_state_ = false;
-      }
-      
-      // If we are dragging the camera with the right mouse button
-      if (canvas_drag_state_ && ImGui::IsMouseDragging(1) && (mouse_pos.x >= 0 || mouse_pos.y >= 0))
-      {
-        auto drag_delta = ImGui::GetMouseDragDelta(1);
-        if (drag_delta.x != 0 || drag_delta.y != 0)
+        if (ImGui::IsMouseClicked(1))
         {
-          ImGui::ResetMouseDragDelta(1);
+          canvas_drag_state_ = true;
         }
 
-        camera_position -= make_vector2(drag_delta.x, drag_delta.y) / zoom_level;
-        camera.set_position(camera_position);
+        else if (ImGui::IsMouseReleased(1))
+        {
+          canvas_drag_state_ = false;
+        }
 
-        detail::clamp_camera(view_port_, world_size);
-      }
+        // If we are dragging the camera with the right mouse button
+        if (canvas_drag_state_ && ImGui::IsMouseDragging(1) && (mouse_pos.x >= 0 || mouse_pos.y >= 0))
+        {
+          auto drag_delta = ImGui::GetMouseDragDelta(1);
+          if (drag_delta.x != 0 || drag_delta.y != 0)
+          {
+            ImGui::ResetMouseDragDelta(1);
+          }
 
-      // If the window is focused and we are scrolling, adjust the camera zoom.
-      if (ImGui::IsWindowHovered() && ImGui::IsWindowFocused() && io.MouseWheel != 0)
-      {
-        auto min_zoom = std::min(canvas_size.x / world_size.x,
-                                 canvas_size.y / world_size.y);
+          camera_position -= make_vector2(drag_delta.x, drag_delta.y) / zoom_level;
+          camera.set_position(camera_position);
 
-        auto mouse_pos = ImGui::GetMousePos();
-        auto window_pos = ImGui::GetWindowPos();
-        
-        auto window_center = make_vector2(window_pos.x, window_pos.y) + make_vector2(canvas_size.x, canvas_size.y) * 0.5;
-        auto relative_mouse_pos = (make_vector2(mouse_pos.x, mouse_pos.y) - window_center) / zoom_level;
+          detail::clamp_camera(view_port_, world_size);
+        }
 
-        detail::zoom_camera(camera, static_cast<int>(io.MouseWheel), 1.08, min_zoom, 8.0, relative_mouse_pos);
-        detail::clamp_camera(view_port_, world_size);
+        // If the window is focused and we are scrolling, adjust the camera zoom.
+        if (io.MouseWheel != 0)
+        {
+          auto min_zoom = std::min(canvas_size.x / world_size.x,
+                                   canvas_size.y / world_size.y);
 
-        zoom_level = camera.zoom_level();
-        camera_position = camera.position();
+          auto mouse_pos = ImGui::GetMousePos();
+          auto window_pos = ImGui::GetWindowPos();
 
-        content_size = world_size * zoom_level;
+          auto window_center = make_vector2(window_pos.x, window_pos.y) + make_vector2(canvas_size.x, canvas_size.y) * 0.5;
+          auto relative_mouse_pos = (make_vector2(mouse_pos.x, mouse_pos.y) - window_center) / zoom_level;
+
+          detail::zoom_camera(camera, static_cast<int>(io.MouseWheel), 1.08, min_zoom, 8.0, relative_mouse_pos);
+          detail::clamp_camera(view_port_, world_size);
+
+          zoom_level = camera.zoom_level();
+          camera_position = camera.position();
+
+          content_size = world_size * zoom_level;
+        }
       }
 
       ImGui::EndChild();
@@ -728,6 +734,7 @@ namespace ts
     {
       return
       {
+        self.canvas_focus_state_,
         *self.editor_scene_,
         self,
         self.working_state_,

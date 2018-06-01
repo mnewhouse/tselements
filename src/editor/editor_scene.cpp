@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -79,33 +79,54 @@ namespace ts
 
     void EditorScene::append_tile(resources::TrackLayer* layer, const resources::Tile& tile)
     {
-      auto tile_index = static_cast<std::uint32_t>(layer->tiles().size());
-      layer->tiles().push_back(tile);
+      if (auto tiles = layer->tiles())
+      {
+        auto tile_index = static_cast<std::uint32_t>(tiles->size());
+        tiles->push_back(tile);
 
-      if (render_scene_)
-      {   
-        const auto& tile_expansion = expand_tile(tile);
-
-        render_scene_->add_tile(layer, tile_index, tile_expansion.data(), tile_expansion.size());
+        if (render_scene_)
+        {
+          const auto& tile_expansion = expand_tile(tile);
+          render_scene_->add_tile(layer, tile_index, tile_expansion.data(), tile_expansion.size());
+        }
       }
     }
 
     void EditorScene::remove_tile(resources::TrackLayer* layer, std::uint32_t tile_index)
     {
-      auto& tiles = layer->tiles();
-      tiles.erase(tiles.begin() + tile_index);
-
-      if (render_scene_)
+      if (auto tiles = layer->tiles())
       {
-        render_scene_->remove_tile(layer, tile_index);
+        tiles->erase(tiles->begin() + tile_index);
+
+        if (render_scene_)
+        {
+          render_scene_->remove_tile(layer, tile_index);
+        }
       }
     }
 
     void EditorScene::remove_last_tile(resources::TrackLayer* layer)
     {
-      if (!layer->tiles().empty())
+      if (auto tiles = layer->tiles())
       {
-        remove_tile(layer, static_cast<std::uint32_t>(layer->tiles().size()) - 1);
+        if (!tiles->empty())
+        {
+          remove_tile(layer, static_cast<std::uint32_t>(tiles->size()) - 1);
+        }
+      }
+    }
+
+    void EditorScene::rebuild_path_geometry(resources::TrackPath* path)
+    {
+      if (!render_scene_) return;
+
+      for (auto& layer : track_.layers())
+      {
+        auto styles = layer.path_styles();
+        if (styles && styles->path == path)
+        {
+          render_scene_->rebuild_path_layer_geometry(&layer);
+        }
       }
     }
   }

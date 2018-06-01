@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -22,7 +22,6 @@ namespace ts
   namespace scene
   {
     struct SceneComponents;
-    class RenderScene;
     class ViewportArrangement;
 
     // The Scene represents all objects that are needed to deliver the client-sided
@@ -31,7 +30,7 @@ namespace ts
     {
     public:
       Scene();
-      Scene(SceneComponents scene_components, RenderScene render_scene);
+      Scene(SceneComponents scene_components);
       ~Scene();
 
       Scene(Scene&&);
@@ -48,7 +47,7 @@ namespace ts
       void handle_collision(const world::messages::SceneryCollision& collision);
       void handle_collision(const world::messages::EntityCollision& collision);
 
-      RenderScene steal_render_scene();
+      SceneComponents release();
 
     private:
       struct Impl;

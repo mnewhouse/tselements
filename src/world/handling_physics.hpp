@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -11,35 +11,32 @@
 
 #include "resources/handling.hpp"
 
+#include <cstdint>
+
 namespace ts
 {
-  namespace resources
-  {
-    struct TerrainDefinition;
-  }
-
   namespace world
   {
     class Car;
+    class TerrainMap;
 
-    struct CarUpdateState_v0
+    struct HandlingState
     {
-      Vector2<double> velocity = {};
-      Rotation<double> rotation = {};
-      double rotating_speed = 0.0;      
-
-      resources::HandlingState handling_state;
+      std::int8_t current_gear = 0;
+      std::int8_t gear_shift_state = 0;
+      double engine_rev_speed = 0.0;
+      double turning_speed = 0.0;
+      double load_balance = 0.0;
     };
 
     struct CarUpdateState
     {
-      Vector2<double> velocity = {};
+      Vector2d velocity = {};
       double rotating_speed = 0.0;
 
-      resources::HandlingState handling_state;
+      HandlingState handling_state;
     };
 
-    template <typename TerrainFunc>
-    CarUpdateState update_car_state(const Car& car, TerrainFunc&& terrain_at, double frame_duration);
+    CarUpdateState update_car_state(const Car& car, const TerrainMap& terrain_map, double frame_duration);
   }
 }

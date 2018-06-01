@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -16,6 +16,10 @@
 #include "utility/rotation.hpp"
 
 #include "graphics/gl_check.hpp"
+
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#define GLM_ENABLE_EXPERIMENTAL
+#endif
 
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>

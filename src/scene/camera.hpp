@@ -1,16 +1,18 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 #pragma once
 
 #include <cstddef>
+#include <array>
 
 #include "utility/vector2.hpp"
 #include "utility/rect.hpp"
 #include "utility/rotation.hpp"
+
 
 namespace ts
 {
@@ -44,6 +46,7 @@ namespace ts
       const world::Entity* followed_entity_ = nullptr;
       Vector2<double> position_;
       Rotation<double> rotation_; 
+
       double zoom_level_ = 2.0;
     };
 

@@ -1,13 +1,13 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 #pragma once
 
 #include "car_definition.hpp"
-#include "pattern_loader.hpp"
+#include "pattern_store.hpp"
 
 #include <boost/utility/string_ref.hpp>
 
@@ -37,7 +37,7 @@ namespace ts
 
     private:
       std::vector<CarDefinition> car_definitions_;
-      PatternLoader pattern_loader_;
+      PatternStore pattern_store_;
     };
   }
 }

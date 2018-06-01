@@ -296,7 +296,6 @@ namespace ts
       Vector2i world_offset;
             
       /*
-
       auto selected_layer = selected_layer_;
       auto path_index = selected_path_index_;
 

@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -125,6 +125,24 @@ namespace ts
 
     template <typename StateType>
     template <typename ConcreteType>
+    ConcreteType* StateMachine<StateType>::find_state() const
+    {      
+      return static_cast<ConcreteType*>(find_state(typeid(ConcreteType)));
+    }
+
+    template <typename StateType>
+    StateType* StateMachine<StateType>::find_state(std::type_index index) const
+    {
+      auto it = state_map_.find(index);
+      if (it == state_map_.end()) return nullptr;
+
+      return it->second.get();
+    }
+
+
+
+    template <typename StateType>
+    template <typename ConcreteType>
     void StateMachine<StateType>::activate_state()
     {
       this->activate_state(typeid(ConcreteType));
@@ -149,6 +167,8 @@ namespace ts
     template <typename StateType>
     void StateMachine<StateType>::commit_state_transitions()
     {
+      destruction_queue_.clear();
+
       // Store the active state for later use
       StateType* previous_state = !state_stack_.empty() ? state_stack_.back().state : nullptr;
 
@@ -177,7 +197,7 @@ namespace ts
             }
 
             {
-              auto state_ptr = std::move(it->second);
+              destruction_queue_.push_back(std::move(it->second));
             }
 
             state_map_.erase(it);
@@ -209,6 +229,8 @@ namespace ts
           call_activation_function(active_state);
         }
       }
+
+      destruction_queue_.clear();
     }
 
     template <typename StateType>

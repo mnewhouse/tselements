@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -22,17 +22,17 @@ namespace ts
 
       virtual void on_lap_complete(const messages::LapComplete& lap_event) override
       {
-        message_dispatcher_(lap_event);
+        message_dispatcher_.send(lap_event);
       }
 
       virtual void on_sector_complete(const messages::SectorComplete& sector_event) override
       {
-        message_dispatcher_(sector_event);
+        message_dispatcher_.send(sector_event);
       }
 
       virtual void on_race_time_update(const messages::RaceTimeUpdate& update) override
       {
-        message_dispatcher_(update);
+        message_dispatcher_.send(update);
       }
 
       MessageDispatcher message_dispatcher_;

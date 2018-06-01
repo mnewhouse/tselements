@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -40,10 +40,10 @@ namespace ts
 
       const Cup& cup() const;
 
-    private:
       template <typename MessageType>
       void dispatch_message(MessageType&& message);
 
+    private:
       bool is_everyone_ready() const;
 
       void begin_cup();

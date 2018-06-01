@@ -1,54 +1,98 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 #include "entity.hpp"
 
+#include "resources/collision_shape.hpp"
+
 #include "utility/math_utilities.hpp"
+
+#include <chipmunk/chipmunk.h>
 
 namespace ts
 {
   namespace world
   {
-    Entity::Entity(EntityId entity_id, EntityType entity_type, std::shared_ptr<resources::CollisionMask> collision_mask)
+
+#define BODY_PTR static_cast<cpBody*>(physics_body_.get())
+
+    void PhysicsBodyDeleter::operator()(void* body) const
+    {
+      cpBodyFree(static_cast<cpBody*>(body));
+    }
+
+    cpShape* create_shape(cpBody* body, const resources::collision_shapes::Circle& circle)
+    {
+      return cpCircleShapeNew(body, circle.radius, { circle.center.x, circle.center.y });      
+    }
+
+    cpShape* create_shape(cpBody* body, const resources::collision_shapes::Polygon& poly)                      
+    {
+      boost::container::small_vector<cpVect, 16> vertices;
+      for (auto& p : poly.points)
+      {
+        vertices.push_back({ p.position.x, p.position.y });
+      }     
+
+      return cpPolyShapeNew(body, vertices.size(), vertices.data(), cpTransformIdentity, 0.0);
+    }
+
+    auto create_physics_body(const resources::CollisionShape& shape, double mass, double moment)
+    {
+      mass = std::max(mass, 1.0);
+      moment = std::max(moment, 50.0);
+
+      auto body = cpBodyNew(mass, mass * moment);
+      std::unique_ptr<void, PhysicsBodyDeleter> owned_body(body);
+
+      if (!shape.sub_shapes.empty())
+      {
+        double moment = 0.0;
+        for (auto& sub_shape : shape.sub_shapes)
+        {
+          auto shape = boost::apply_visitor([&](auto& s)
+          {
+            return create_shape(body, s);
+          }, sub_shape.data);
+
+          cpShapeSetElasticity(shape, sub_shape.bounciness);
+        }
+      }
+      
+      return owned_body;
+    }
+
+    Entity::Entity(EntityId entity_id, EntityType entity_type, 
+                   const resources::CollisionShape& collision_shape, double mass, double moment)
       : entity_id_(entity_id),
         entity_type_(entity_type),
-        collision_mask_(std::move(collision_mask))
-    {
+        physics_body_(create_physics_body(collision_shape, mass, moment))
+    {      
     }
 
-    Vector2<double> Entity::position() const
+    Vector2d Entity::position() const
     {
-      return raw_state_.position / 32768.0;
+      auto pos = cpBodyGetPosition(BODY_PTR);
+      return{ pos.x, pos.y };
     }
 
-    Vector2<double> Entity::velocity() const
+    Vector2d Entity::velocity() const
     {
-      auto result = make_vector2((raw_state_.velocity.x & ~(1U << 31)) / 32768.0,
-                                 (raw_state_.velocity.y & ~(1U << 31)) / 32768.0);
-
-      if (raw_state_.velocity.x & (1U << 31)) result.x = -result.x;
-      if (raw_state_.velocity.y & (1U << 31)) result.y = -result.y;
-
-      return result;
+      auto vel = cpBodyGetVelocity(BODY_PTR);
+      return{ vel.x, vel.y };
     }
 
     Rotation<double> Entity::rotation() const
     {
-      auto rad = (raw_state_.rotation & ~(1U << 23)) / 8388607.0 * Rotation<double>::pi;
-      if (raw_state_.rotation & (1U << 23)) rad = -rad;
-      
-      return radians(rad);
+      return radians(cpBodyGetAngle(BODY_PTR));     
     }
 
-    double Entity::rotating_speed() const
+    double Entity::angular_velocity() const
     {
-      auto result = (raw_state_.rotating_speed & ~(1U << 23)) / 32768.0;
-      if (raw_state_.rotating_speed & (1U << 23)) result = -result;
-
-      return result;
+      return cpBodyGetAngularVelocity(BODY_PTR);
     }
 
     double Entity::z_speed() const
@@ -84,45 +128,24 @@ namespace ts
       return static_cast<std::uint32_t>(z_position_);
     }
 
-    void Entity::set_position(Vector2<double> position)
+    void Entity::set_position(Vector2d position)
     {
-      position.x = utility::clamp(position.x, 0.0, 32767.0);
-      position.y = utility::clamp(position.y, 0.0, 32767.0);
-
-      raw_state_.position = vector2_cast<std::uint32_t>(position * 32768.0);
+      cpBodySetPosition(BODY_PTR, { position.x, position.y });
     }
 
-    void Entity::set_velocity(Vector2<double> velocity)
+    void Entity::set_velocity(Vector2d velocity)
     {
-      velocity.x = utility::clamp(velocity.x, -32767.0, 32767.0);
-      velocity.y = utility::clamp(velocity.y, -32767.0, 32767.0);
-
-      raw_state_.velocity.x = static_cast<std::uint32_t>(std::abs(velocity.x) * 32768.0);
-      raw_state_.velocity.y = static_cast<std::uint32_t>(std::abs(velocity.y) * 32768.0);
-
-      if (velocity.x < 0.0) raw_state_.velocity.x |= (1U << 31);
-      if (velocity.y < 0.0) raw_state_.velocity.y |= (1U << 31);
+      cpBodySetVelocity(BODY_PTR, { velocity.x, velocity.y });
     }
 
-    void Entity::set_rotation(Rotation<double> rotation)
+    void Entity::set_rotation(Rotation<double> r)
     {
-      rotation.normalize();
-
-      raw_state_.rotation = static_cast<std::uint32_t>(std::abs(rotation.radians() / Rotation<double>::pi) * 8388607.0);
-
-      if (rotation.radians() < 0) raw_state_.rotation |= (1U << 23);
+      cpBodySetAngle(BODY_PTR, r.radians());
     }
 
-    void Entity::set_rotating_speed(double rotating_speed)
+    void Entity::set_angular_velocity(double angular_velocity)
     {
-      rotating_speed = utility::clamp(rotating_speed, -255.0, 255.0);
-      
-      raw_state_.rotating_speed = static_cast<std::uint32_t>(std::abs(rotating_speed) * 32768.0);
-
-      if (rotating_speed < 0.0)
-      {
-        raw_state_.rotating_speed |= (1U << 23);
-      }
+      cpBodySetAngularVelocity(BODY_PTR, angular_velocity);
     }
 
     void Entity::set_z_speed(double z_speed)
@@ -154,29 +177,20 @@ namespace ts
       return entity_id_;
     }
 
-    const resources::CollisionMask* Entity::collision_mask() const
-    {
-      return collision_mask_.get();
-    }
-
-    double Entity::bounciness() const
-    {
-      return bounciness_;
-    }
-
-    void Entity::set_bounciness(double bounciness)
-    {
-      bounciness_ = bounciness;
-    }
-
     double Entity::mass() const
     {
-      return mass_;
+      return cpBodyGetMass(BODY_PTR);
+    }
+
+    Vector2d Entity::center_of_mass() const
+    {
+      auto cog = cpBodyGetCenterOfGravity(BODY_PTR);
+      return{ cog.x, cog.y };
     }
 
     void Entity::set_mass(double mass)
     {
-      mass_ = mass;
+      cpBodySetMass(BODY_PTR, mass);
     }
 
     void Entity::update_z_speed(double frame_duration)
@@ -185,6 +199,11 @@ namespace ts
       {
         z_speed_ -= 1.5 * frame_duration;
       }      
+    }
+
+    void Entity::apply_force(Vector2d force, Vector2d point)
+    {
+      cpBodyApplyForceAtLocalPoint(BODY_PTR, { force.x, force.y }, { point.x, point.y });
     }
   }
 }

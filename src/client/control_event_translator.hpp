@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -24,6 +24,8 @@ namespace ts
 
   namespace client
   {
+    class MessageDispatcher;
+
     // The ControlEventTranslator takes game events, translates these events according to the
     // key mapping and the locally controlled entities, and sends them away through the given
     // message dispatcher.
@@ -32,7 +34,6 @@ namespace ts
     public:
       ControlEventTranslator(const stage::Stage* stage, controls::ControlCenter* control_center, KeyMapping key_mapping);                             
 
-      template <typename MessageDispatcher>
       void translate_event(const game::Event& event, const MessageDispatcher& message_dispatcher) const;
 
     private:

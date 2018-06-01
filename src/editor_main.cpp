@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -49,15 +49,14 @@ int main(int argc, char* argv[])
     graphics::RenderWindow window("Pocket Wheels - Editor",
                                   screen_width, screen_height, graphics::WindowMode::Windowed);
 
-    window.set_vsync_enabled(false);
-    window.set_framerate_limit(240);
+    window.set_vsync_enabled(true);
+    window.set_framerate_limit(0);
 
     graphics::initialize_glew();    
 
     window.activate();
     window.clear();
     window.display();
-
 
     imgui::Context gui_context(&window);
     imgui::push_default_style();
@@ -85,7 +84,7 @@ int main(int argc, char* argv[])
     player.name = "test";
     player_settings.selected_players.push_back(player);
 
-    auto car_it = resource_store.car_store().car_definitions().find("f1");
+    auto car_it = resource_store.car_store().car_definitions().find("porge");
     cup_settings.selected_cars.push_back(*car_it);
 
     if (argc >= 2)
@@ -97,8 +96,8 @@ int main(int argc, char* argv[])
     {
       state_machine.create_state<editor::EditorState>(game_context);
     }
-
-    game::main_loop(game_context);
+    
+    game::main_loop(game_context);    
   }
 
   catch (const std::exception& e)

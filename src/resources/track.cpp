@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -92,6 +92,16 @@ namespace ts
       return texture_library_;
     }
 
+    PathLibrary& Track::path_library() noexcept
+    {
+      return path_library_;
+    }
+
+    const PathLibrary& Track::path_library() const noexcept
+    {
+      return path_library_;
+    }
+
     Track::LayerOrderInterface Track::layers()
     {
       TrackLayer* const* begin = layer_order_.data();
@@ -100,12 +110,12 @@ namespace ts
       return LayerOrderInterface(boost::make_indirect_iterator(begin), boost::make_indirect_iterator(end));
     }
 
-    Track::ImmutableLayerOrderInterface Track::layers() const
+    Track::ConstLayerOrderInterface Track::layers() const
     {
       const TrackLayer* const* begin = layer_order_.data();
       const TrackLayer* const* end = begin + layer_order_.size();
 
-      return ImmutableLayerOrderInterface(boost::make_indirect_iterator(begin), boost::make_indirect_iterator(end));
+      return ConstLayerOrderInterface(boost::make_indirect_iterator(begin), boost::make_indirect_iterator(end));
     }
 
     void Track::set_layer_level(TrackLayer* layer, std::uint32_t level)
@@ -192,7 +202,7 @@ namespace ts
       return i;
     }
 
-    TrackLayer* Track::create_layer(std::string layer_name, std::uint32_t level, TrackLayerType type)
+    TrackLayer* Track::create_layer(TrackLayerType type, std::string layer_name, std::uint32_t level)                                    
     {
       LayerId layer_id = 0;
       if (!layers_.empty()) layer_id = layers_.crbegin()->first + 1;

@@ -1,39 +1,47 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 #pragma once
 
-#include "server_message_forwarder.hpp"
-
-#include "messages/message_conveyor.hpp"
+#include "client_message.hpp"
 
 namespace ts
 {
   namespace server
-  {
-    class CupEssentials;
-
-    struct MessageContext
-    {
-      CupEssentials* cup_essentials;
-    };
+  {   
+    class Cup;
+    class Stage;
 
     class MessageConveyor
-      : public messages::MessageConveyor<MessageContext>
     {
-      using messages::MessageConveyor<MessageContext>::MessageConveyor;
-    };
+    public:
+      MessageConveyor() = default;
 
-    // The following overloads are internal messages that we use to communicate between different
-    // server components.
-    template <typename MessageType>
-    void forward_message(const MessageContext& context, MessageType&& message)
-    {
-      MessageForwarder forwarder = { context.cup_essentials };
-      forwarder.forward(std::forward<MessageType>(message));
-    }
+      MessageConveyor(Cup* cup, Stage* stage)
+        : cup_(cup), 
+          stage_(stage)
+      {}
+
+      explicit MessageConveyor(Stage* stage)
+        : stage_(stage)
+      {
+      }
+
+      template <typename MessageType>
+      void process(const MessageType& msg) const
+      {
+        this->process_internal(msg);
+      }
+
+    private:
+      template <typename MessageType>
+      void process_internal(const MessageType& message) const;
+
+      Cup* cup_ = nullptr;
+      Stage* stage_ = nullptr;
+    };
   }
 }

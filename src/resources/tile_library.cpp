@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -100,6 +100,16 @@ namespace ts
 
 
       return result.first;
+    }
+    
+    void TileLibrary::define_collision_shape(TileId tile_id, CollisionShape collision_shape)
+    {
+      auto tile_it = tile_definitions_.find(tile_id);
+      if (tile_it != tile_definitions_.end())
+      {        
+        // Bit of an ugly hack, but this should be fine because the collision shape doesn't affect the ordering.
+        const_cast<CollisionShape&>(tile_it->collision_shape) = std::move(collision_shape);
+      }
     }
 
     TileLibrary::tile_interface_type TileLibrary::tiles() const

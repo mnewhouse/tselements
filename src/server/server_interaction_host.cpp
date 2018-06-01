@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -16,10 +16,8 @@ namespace ts
 {
   namespace server
   {
-    InteractionHost::InteractionHost(CupController* cup_controller,
-                                     const MessageDispatcher* message_dispatcher)
+    InteractionHost::InteractionHost(CupController* cup_controller)
       : cup_controller_(cup_controller),
-        message_dispatcher_(message_dispatcher),
         remote_client_map_(cup::max_client_count)
     {
     }
@@ -49,7 +47,7 @@ namespace ts
                result.second == cup::RegistrationStatus::TooManyPlayers)
 
       {
-        dispatch_message(cup::messages::ServerFull(), local_client);
+        dispatch_message(cup::messages::ServerFull{}, local_client);
       }
     }
 
@@ -62,9 +60,9 @@ namespace ts
     }
 
     template <typename MessageType>
-    void InteractionHost::dispatch_message(MessageType&& message, const RemoteClient& client)
+    void InteractionHost::dispatch_message(const MessageType& message, const RemoteClient& client)
     {
-      (*message_dispatcher_)(std::forward<MessageType>(message), client);
+      cup_controller_->dispatch_message(make_client_message(message, client));
     }
   }
 }

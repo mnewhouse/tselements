@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -54,6 +54,8 @@ namespace ts
 
       void control_point_hit(const world::Entity* entity, std::uint16_t point_id, std::uint32_t point_flags,
                              std::uint32_t frame_offset, RaceEventInterface& event_interface);
+
+      resources::Track steal_track();
 
     private:
       void create_stage_entities();

@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -63,13 +63,14 @@ namespace ts
       std::unique_ptr<EditorScene> editor_scene_;
       std::future<std::unique_ptr<EditorScene>> loading_future_;
 
-      std::unique_ptr<TestState> test_state_;
-      std::future<std::unique_ptr<TestState>> test_loading_future_;
+      std::future<StageComponents> test_loading_future_;
 
       scene::Viewport view_port_;
 
       scene::Camera camera_snapshot_;
       Vector2f canvas_scroll_state_;
+      bool canvas_hover_state_ = false;
+      bool canvas_focus_state_ = false;
       bool canvas_drag_state_ = false;
 
       EditorTool* active_tool_ = nullptr;

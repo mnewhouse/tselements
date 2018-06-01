@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -15,7 +15,7 @@ namespace ts
     {
     }
 
-    void TextureMapping::map_texture(std::size_t resource_id, texture_type texture, IntRect texture_rect)
+    void TextureMapping::map_texture(std::uint64_t resource_id, texture_type texture, IntRect texture_rect)
     {
       // Slow
       MappedTexture m;
@@ -29,7 +29,7 @@ namespace ts
       textures_.insert(insert_position, m);
     }
 
-    void TextureMapping::map_texture_fragment(std::size_t resource_id, texture_type texture,
+    void TextureMapping::map_texture_fragment(std::uint64_t resource_id, texture_type texture,
                                               IntRect texture_rect, Vector2i fragment_offset)
     {
       // And slow
@@ -44,12 +44,12 @@ namespace ts
       texture_fragments_.insert(insert_position, m);
     }
 
-    TextureMapping::mapping_range TextureMapping::find(std::size_t resource_id) const
+    TextureMapping::mapping_range TextureMapping::find(std::uint64_t resource_id) const
     {
       return find(resource_id, nullptr);
     }
 
-    TextureMapping::mapping_range TextureMapping::find(std::size_t resource_id,
+    TextureMapping::mapping_range TextureMapping::find(std::uint64_t resource_id,
                                                        texture_type texture_hint) const
     {
       auto result = find_all(resource_id);
@@ -88,19 +88,19 @@ namespace ts
       return TextureMappingInterface(this);
     }
 
-    std::size_t TextureMapping::tile_id(std::size_t resource_id)
+    std::uint64_t TextureMapping::tile_id(std::uint32_t tile_id)
     {
-      return resource_id;
+      return tile_id;
     }
 
-    std::size_t TextureMapping::texture_id(std::size_t resource_id)
+    std::uint64_t TextureMapping::texture_id(std::uint32_t texture_id)
     {
-      return resource_id | 0x80000000;
+      return texture_id | 0x100000000;
     }
 
 
     std::pair<TextureMapping::mapping_range, bool>
-      TextureMapping::find_all(std::size_t resource_id) const
+      TextureMapping::find_all(std::uint64_t resource_id) const
     {
       bool fragments = false;
       auto range = std::equal_range(textures_.data(), textures_.data() + textures_.size(),
@@ -120,6 +120,10 @@ namespace ts
       return std::make_pair(mapping_range(range.first, range.second), fragments);
     }
 
+    void TextureMapping::adopt_texture(std::unique_ptr<graphics::Texture> texture)
+    {
+      texture_storage_.push_back(std::move(texture));
+    }
 
     TextureMappingInterface::TextureMappingInterface(TextureMapping* texture_mapping)
       : texture_mapping_(texture_mapping),
@@ -143,7 +147,7 @@ namespace ts
       texture_mapping_->texture_fragments_ = std::move(texture_fragments_);
     }
 
-    void TextureMappingInterface::map_texture(std::size_t resource_id, texture_type texture, IntRect texture_rect)
+    void TextureMappingInterface::map_texture(std::uint64_t resource_id, texture_type texture, IntRect texture_rect)
     {
       MappedTexture m;
       m.resource_id = resource_id;
@@ -154,7 +158,7 @@ namespace ts
       textures_.push_back(m);
     }
 
-    void TextureMappingInterface::map_texture_fragment(std::size_t resource_id, texture_type texture,
+    void TextureMappingInterface::map_texture_fragment(std::uint64_t resource_id, texture_type texture,
                                                        IntRect texture_rect, Vector2i fragment_offset)
     {
       MappedTexture m;

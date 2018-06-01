@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -45,7 +45,7 @@ namespace ts
       sf::ContextSettings settings;
       settings.majorVersion = gl_version::major;
       settings.minorVersion = gl_version::minor;
-      settings.antialiasingLevel = 4;
+      settings.antialiasingLevel = 0;
       settings.stencilBits = 8;
 
       auto context = new sf::Context(settings, 0, 0);      

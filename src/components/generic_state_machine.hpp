@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -88,6 +88,9 @@ namespace ts
       template <typename ConcreteType>
       void activate_state();
 
+      template <typename ConcreteType>
+      ConcreteType* find_state() const;
+
       // Clear the state stack.
       void clear();
 
@@ -119,6 +122,7 @@ namespace ts
 
       void activate_state(std::type_index index);
       void deactivate_state(std::type_index index);
+      StateType* find_state(std::type_index index) const;
 
       void call_activation_function(StateType* state_ptr) const;
       void call_deactivation_function(StateType* state_ptr) const;
@@ -153,6 +157,7 @@ namespace ts
       };
 
       friend transition_guard_type;
+      std::vector<std::unique_ptr<StateType>> destruction_queue_;
       std::vector<Transition> state_transitions_;
       std::size_t transition_guard_count_ = 0;
     };

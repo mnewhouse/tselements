@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -20,7 +20,7 @@ namespace ts
     // taking the sub-tiles and calculating their positions as if they were normal tiles.
 
     template <typename InputIt, typename OutIt>
-    void expand_tiles(InputIt tile_it, InputIt tile_end,
+    OutIt expand_tiles(InputIt tile_it, InputIt tile_end,
                       const TileLibrary& tile_library, OutIt out)
     {
       const auto& tile_groups = tile_library.tile_groups();
@@ -56,25 +56,28 @@ namespace ts
           for (const auto& sub_tile : tile_group->sub_tiles)
           {
             auto tile_def_it = tiles.find(sub_tile.id);
-            if (tile_def_it == tiles.end()) continue;
+            if (tile_def_it != tiles.end())
+            {
+              auto tile_rotation = degrees(static_cast<double>(tile.rotation));
 
-            auto tile_rotation = degrees(static_cast<double>(tile.rotation));
+              auto sub_tile_position = vector2_cast<double>(sub_tile.position);
+              auto sub_tile_offset = transform_point(sub_tile_position, tile_rotation);
 
-            auto sub_tile_position = vector2_cast<double>(sub_tile.position);
-            auto sub_tile_offset = transform_point(sub_tile_position, tile_rotation);
+              PlacedTile placed_tile;
+              placed_tile.id = sub_tile.id;
+              placed_tile.level = sub_tile.level;
+              placed_tile.position = tile.position + vector2_round<std::int32_t>(sub_tile_offset);
+              placed_tile.definition = &*tile_def_it;
+              placed_tile.rotation = tile.rotation + sub_tile.rotation;
 
-            PlacedTile placed_tile;
-            placed_tile.id = sub_tile.id;
-            placed_tile.level = sub_tile.level;
-            placed_tile.position = tile.position + vector2_round<std::int32_t>(sub_tile_offset);
-            placed_tile.definition = &*tile_def_it;
-            placed_tile.rotation = tile.rotation + sub_tile.rotation;
-
-            *out = placed_tile;
-            ++out;
+              *out = placed_tile;
+              ++out;
+            }
           }
         }
       }
+
+      return out;
     }
   }
 }

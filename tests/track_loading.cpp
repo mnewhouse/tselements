@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -11,7 +11,6 @@
 #include "resources/tile_library.hpp"
 #include "resources/texture_library.hpp"
 #include "resources/track_layer.hpp"
-#include "resources/pattern_builder.hpp"
 
 #include "scene/track_scene_generator_detail.hpp"
 #include "scene/track_scene.hpp"
@@ -64,14 +63,18 @@ TEST_CASE("Track loading is a complex process, which is required to work perfect
   if (layers.size() == 1)
   {
     auto& layer = layers[0];
-    auto& layer_tiles = layer.tiles();
-
-    REQUIRE(layer_tiles.size() == 2);
-    if (layer_tiles.size() == 2)
+    auto layer_tiles = layer.tiles();
+    REQUIRE(layer_tiles != nullptr);
+    if (layer_tiles != nullptr)
     {
-      REQUIRE(layer_tiles[0].id == 25);
-      REQUIRE(layer_tiles[0].position == Vector2i(523, 117));
-      REQUIRE(layer_tiles[0].rotation == 126);
+      auto& t = *layer_tiles;
+      REQUIRE(t.size() == 2);
+      if (t.size() == 2)
+      {
+        REQUIRE(t[0].id == 25);
+        REQUIRE(t[0].position == Vector2i(523, 117));
+        REQUIRE(t[0].rotation == 126);
+      }
     }
   }
 
@@ -135,21 +138,9 @@ TEST_CASE("Track loading is a complex process, which is required to work perfect
     std::size_t id = 0;
     for (const auto& atlas : placement_map.atlases)
     {
-      auto surface = detail::build_atlas_surface(atlas, image_loader);
+      auto surface = detail::build_atlas_image(atlas, image_loader);
       graphics::save_image(surface, "assets/output/atlas_" + std::to_string(++id) + ".png");    
     }
-  }
-
-  SECTION("Pattern builder")
-  {
-    resources::TrackLoader banaring_loader;
-    banaring_loader.load_from_file("assets/tracks/banaring.trk");
-
-    auto banaring = banaring_loader.get_result();
-    auto banaring_pattern = build_track_pattern(banaring);
-
-    resources::save_pattern(banaring_pattern, "assets/output/banaring-pat.generated.png",
-                            banaring.terrain_library());
   }
 }
 

@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -9,7 +9,7 @@
 #include "control_point_manager.hpp"
 #include "entity.hpp"
 
-#include <utility/line_intersection.hpp>
+#include "utility/line_intersection.hpp"
 
 namespace ts
 {
@@ -88,7 +88,7 @@ namespace ts
     template <typename EventCallback>
     void ControlPointManager::test_control_point_intersections(Vector2<double> old_position, Vector2<double> new_position, 
                                                                EventCallback&& event_callback)
-    {
+    {      
       for (const auto& point : control_points_)
       {
         switch (point.type)

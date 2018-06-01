@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -24,7 +24,7 @@ namespace ts
     template <typename MessageType>
     void EventTranslator<MessageDispatcher>::dispatch_message(MessageType&& message)
     {
-      message_dispatcher_(std::forward<MessageType>(message));
+      message_dispatcher_.send(std::forward<MessageType>(message));
     }
 
     template <typename MessageDispatcher>
@@ -45,7 +45,7 @@ namespace ts
     {
       messages::SceneryCollision message;
       message.entity = entity;
-      message.collision = collision;
+      //message.collision = collision;
       dispatch_message(message);
     }
 
@@ -56,7 +56,7 @@ namespace ts
       messages::EntityCollision message;
       message.subject = subject;
       message.object = object;
-      message.collision = collision;
+      //message.collision = collision;
       dispatch_message(message);
     }
   }

@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -18,6 +18,16 @@ namespace ts
     void WorkingState::select_layer(resources::TrackLayer* layer)
     {
       selected_layer_ = layer;
+    }
+
+    resources::TrackPath* WorkingState::selected_path() const
+    {
+      return selected_path_;
+    }
+
+    void WorkingState::select_path(resources::TrackPath* path)
+    {
+      selected_path_ = path;
     }
   }
 }

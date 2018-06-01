@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -13,20 +13,12 @@
 #include <vector>
 #include <cstdint>
 
+/*
 namespace ts
 {
   namespace scene
   {
     using PathNodeIterator = std::vector<resources::TrackPathNode>::const_iterator;
-
-    struct PathVertexPoint
-    {
-      PathNodeIterator first;
-      PathNodeIterator second;
-      float time_point = 0.0f;
-      Vector2f point;
-      Vector2f normal;
-    };
 
     struct PathVertex
     {
@@ -52,7 +44,7 @@ namespace ts
     //   returns something that's convertible to VertexType.
     template <typename VertexType, typename VertexTransform>
     void generate_path_vertices(const resources::TrackPath& path,
-                                const resources::SegmentedStroke& stroke,
+                                const resources::SegmentedStrokeStyle& stroke,
                                 const std::vector<PathVertexPoint>& points,
                                 float texture_size, float texture_z,
                                 resources::BasicGeometry<VertexType>& output_model,
@@ -60,10 +52,11 @@ namespace ts
 
     template <typename VertexType, typename VertexTransform>
     void generate_path_vertices(const resources::TrackPath& path,
-                                const resources::StrokeProperties& stroke_properties,
+                                const resources::StrokeStyle& stroke_properties,
                                 const std::vector<PathVertexPoint>& points,
                                 float texture_size, float texture_z,
                                 resources::BasicGeometry<VertexType>& output_geometry,
                                 VertexTransform&& transform_vertex);
   }
 }
+*/

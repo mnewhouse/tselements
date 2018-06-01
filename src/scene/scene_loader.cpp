@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -71,7 +71,7 @@ namespace ts
   
     Scene SceneLoader::load(const stage::Stage* stage_ptr)
     {
-      return Scene(load_scene_components(stage_ptr), RenderScene(generate_track_scene(stage_ptr->track())));
+      return Scene(load_scene_components(stage_ptr));
     }
 
     bool SceneLoader::is_ready() const
@@ -91,6 +91,21 @@ namespace ts
       return SceneComponents
       {
         stage_ptr,
+        RenderScene(generate_track_scene(stage_ptr->track())),
+        generate_dynamic_scene(*stage_ptr),
+        create_particle_generator(*stage_ptr),
+        make_car_sound_controller(*stage_ptr),
+        make_sound_effect_controller()
+      };
+    }
+
+
+    SceneComponents load_scene_components_no_render(const stage::Stage* stage_ptr)
+    {
+      return SceneComponents
+      {
+        stage_ptr,
+        RenderScene(),
         generate_dynamic_scene(*stage_ptr),
         create_particle_generator(*stage_ptr),
         make_car_sound_controller(*stage_ptr),

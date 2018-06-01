@@ -1,10 +1,12 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 #pragma once
+
+#include "resources/collision_shape.hpp"
 
 #include "utility/rect.hpp"
 #include "utility/vector2.hpp"
@@ -30,6 +32,7 @@ namespace ts
       boost::string_ref image_file;
       IntRect pattern_rect;
       IntRect image_rect;
+      CollisionShape collision_shape;
     };
 
     struct Tile

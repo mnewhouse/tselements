@@ -1,12 +1,12 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 
 #include "car.hpp"
-#include "handling_physics.hpp"
+#include "handling_v2.hpp"
 
 #include "resources/car_definition.hpp"
 
@@ -15,23 +15,17 @@ namespace ts
   namespace world
   {
     Car::Car(const CarDefinition& car_definition, std::uint16_t entity_id)
-      : Entity(entity_id, EntityType::Car, car_definition.collision_mask),
-        Controllable(entity_id),
-        handling_(car_definition.handling),
-        handling_state_()
-    {
-      set_bounciness(car_definition.bounciness);
-      set_mass(car_definition.handling.mass);
+      : Entity(entity_id, EntityType::Car, 
+               car_definition.collision_shape, 
+               car_definition.mass, 
+               car_definition.moment_of_inertia),
+        Controllable(entity_id)
+    {      
     }
 
-    const resources::Handling& Car::handling() const
+    void Car::update(const TerrainMap& terrain_map, double frame_duration)
     {
-      return handling_;
-    }
-
-    const resources::HandlingState& Car::handling_state() const
-    {
-      return handling_state_;
+      apply_physics_forces(*this, terrain_map, frame_duration);
     }
   }
 }

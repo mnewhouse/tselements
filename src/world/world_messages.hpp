@@ -1,12 +1,10 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 #pragma once
-
-#include "collisions.hpp"
 
 #include <cstdint>
 
@@ -29,14 +27,12 @@ namespace ts
       struct SceneryCollision
       {
         const Entity* entity;
-        CollisionResult collision;
       };
 
       struct EntityCollision
       {
         const Entity* subject;
         const Entity* object;
-        CollisionResult collision;
       };
     }
   }

@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -10,11 +10,16 @@ namespace ts
 {
   namespace resources
   {
+
     TrackLayer::TrackLayer(TrackLayerType type, std::uint32_t level, std::string name)
       : type_(type),
-        level_(level),
-        name_(std::move(name))
-    {}
+      level_(level),
+      name_(std::move(name))
+    {
+      if (type_ == TrackLayerType::Tiles) data_ = std::vector<Tile>();
+      else if (type_ == TrackLayerType::PathStyle) data_ = PathLayerData();
+      else if (type_ == TrackLayerType::BaseTerrain) data_ = BaseTerrainData();
+    }
 
     void TrackLayer::set_level(std::uint32_t level)
     {
@@ -36,34 +41,44 @@ namespace ts
       name_ = new_name;
     }
 
-    std::vector<Tile>& TrackLayer::tiles()
+    TrackLayer::data_type& TrackLayer::data()
     {
-      return tiles_;
+      return data_;
     }
 
-    const std::vector<Tile>& TrackLayer::tiles() const
+    const TrackLayer::data_type& TrackLayer::data() const
     {
-      return tiles_;
+      return data_;
     }
 
-    std::vector<Geometry>& TrackLayer::geometry()
+    std::vector<Tile>* TrackLayer::tiles()
     {
-      return geometry_;
+      return boost::get<std::vector<Tile>>(&data_);
     }
 
-    const std::vector<Geometry>& TrackLayer::geometry() const
+    const std::vector<Tile>* TrackLayer::tiles() const
     {
-      return geometry_;
+      return boost::get<std::vector<Tile>>(&data_);
     }
 
-    std::vector<TrackPath>& TrackLayer::paths()
+    const PathLayerData* TrackLayer::path_styles() const
     {
-      return paths_;
+      return boost::get<PathLayerData>(&data_);
     }
 
-    const std::vector<TrackPath>& TrackLayer::paths() const
+    PathLayerData* TrackLayer::path_styles()
     {
-      return paths_;
+      return boost::get<PathLayerData>(&data_);
+    }
+
+    BaseTerrainData* TrackLayer::base_terrain()
+    {
+      return boost::get<BaseTerrainData>(&data_);
+    }
+
+    const BaseTerrainData* TrackLayer::base_terrain() const
+    {
+      return boost::get<BaseTerrainData>(&data_);
     }
   }
 }

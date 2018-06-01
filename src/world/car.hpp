@@ -1,14 +1,16 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 #pragma once
 
 #include "entity.hpp"
+#include "handling_v2.hpp"
 
-#include "resources/handling.hpp"
+#include "resources/car_definition.hpp"
+#include "resources/handling_properties.hpp"
 
 #include "controls/controllable.hpp"
 
@@ -22,28 +24,27 @@ namespace ts
   namespace resources
   {
     struct CarDefinition;
-    struct TerrainDefinition;
   }
 
   namespace world
   {
+    class TerrainMap;
     using resources::CarDefinition;
 
     class Car
       : public Entity, public controls::Controllable
     {
     public:
-      explicit Car(const CarDefinition& car_definition, EntityId entity_id);
+      explicit Car(const CarDefinition& car_definition, std::uint16_t entity_id);
+      
+      void update(const TerrainMap& terrain_map, double frame_duration);
 
-      template <typename TerrainFunc>
-      void update(TerrainFunc&& terrain_at, double frame_duration);
-
-      const resources::Handling& handling() const;
-      const resources::HandlingState& handling_state() const;
+      const resources::HandlingProperties& handling_properties() const { return handling_properties_; }
+      const HandlingState& handling_state() const { return handling_state_; }
 
     private:
-      resources::Handling handling_;
-      resources::HandlingState handling_state_;
+      resources::HandlingProperties handling_properties_;
+      HandlingState handling_state_;
     };
   }
 }

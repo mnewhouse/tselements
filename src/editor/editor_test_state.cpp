@@ -1,19 +1,17 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 #include "editor_test_state.hpp"
-#include "test_state_essentials.hpp"
+#include "editor_scene.hpp"
 
 #include "scene/scene_loader.hpp"
 #include "scene/scene_components.hpp"
 #include "scene/scene.hpp"
 #include "scene/render_scene.hpp"
 
-#include "resources/pattern_loader.hpp"
-#include "resources/pattern_builder.hpp"
 #include "resources/settings.hpp"
 
 #include "cup/cup_settings.hpp"
@@ -21,10 +19,18 @@
 #include "client/player_settings.hpp"
 #include "client/local_player_roster.hpp"
 
+#include "world/terrain_map_builder.hpp"
+#include "world/terrain_map.hpp"
+
 namespace ts
 {
   namespace editor
   {
+    StageComponents::StageComponents() = default;
+    StageComponents::~StageComponents() = default;
+    StageComponents::StageComponents(StageComponents&&) = default;
+    StageComponents& StageComponents::operator=(StageComponents&&) = default;
+
     static auto load_scene_components(const stage::Stage* stage_ptr)
     {
       return std::make_unique<scene::SceneComponents>(scene::load_scene_components(stage_ptr));
@@ -73,44 +79,41 @@ namespace ts
     static auto load_stage(resources::Track track, const resources::Settings& settings,
                            const client::LocalPlayerRoster& local_players)
     {
-      auto pattern_loader = preload_pattern_files(track);
-      auto pattern = build_track_pattern(track, pattern_loader);
+      auto terrain_map = world::build_terrain_map(track);
 
-      world::World world_obj(std::move(track), std::move(pattern));
+      world::World world_obj(std::move(track), std::move(terrain_map));
 
-      auto stage_obj = std::make_unique<stage::Stage>(std::move(world_obj),
+      return std::make_unique<stage::Stage>(std::move(world_obj),
                                                       make_stage_description(settings, local_players));
-
-      return std::make_unique<test::StageEssentials>(std::move(stage_obj));
     }
 
-    TestState::TestState(resources::Track track, const resources::Settings& settings)
-      : local_players_(make_local_player_roster(settings.player_settings())),
-      stage_essentials_(load_stage(std::move(track), settings, local_players_)),
-      scene_components_(load_scene_components(stage_essentials_->stage()))
+    StageComponents load_test_stage_components(resources::Track track, const resources::Settings& settings)
+    {
+      auto terrain_map = world::build_terrain_map(track);
+      world::World world_obj(std::move(track), std::move(terrain_map));
+
+      StageComponents result;
+      result.local_players = make_local_player_roster(settings.player_settings());
+      result.stage = std::make_unique<stage::Stage>(std::move(world_obj), make_stage_description(settings, result.local_players));
+      result.scene_components = load_scene_components(result.stage.get());
+      return result;
+    }
+
+    void adopt_render_scene(StageComponents& stage_components, scene::RenderScene render_scene)
+    {
+      stage_components.scene_components->render_scene_ = std::move(render_scene);
+    }
+
+    TestState::TestState(const game_context& ctx, StageComponents stage_components)
+      : client::StandaloneActionState(ctx, scene::Scene(std::move(*stage_components.scene_components)),
+                                      std::move(stage_components.local_players),
+                                      std::move(stage_components.stage))
     {
     }
 
-    TestState::~TestState() = default;
-
-    void TestState::launch(const game::GameContext& game_context, scene::RenderScene render_scene)
+    void TestState::release_scene(EditorScene& editor_scene)
     {
-      render_scene.set_background_color({ 0.0f, 0.0f, 0.0f, 1.0f });
-
-      scene::Scene scene_obj(std::move(*scene_components_), std::move(render_scene));
-      test::ClientMessageDispatcher dispatcher(&stage_essentials_->message_conveyor());
-
-      action_essentials_ = std::make_unique<test::ActionEssentials>(game_context, std::move(scene_obj),
-                                                                    local_players_, dispatcher);
-
-      stage_essentials_->initiate_local_connection(action_essentials_.get());
-
-      action_essentials_->launch_action();
-    }
-
-    scene::RenderScene TestState::steal_render_scene()
-    {
-      return action_essentials_->scene_object().steal_render_scene();
+      editor_scene.adopt_render_scene(scene_object().release().render_scene_);
     }
   }
 }

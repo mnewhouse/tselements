@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -80,11 +80,13 @@ namespace ts
         if (car_info.engine_sound)
         {
           auto pitch = std::min(0.3 + rev_speed * 0.7, 1.1);
-          auto target_volume = 0.3 + car.control_state(controls::Control::Throttle) / 255.0 * 0.25;
+          auto throttle_rate = car.control_state(controls::Control::Throttle) / 255.0;
 
-          auto frame_increment = frame_duration * 0.0001;
+          auto frame_increment = frame_duration * 0.001 * 0.5;
 
           auto volume = std::max(static_cast<double>(car_info.engine_sound.volume()), 0.3);
+          auto target_volume = 0.3 + 0.3 * rev_speed + 0.4 * throttle_rate;
+
           if (target_volume > volume)
           {
             volume = std::min(volume + frame_increment, target_volume);
@@ -95,10 +97,11 @@ namespace ts
             volume = std::max(volume - frame_increment, target_volume);
           }
 
-          car_info.engine_sound.set_volume(std::min(volume, 1.0));
-          car_info.engine_sound.set_pitch(std::min(pitch, 1.1));
+          car_info.engine_sound.set_volume(static_cast<float>(std::min(volume, 1.0)));
+          car_info.engine_sound.set_pitch(static_cast<float>(std::min(pitch, 1.1)));
         }
 
+        /*
         auto traction = handling_state.traction;
 
         if (traction < 0.95)
@@ -114,7 +117,7 @@ namespace ts
 
           if (car_info.skid_sound)
           {
-            car_info.skid_sound.set_volume(volume * volume * 0.6);
+            car_info.skid_sound.set_volume(static_cast<float>(volume * volume * 0.6));
           }          
         }
 
@@ -123,6 +126,7 @@ namespace ts
           skid_playback_controller_.stop_sound_playback(car_info.skid_sound);
           car_info.skid_sound = {};
         }
+        */
       }
     }
   }

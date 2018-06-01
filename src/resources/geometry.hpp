@@ -1,12 +1,13 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 #pragma once
 
 #include "track_texture.hpp"
+#include "terrain_definition.hpp"
 
 #include "utility/vector2.hpp"
 #include "utility/color.hpp"
@@ -31,12 +32,10 @@ namespace ts
       std::array<std::uint32_t, 3> indices;
     };
 
-    static_assert(sizeof(Face) == sizeof(std::uint32_t) * 3, "error");
-
     template <typename VertexType>
     struct BasicGeometry
     {
-      TextureId texture_id;
+      std::uint32_t texture_id;      
       std::uint32_t level;
       std::vector<VertexType> vertices;
       std::vector<Face> faces;

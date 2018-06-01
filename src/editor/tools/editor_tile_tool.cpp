@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -50,7 +50,7 @@ namespace ts
         for (unsigned x = 16; x != 32; ++x)
           transparency_tiles.setPixel(x, y, sf::Color(130, 130, 130));
 
-      return graphics::create_texture_from_image(transparency_tiles);
+      return graphics::create_texture(transparency_tiles);
     }
 
     TileTool::TileTool()
@@ -67,16 +67,13 @@ namespace ts
     {
       // Show tile library and update selected tile if needed
 
-      imgui::StyleGuard styles;
-      imgui::ColorGuard colors;
-
       const char* all[] =
       {
         "All Tiles"
-      };
+      };      
 
-      styles.push(ImGuiStyleVar_WindowPadding, ImVec2(3, 3));
-      ImGui::BeginChild("Tile Selection", ImVec2(ImGui::GetWindowSize().x, 200), true);
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(3, 3));
+      ImGui::BeginChild("Tile Selection", ImVec2(ImGui::GetWindowSize().x, 200), true);      
 
       ImGui::PushItemWidth(ImGui::GetWindowSize().x - 5.0f);      
       ImGui::Combo("##tile_category_filter", &selected_tile_category_, all, static_cast<int>(std::end(all) - all));
@@ -89,13 +86,13 @@ namespace ts
 
         auto selector_window_width = ImGui::GetWindowSize().x - style.WindowPadding.x;
         
-        colors.push(ImGuiCol_ChildWindowBg, ImColor(0.5f, 0.5f, 0.55f, 1.0f));
-        colors.push(ImGuiCol_HeaderHovered, ImColor(0.5f, 0.6f, 0.8f, 0.3f));
-        colors.push(ImGuiCol_HeaderActive, ImColor(0.5f, 0.6f, 0.8f, 0.3f));
-        colors.push(ImGuiCol_Header, ImColor(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, ImColor(0.5f, 0.5f, 0.55f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImColor(0.5f, 0.6f, 0.8f, 0.3f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImColor(0.5f, 0.6f, 0.8f, 0.3f));
+        ImGui::PushStyleColor(ImGuiCol_Header, ImColor(0, 0, 0, 0));
 
-        styles.push(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
-        styles.push(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
         ImGui::BeginChild("##tile_selector_list", ImVec2(selector_window_width, 160.f), true);        
 
@@ -244,12 +241,16 @@ namespace ts
               if (col + 1 != max_columns) ImGui::SameLine();
             }
           }
-        }
+        }       
 
         ImGui::EndChild();        
+
+        ImGui::PopStyleColor(4);
+        ImGui::PopStyleVar(2);
       }
 
       ImGui::EndChild();
+      ImGui::PopStyleVar(1);
     }
 
     void TileTool::update_canvas_interface(const EditorContext& context)
@@ -270,7 +271,7 @@ namespace ts
       {
         auto& scene = context.scene;
 
-        if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0))
+        if (context.canvas_focus && ImGui::IsMouseClicked(0))
         {
           // Place a tile
           place_tile_at(context, world_pos);
@@ -395,21 +396,24 @@ namespace ts
         tile.rotation = placement_tile_rotation_;
 
         auto layer = selected_layer_;
-        auto tile_index = static_cast<std::uint32_t>(layer->tiles().size());
-
-        auto action = [=]()
+        if (auto tiles = layer->tiles())
         {
-          select_layer(layer, context);
-          context.scene.append_tile(layer, tile);         
-        };        
+          auto tile_index = static_cast<std::uint32_t>(tiles->size());
 
-        auto undo_action = [=]()
-        {
-          select_layer(layer, context);
-          context.scene.remove_tile(layer, tile_index);
-        };
+          auto action = [=]()
+          {
+            select_layer(layer, context);
+            context.scene.append_tile(layer, tile);
+          };
 
-        context.action_history.push_action("Place tile", action, undo_action);
+          auto undo_action = [=]()
+          {
+            select_layer(layer, context);
+            context.scene.remove_tile(layer, tile_index);
+          };
+
+          context.action_history.push_action("Place tile", action, undo_action);
+        }
       }      
     }
     
@@ -510,11 +514,12 @@ namespace ts
     {
       update_selected_layer(context);
 
-      if (auto layer = selected_layer_)
+      if (auto tiles = selected_layer_->tiles())
       {
-        if (!layer->tiles().empty())
+        auto layer = selected_layer_;
+        if (!tiles->empty())
         {
-          auto last_tile = layer->tiles().back();
+          auto last_tile = tiles->back();
 
           auto action = [=]()
           {

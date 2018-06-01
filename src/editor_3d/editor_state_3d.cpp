@@ -23,17 +23,10 @@ namespace ts
       auto create_test_track()
       {
         Vector2i track_size(1600, 1400);
-        auto elevation_map = resources3d::generate_random_elevation_map(track_size, 32,
+        auto elevation_map = resources3d::generate_random_elevation_map(track_size, 16,
                                                                         0.0f, 300.0f, 0.5f);
 
         resources3d::Track track(track_size, std::move(elevation_map));
-
-        resources3d::TextureDescriptor texture_desc;
-        texture_desc.feature_set = 0;
-        texture_desc.user_id = 0;
-        texture_desc.image_rect = { 0, 0, 2048, 2048 };
-        texture_desc.image_file = "features/grass_ultra.png";
-        track.texture_library().define_texture(texture_desc);
 
         return track;
       }

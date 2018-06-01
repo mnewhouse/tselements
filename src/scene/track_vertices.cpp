@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -133,19 +133,25 @@ namespace ts
         }
         */
 
-        track_scene.create_layer(&layer);
-
-        std::uint32_t tile_index = 0;
-        for (const auto& tile : layer.tiles())
+        if (auto tiles = layer.tiles())
         {
-          placed_tiles.clear();
-          resources::expand_tiles(&tile, &tile + 1,
-                                  tile_library, std::back_inserter(placed_tiles));
+          std::uint32_t tile_index = 0;
+          for (const auto& tile : *tiles)
+          {
+            placed_tiles.clear();
+            resources::expand_tiles(&tile, &tile + 1,
+                                    tile_library, std::back_inserter(placed_tiles));
 
-          track_scene.add_tile_geometry(&layer, tile_index, placed_tiles.data(), placed_tiles.size());
+            track_scene.add_tile_geometry(&layer, tile_index, placed_tiles.data(), placed_tiles.size());
 
-          ++tile_index;
-        }       
+            ++tile_index;
+          }
+        }
+
+        else if (auto base_terrain = layer.base_terrain())
+        {
+          track_scene.add_base_terrain_geometry(&layer);
+        }
       }
     }
   }

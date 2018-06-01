@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -27,7 +27,9 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <iostream>
+#include <fstream>
 
 namespace ts
 {
@@ -83,8 +85,57 @@ namespace ts
       }
     }
 
+    template <typename Func>
+    static void do_callback(boost::string_ref line, std::string& directive, Func&& callback)
+    {
+      auto directive_view = extract_word(line);
 
-    static bool read_tile(LoadingContext& context, boost::string_ref directive, boost::string_ref line, 
+      directive.assign(directive_view.begin(), directive_view.end());
+      primitive_tolower(directive);
+
+      boost::string_ref remainder = make_string_ref(directive_view.end(), line.end());
+      remainder = remove_leading_spaces(remainder, "\t ");
+
+      if (!directive.empty() && directive.front() != '#')
+      {
+        callback(directive, directive_view, remainder);
+      }      
+    }
+
+    template <typename Func>
+    auto loop_until_end(LoadingContext& context, Func&& callback)
+    {
+      const auto& lines = *context.lines;
+      auto& line_index = context.line_index;
+
+      for (std::string directive; line_index < lines.size() && directive != "end"; ++line_index)
+      {
+        do_callback(lines[line_index], directive, callback);
+      }
+    }
+
+    template <typename Func>
+    auto loop_all(LoadingContext& context, Func&& callback)
+    {
+      const auto& lines = *context.lines;
+      auto& line_index = context.line_index;
+
+      for (std::string directive; line_index < lines.size(); )
+      {
+        auto start_index = line_index;
+        do_callback(lines[line_index], directive, callback);
+
+        if (line_index == start_index)
+        {
+          ++line_index;
+        }
+      }
+    }
+
+
+#define LOOP_LAMBDA [&](const std::string& directive, boost::string_ref directive_view, boost::string_ref remainder)
+
+    static bool read_tile(LoadingContext& context, boost::string_ref directive, boost::string_ref line,
                           Tile& tile, bool level_tile = false)
     {
       TileId tile_id;
@@ -108,9 +159,10 @@ namespace ts
       return false;
     }
 
-    static void load_geometry(TrackLayer& layer, LoadingContext& context, TextureId texture_id, 
+    static void load_geometry(TrackLayer& layer, LoadingContext& context, std::uint32_t texture_id,
                               std::uint32_t level, std::size_t vertex_count)
     {
+      /*
       std::size_t start_line = context.line_index;
 
       Geometry geometry;
@@ -142,10 +194,10 @@ namespace ts
 
             if (stream >> r >> g >> b >> a)
             {
-              vertex.color = 
-              { 
-                static_cast<std::uint8_t>(r), 
-                static_cast<std::uint8_t>(g),              
+              vertex.color =
+              {
+                static_cast<std::uint8_t>(r),
+                static_cast<std::uint8_t>(g),
                 static_cast<std::uint8_t>(g),
                 static_cast<std::uint8_t>(a)
               };
@@ -165,7 +217,7 @@ namespace ts
 
       if (vertices.size() == 0)
       {
-        DEBUG_RELEVANT << "Warning: geometry definition on line " << start_line << 
+        DEBUG_RELEVANT << "Warning: geometry definition on line " << start_line <<
           " has no vertices, ignoring." << debug::endl;
       }
 
@@ -179,13 +231,11 @@ namespace ts
             start_line << "." << debug::endl;
         }
       }
+      */
     }
 
     static void load_track_components(Track& track, LoadingContext& context)
     {
-      const auto& lines = *context.lines;
-      auto& line_index = context.line_index;
-
       TrackLayer* current_layer = nullptr;
 
       // Helper lambda to ensure that a layer with the specified level exists,
@@ -195,21 +245,12 @@ namespace ts
         if (!current_layer || current_layer->level() != level)
         {
           auto layer_count = track.layer_count();
-          current_layer = track.create_layer("Layer " + std::to_string(layer_count + 1), level);
+          current_layer = track.create_layer(TrackLayerType::Tiles, "Layer " + std::to_string(layer_count + 1), level);
         }
       };
 
-      for (std::string directive; line_index < lines.size() && directive != "end";)
+      loop_until_end(context, LOOP_LAMBDA
       {
-        auto start_index = line_index;
-
-        boost::string_ref line = lines[line_index];
-        boost::string_ref directive_view = extract_word(line);
-        auto remainder = make_string_ref(directive_view.end(), line.end());
-
-        directive.assign(directive_view.begin(), directive_view.end());
-        primitive_tolower(directive);
-
         if (directive == "a" || directive == "leveltile")
         {
           bool level_tile = directive != "a";
@@ -218,30 +259,15 @@ namespace ts
           if (read_tile(context, directive_view, remainder, tile, level_tile))
           {
             ensure_layer_exists(tile.level);
-            current_layer->tiles().push_back(tile);
+
+            if (auto tiles = current_layer->tiles())
+            {
+              tiles->push_back(tile);
+            }
           }
         }
 
-        else if (directive == "geometry")
-        {
-          std::size_t vertex_count = 0;
-          std::uint32_t level = 0;
-          TextureId texture_id;
-          if (ArrayStream(remainder) >> texture_id >> level >> vertex_count)
-          {
-            ++line_index;
-            ensure_layer_exists(level); // TODO
-            load_geometry(*current_layer, context, texture_id, level, vertex_count);
-          }
-
-          else
-          {
-            skip_until_end(context);
-            insufficient_parameters(directive_view, context);
-          }
-        }
-
-        else if (directive == "layer")
+        else if (directive == "tilelayer")
         {
           ArrayStream stream(remainder);
 
@@ -250,16 +276,30 @@ namespace ts
 
           if (stream >> level >> visible >> std::ws && std::getline(stream, layer_name))
           {
-            current_layer = track.create_layer(std::move(layer_name), level);
+            current_layer = track.create_layer(resources::TrackLayerType::Tiles, std::move(layer_name), level);
             current_layer->set_visible(visible != 0);
-          }         
+          }
         }
 
-        if (start_index == line_index)
+        else if (directive == "baseterrain")
         {
-          ++line_index;
+          ArrayStream stream(remainder);
+          std::uint32_t texture_id, terrain_id;
+          
+          if (stream >> terrain_id >> texture_id)
+          {
+            char h{};
+            stream >> h;
+
+            current_layer = track.create_layer(resources::TrackLayerType::BaseTerrain, "Base Terrain", 0);
+            current_layer->set_visible(h == 'H' || h == 'h');
+
+            auto* base_terrain = current_layer->base_terrain();
+            base_terrain->texture_id = texture_id;
+            base_terrain->terrain_id = terrain_id;
+          }
         }
-      }
+      });
     }
 
     static void load_tile_definitions(TileLibrary& tile_library, LoadingContext& context,
@@ -281,35 +321,22 @@ namespace ts
 
       auto tile_def_interface = tile_library.define_tile_set(pattern_path.string(), image_path.string());
 
-      const auto& lines = *context.lines;
-      auto& line_index = context.line_index;
-
-      for (std::string directive; line_index < lines.size() && directive != "end"; ++context.line_index)
+      loop_until_end(context, LOOP_LAMBDA
       {
-        boost::string_ref line = lines[line_index];
-        boost::string_ref directive_view = extract_word(line);
-
-        directive.assign(directive_view.begin(), directive_view.end());
-        if (!directive.empty())
+        if (directive == "tile" || directive == "norottile")
         {
-          primitive_tolower(directive);
-          auto remainder = make_string_ref(directive_view.end(), line.end());
+          TileId tile_id;
+          IntRect pat_rect, img_rect;
 
-          if (directive == "tile" || directive == "norottile")
+          if (ArrayStream(remainder) >> tile_id >> pat_rect.left >> pat_rect.top >> pat_rect.width >> pat_rect.height >>
+              img_rect.left >> img_rect.top >> img_rect.width >> img_rect.height)
           {
-            TileId tile_id;
-            IntRect pat_rect, img_rect;
-
-            if (ArrayStream(remainder) >> tile_id >> pat_rect.left >> pat_rect.top >> pat_rect.width >> pat_rect.height >>
-                img_rect.left >> img_rect.top >> img_rect.width >> img_rect.height)
-            {
-              tile_def_interface.define_tile(tile_id, pat_rect, img_rect);
-            }
-
-            else insufficient_parameters(directive_view, context);
+            tile_def_interface.define_tile(tile_id, pat_rect, img_rect);
           }
-        }        
-      }
+
+          else insufficient_parameters(directive_view, context);
+        }
+      });
     }
 
     static void load_tile_group_definitions(TileLibrary& tile_library, LoadingContext& context, TileId group_id, std::size_t group_size)
@@ -320,18 +347,8 @@ namespace ts
       auto& sub_tiles = tile_group.sub_tiles;
       sub_tiles.reserve(group_size);
 
-      const auto& lines = *context.lines;
-      auto& line_index = context.line_index;
-
-      for (std::string directive; line_index < lines.size() && directive != "end"; ++line_index)
+      loop_until_end(context, LOOP_LAMBDA
       {
-        boost::string_ref line = lines[line_index];
-        boost::string_ref directive_view = extract_word(line);
-        boost::string_ref remainder = make_string_ref(directive_view.end(), line.end());
-
-        directive.assign(directive_view.begin(), directive_view.end());
-        primitive_tolower(directive);    
-
         if (directive == "a")
         {
           Tile tile;
@@ -349,7 +366,7 @@ namespace ts
             sub_tiles.push_back(tile);
           }
         }
-      }
+      });
 
       if (tile_group.sub_tiles.size() == 0)
       {
@@ -367,64 +384,94 @@ namespace ts
       }      
     }
 
-    static void load_texture_definitions(TextureLibrary& texture_library, LoadingContext& context, 
-                                         boost::string_ref image_file, boost::string_ref working_directory)
+    static void load_collision_shape(TileLibrary& tile_library, LoadingContext& context,
+                                     std::uint32_t tile_id)
     {
-      auto image_path = resolve_asset_path(image_file, working_directory);
-
-      if (image_path.empty())
+      CollisionShape collision_shape{};
+      loop_until_end(context, LOOP_LAMBDA
       {
-        throw BrokenTrackException({ image_file.begin(), image_file.end() });
-      }
-
-      auto texture_interface = texture_library.define_texture_set(image_path.string());
-
-      const auto& lines = *context.lines;
-      auto& line_index = context.line_index;
-      for (std::string directive; line_index < lines.size() && directive != "end"; ++line_index)
-      {
-        boost::string_ref line = lines[line_index];
-        boost::string_ref directive_view = extract_word(line);        
-
-        directive.assign(directive_view.begin(), directive_view.end());
-        primitive_tolower(directive);
-
-        if (directive == "texture")
+        if (directive == "circle")
         {
-          boost::string_ref remainder = make_string_ref(directive_view.end(), line.end());
-          remainder = remove_leading_spaces(remainder, "\t ");
+          float x, y, radius, bounciness;
+          std::uint32_t height;
 
-          TextureId texture_id;
-          IntRect rect;
-          if (ArrayStream(remainder) >> texture_id >> rect.left >> rect.top >> rect.width >> rect.height)
+          ArrayStream stream(remainder);
+          if (stream >> x >> y >> radius >> bounciness)
           {
-            texture_interface.define_texture(texture_id, rect);
-          }
+            if (!(stream >> height)) height = 1;
 
-          else insufficient_parameters(directive_view, context);
+            collision_shapes::Circle circle;
+            circle.center = { x, y };
+            circle.radius = radius;
+            circle.height = height;
+
+            collision_shape.sub_shapes.push_back({ circle, bounciness });
+          }
         }
+      });
+
+      tile_library.define_collision_shape(tile_id, collision_shape);
+    }
+    
+    bool process_path_style_directive(BaseStyle& style, const std::string& directive, boost::string_ref remainder)
+    {
+      if (directive == "texture")
+      {
+        ArrayStream(remainder) >> style.texture_id;
       }
+
+      else if (directive == "terrain")
+      {
+        ArrayStream(remainder) >> style.terrain_id;
+      }
+
+      else if (directive == "width")
+      {
+        ArrayStream(remainder) >> style.width;
+      }
+
+      else return false;
+
+      return true;
+    }
+
+    static BorderStyle load_border_style(LoadingContext& context)
+    {
+      BorderStyle style;
+      loop_until_end(context, LOOP_LAMBDA
+      {
+        process_path_style_directive(style, directive, remainder);
+      });
+
+      return style;
+    }
+
+    static PathStyle load_path_style(LoadingContext& context)
+    {
+      PathStyle style;
+      loop_until_end(context, LOOP_LAMBDA
+      {
+        if (process_path_style_directive(style, directive, remainder))
+        {
+          // do nothing
+        }
+
+        else if (directive == "border")
+        {
+          style.border_styles.push_back(load_border_style(context));          
+        }
+      });
+
+      return style;
     }
 
     static void load_terrain_definition(TerrainLibrary& terrain_library, LoadingContext& context)
     {
-      const auto& lines = *context.lines;
-      auto& line_index = context.line_index;
-
       boost::optional<TerrainId> terrain_id;
       TerrainDefinition terrain_def;
 
-      for (std::string directive; line_index < lines.size() && directive != "end"; ++line_index)
+      loop_until_end(context, LOOP_LAMBDA
       {
-        boost::string_ref line = lines[line_index];
-        boost::string_ref directive_view = extract_word(line);
-
-        directive.assign(directive_view.begin(), directive_view.end());
-        primitive_tolower(directive);
-
-        boost::string_ref remainder = make_string_ref(directive_view.end(), line.end());
-        remainder = remove_leading_spaces(remainder, "\t ");
-
         auto read_property = [&](const char* property_directive, auto& value)
         {
           if (directive == property_directive)
@@ -453,8 +500,8 @@ namespace ts
         else if (read_property("iswall", terrain_def.is_wall)) {}
         else if (read_property("red", color)) { terrain_def.color.r = static_cast<std::uint8_t>(color); }
         else if (read_property("green", color)) { terrain_def.color.g = static_cast<std::uint8_t>(color); }
-        else if (read_property("blue", color)) { terrain_def.color.b = static_cast<std::uint8_t>(color); }        
-      }
+        else if (read_property("blue", color)) { terrain_def.color.b = static_cast<std::uint8_t>(color); }
+      });
 
       if (!terrain_id)
       {
@@ -466,27 +513,15 @@ namespace ts
         terrain_def.id = *terrain_id;
         terrain_library.define_terrain(terrain_def);
       }
-    }
+    }    
 
-    static void load_control_points(Track& track, LoadingContext& context, std::size_t point_count)
+    static void load_control_points(Track& track, LoadingContext& context)
     {
-      const auto& lines = *context.lines;
-      auto& line_index = context.line_index;
-
-      for (std::string directive; line_index < lines.size() && directive != "end" && point_count != 0; ++line_index)
+      loop_until_end(context, LOOP_LAMBDA
       {
-        boost::string_ref line = lines[line_index];
-        boost::string_ref directive_view = extract_word(line);
-
-        directive.assign(directive_view.begin(), directive_view.end());
-        primitive_tolower(directive);
-
-        boost::string_ref remainder = make_string_ref(directive_view.end(), line.end());
-        remainder = remove_leading_spaces(remainder, "\t ");
-
         if (directive == "point")
         {
-          std::int32_t x, y, length, direction;          
+          std::int32_t x, y, length, direction;
 
           if (ArrayStream(remainder) >> x >> y >> length >> direction)
           {
@@ -505,13 +540,12 @@ namespace ts
             {
               point.end.x += length;
               point.type = ControlPoint::HorizontalLine;
-            }            
-            
+            }
+
             track.add_control_point(point);
-            --point_count;
           }
-          
-          else insufficient_parameters(directive_view, context);          
+
+          else insufficient_parameters(directive_view, context);
         }
 
         if (directive == "check")
@@ -531,30 +565,17 @@ namespace ts
             point.type = ControlPoint::FinishLine;
             point.flags = flags;
             track.add_control_point(point);
-            --point_count;
           }
         }
 
         else insufficient_parameters(directive_view, context);
-      }
+      });
     }
 
     static void load_start_points(Track& track, LoadingContext& context, std::size_t point_count)
     {
-      const auto& lines = *context.lines;
-      auto& line_index = context.line_index;
-
-      for (std::string directive; line_index < lines.size() && directive != "end"; ++line_index)
+      loop_until_end(context, LOOP_LAMBDA
       {
-        boost::string_ref line = lines[line_index];
-        boost::string_ref directive_view = extract_word(line);
-
-        directive.assign(directive_view.begin(), directive_view.end());
-        primitive_tolower(directive);
-
-        boost::string_ref remainder = make_string_ref(directive_view.end(), line.end());
-        remainder = remove_leading_spaces(remainder, "\t ");
-
         if (point_count != 0 && directive == "point")
         {
           std::int32_t x, y, rotation; std::uint32_t level;          
@@ -571,7 +592,7 @@ namespace ts
 
           else insufficient_parameters(directive_view, context);
         }
-      }
+      });
     }
 
 
@@ -600,7 +621,7 @@ namespace ts
     void TrackLoader::include(const std::string& file_name)
     {
       include(file_name, 0);
-    }
+    }    
 
     void TrackLoader::include(const std::string& file_name, std::size_t inclusion_depth)
     {
@@ -622,10 +643,12 @@ namespace ts
         context.file_name = { file_name.data(), file_name.size() };
         context.line_index = 0;
         context.lines = &lines;
-
+        
         load_included_file(context, inclusion_depth);
       }
     }
+
+    
 
     void TrackLoader::load_included_file(Context& context, std::size_t inclusion_depth)
     {
@@ -633,176 +656,163 @@ namespace ts
 
       const auto& lines = *context.lines;
       auto& line_index = context.line_index;
-
-      for (std::string directive; line_index < lines.size();)
+      loop_all(context, LOOP_LAMBDA
       {
-        std::size_t start_index = line_index;
-        boost::string_ref line = lines[line_index];
-        boost::string_ref directive_view = extract_word(line);        
-
-        if (!directive_view.empty() && !directive_view.starts_with("#"))        
+        if (directive == "include")
         {
-          directive.assign(directive_view.begin(), directive_view.end());
-          primitive_tolower(directive);
-
-          auto remainder = make_string_ref(directive_view.end(), line.end());
-          remainder = remove_leading_spaces(remainder);
-
-          if (directive == "include")
+          if (!remainder.empty())
           {
-            if (!remainder.empty())
-            {
-              auto path = resolve_asset_path(remainder, working_directory_);
-              include(path.string(), inclusion_depth + 1);
-            }
-
-            else insufficient_parameters(directive_view, context);
+            auto path = resolve_asset_path(remainder, working_directory_);
+            include(path.string(), inclusion_depth + 1);
           }
 
-          else if (directive == "controlpoints")
-          {
-            std::size_t point_count = 0;
-            if (ArrayStream(remainder) >> point_count)
-            {
-              load_control_points(track_, context, point_count);
-            }
+          else insufficient_parameters(directive_view, context);
+        }
 
-            else insufficient_parameters(directive_view, context);
+        else if (directive == "controlpoints")
+        { 
+          load_control_points(track_, context);
+        }
+
+        else if (directive == "startpoints")
+        {
+          std::size_t point_count;
+          if (ArrayStream(remainder) >> point_count)
+          {
+            load_start_points(track_, context, point_count);
           }
-
-          else if (directive == "startpoints")
-          {
-            std::size_t point_count;
-            if (ArrayStream(remainder) >> point_count)
-            {
-              load_start_points(track_, context, point_count);
-            }
             
-            else insufficient_parameters(directive_view, context);
+          else insufficient_parameters(directive_view, context);
+        }
+
+        else if (directive == "tiledefinition")
+        {
+          auto pattern_file = extract_word(remainder);
+          auto image_file = extract_word(make_string_ref(pattern_file.end(), remainder.end()));
+
+          if (!pattern_file.empty() && !image_file.empty())
+          {
+            load_tile_definitions(track_.tile_library(), context, pattern_file, image_file, working_directory_);
           }
 
-          else if (directive == "tiledefinition")
+          else
           {
-            ++line_index;
-            auto pattern_file = extract_word(remainder);
-            auto image_file = extract_word(make_string_ref(pattern_file.end(), line.end()));
-
-            if (!pattern_file.empty() && !image_file.empty())
-            {
-              load_tile_definitions(track_.tile_library(), context, pattern_file, image_file, working_directory_);
-            }
-
-            else
-            {
-              insufficient_parameters(directive_view, context);
-              skip_until_end(context);
-            }
-          }
-
-          else if (directive == "texturedefinition")
-          {
-            ++line_index;
-            if (!remainder.empty())
-            {
-              load_texture_definitions(track_.texture_library(), context, remainder, working_directory_);
-            }
-
-            else
-            {
-              insufficient_parameters(directive_view, context);
-              skip_until_end(context);
-            }
-          }
-
-          else if (directive == "tilegroup" || directive == "norottilegroup")
-          {
-            TileId group_id;
-            std::size_t group_size;
-            if (ArrayStream(remainder) >> group_id >> group_size)
-            {
-              load_tile_group_definitions(track_.tile_library(), context, group_id, group_size);
-            }
-            
-            else
-            {
-              insufficient_parameters(directive_view, context);
-              skip_until_end(context);
-            }
-          }
-
-          else if (directive == "terrain")
-          {
-            ++line_index;
-
-            load_terrain_definition(track_.terrain_library(), context);
-          }
-
-          else if (directive == "subterrain")
-          {
-            std::uint16_t terrain_id, sub_id, level_start, num_levels;
-            if (ArrayStream(remainder) >> terrain_id >> sub_id >> level_start >> num_levels)
-            {
-              resources::SubTerrain sub_terrain;
-              sub_terrain.level_start = static_cast<std::uint8_t>(level_start);
-              sub_terrain.num_levels = static_cast<std::uint8_t>(num_levels);
-              sub_terrain.sub_terrain = static_cast<resources::TerrainId>(sub_id);
-
-              track_.terrain_library().define_sub_terrain(static_cast<resources::TerrainId>(terrain_id), 
-                                                          sub_terrain);
-            }            
-          }
-
-          if (inclusion_depth == 0)
-          {
-            // These properties only work for the "main" file.
-
-            if (directive == "size")
-            {
-              auto next_word = extract_word(remainder);
-              if (next_word == "td")
-              {
-                remainder = make_string_ref(next_word.end(), line.end());
-                std::int32_t height_levels;
-                Vector2i size;
-                if (ArrayStream(remainder) >> height_levels >> size.x >> size.y)
-                {
-                  track_.set_height_level_count(height_levels);
-                  track_.set_size(size);
-                }
-              }
-            }
-
-            else if (directive == "maker")
-            {
-              auto author = remove_leading_spaces(remainder, "\t ");
-              if (!author.empty())
-              {
-                track_.set_author(std::string(author.begin(), author.end()));
-              }
-
-              else insufficient_parameters(directive_view, context);
-            }
-
-            else if (directive == "a" || directive == "leveltile" || directive == "geometry" || directive == "layer")
-            {
-              // If any of these directives are reached, we only have track components to process.
-              // It will loop through all the remaining lines until an 'End' is found.
-              // It is then up to us to finish up here, because the loading will be finished.
-
-              // Don't increment the line index and let it process this line again.
-              load_track_components(track_, context);
-
-              // And make sure we're finished here.
-              line_index = context.lines->size();
-            }
+            insufficient_parameters(directive_view, context);
+            skip_until_end(context);
           }
         }
 
-        if (start_index == line_index)
+        else if (directive == "collisionshape")
         {
-          ++line_index;
+          std::uint32_t tile_id = 0;
+          if (ArrayStream(remainder) >> tile_id)
+          {
+            load_collision_shape(track_.tile_library(), context, tile_id);
+          }
         }
-      }
+
+        else if (directive == "texture")
+        {         
+          std::uint32_t texture_id;
+          std::string path;
+          ArrayStream stream(remainder);
+          if (stream >> texture_id >> std::ws && std::getline(stream, path))
+          {
+            Texture tex;
+            tex.file_name = resolve_asset_path(path, working_directory_).string();
+            if (tex.file_name.empty())
+            {
+              throw BrokenTrackException({ path.begin(), path.end() });
+            }
+
+            tex.id = texture_id;
+            track_.texture_library().define_texture(std::move(tex));
+          }
+            
+          else
+          {
+            insufficient_parameters(directive_view, context);
+            skip_until_end(context);
+          }
+        }
+
+        else if (directive == "tilegroup" || directive == "norottilegroup")
+        {
+          TileId group_id;
+          std::size_t group_size;
+          if (ArrayStream(remainder) >> group_id >> group_size)
+          {
+            load_tile_group_definitions(track_.tile_library(), context, group_id, group_size);
+          }
+            
+          else
+          {
+            insufficient_parameters(directive_view, context);
+            skip_until_end(context);
+          }
+        }
+
+        else if (directive == "pathstyle")
+        {
+          PathStylePreset preset;            
+          if (std::getline(ArrayStream(remainder), preset.name))
+          {              
+            preset.style = load_path_style(context);
+            track_.path_library().add_style_preset(preset);
+          }            
+        }
+
+        else if (directive == "terrain")
+        {
+          load_terrain_definition(track_.terrain_library(), context);
+        }
+
+        if (inclusion_depth == 0)
+        {
+          // These properties only work for the "main" file.
+
+          if (directive == "size")
+          {
+            auto next_word = extract_word(remainder);
+            if (next_word == "td")
+            {
+              auto size_data = make_string_ref(next_word.end(), remainder.end());
+              std::int32_t height_levels;
+              Vector2i size;
+              if (ArrayStream(size_data) >> height_levels >> size.x >> size.y)
+              {
+                track_.set_height_level_count(height_levels);
+                track_.set_size(size);
+              }
+            }
+          }
+
+          else if (directive == "maker")
+          {
+            auto author = remove_leading_spaces(remainder, "\t ");
+            if (!author.empty())
+            {
+              track_.set_author(std::string(author.begin(), author.end()));
+            }
+
+            else insufficient_parameters(directive_view, context);
+          }
+
+          else if (directive == "a" || directive == "leveltile" || directive == "geometry" || directive == "tilelayer" ||
+                    directive == "baseterrain")
+          {
+            // If any of these directives are reached, we only have track components to process.
+            // It will loop through all the remaining lines until an 'End' is found.
+            // It is then up to us to finish up here, because the loading will be finished.
+
+            // Don't increment the line index and let it process this line again.
+            load_track_components(track_, context);
+
+            // And make sure we're finished here.
+            line_index = context.lines->size();
+          }
+        }
+      });
     }
 
     Track TrackLoader::get_result()

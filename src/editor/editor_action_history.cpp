@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -33,7 +33,9 @@ namespace ts
       while (current_action_index_ > action_capacity_)
       {
         action_stack_.pop_front();
-      }
+
+        --current_action_index_;
+      }      
     }
 
     bool ActionHistory::can_undo() const

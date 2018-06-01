@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -22,6 +22,10 @@
 
 #include <GL/glew.h>
 #include <GL/GL.h>
+
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#define GLM_ENABLE_EXPERIMENTAL
+#endif
 
 #include <glm/mat4x4.hpp>
 #include <glm/gtx/transform.hpp>
@@ -64,7 +68,7 @@ namespace ts
       sf::Image dummy_image;
       dummy_image.create(2, 2, sf::Color::White);
 
-      return graphics::create_texture_from_image(dummy_image);
+      return graphics::create_texture(dummy_image);
     }
 
 

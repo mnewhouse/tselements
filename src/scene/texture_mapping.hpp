@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -22,7 +22,7 @@ namespace ts
   {
     struct MappedTexture
     {
-      std::size_t resource_id;
+      std::uint64_t resource_id;
       IntRect texture_rect;
       Vector2i fragment_offset;
       const graphics::Texture* texture;
@@ -35,6 +35,7 @@ namespace ts
     class TextureMapping
     {
     public:
+      TextureMapping() = default;
       explicit TextureMapping(std::vector<std::unique_ptr<graphics::Texture>> textures);
 
       using mapping_range = boost::iterator_range<const MappedTexture*>;
@@ -43,24 +44,26 @@ namespace ts
       // The following functions are provided for completeness, but they are extremely slow if 
       // used several times in a row. In such cases, it will be a great deal more efficient
       // to create a mapping interface and use the similar interface provided by that class.
-      void map_texture(std::size_t resource_id, texture_type texture, IntRect texture_rect);
-      void map_texture_fragment(std::size_t resource_id, texture_type texture, IntRect texture_rect, Vector2i fragment_offset);
+      void map_texture(std::uint64_t resource_id, texture_type texture, IntRect texture_rect);
+      void map_texture_fragment(std::uint64_t resource_id, texture_type texture, IntRect texture_rect, Vector2i fragment_offset);
 
       // Look up a texture by resource id in O(log n).
-      mapping_range find(std::size_t resource_id, texture_type texture_hint) const;
-      mapping_range find(std::size_t resource_id) const;
+      mapping_range find(std::uint64_t resource_id, texture_type texture_hint) const;
+      mapping_range find(std::uint64_t resource_id) const;
 
-      static std::size_t tile_id(std::size_t tile);
-      static std::size_t texture_id(std::size_t texture);
+      static std::uint64_t tile_id(std::uint32_t tile);
+      static std::uint64_t texture_id(std::uint32_t texture);
 
       // Find all matching textures, plus a bool to tell whether the range consists of fragments.
-      std::pair<mapping_range, bool> find_all(std::size_t resource_id) const;
+      std::pair<mapping_range, bool> find_all(std::uint64_t resource_id) const;
 
       // This function creates the mapping interface we mentioned above. Be aware that it's pointless
       // to use this class while a mapping face object exists.
       TextureMappingInterface create_mapping_interface();
 
       const std::vector<std::unique_ptr<graphics::Texture>>& textures() const;
+
+      void adopt_texture(std::unique_ptr<graphics::Texture> texture);
 
     private:
       friend TextureMappingInterface;
@@ -100,12 +103,12 @@ namespace ts
         {
           return a.resource_id < b.resource_id;
         }
-        bool operator()(const MappedTexture& a, std::size_t resource_id) const
+        bool operator()(const MappedTexture& a, std::uint64_t resource_id) const
         {
           return a.resource_id < resource_id;
         }
 
-        bool operator()(std::size_t resource_id, const MappedTexture& b) const
+        bool operator()(std::uint64_t resource_id, const MappedTexture& b) const
         {
           return resource_id < b.resource_id;
         }

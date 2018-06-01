@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -13,13 +13,26 @@
 #include "utility/vector2.hpp"
 #include "utility/rotation.hpp"
 
+#include <boost/container/small_vector.hpp>
+
 #include <memory>
 
 namespace ts
 {
+  namespace resources
+  {
+    struct CollisionShape;
+  }
+
   namespace world
   {
     using EntityId = std::uint16_t;
+    class PhysicsSpace;
+
+    struct PhysicsBodyDeleter
+    {
+      void operator()(void*) const;
+    };
 
     // The Entity class is the base class of all dynamic world objects.
     // All of these entities share a few common properties, such as position, velocity and rotation,
@@ -27,28 +40,25 @@ namespace ts
     class Entity
     {
     public:
-      explicit Entity(EntityId entity_id, EntityType entity_type, 
-                      std::shared_ptr<resources::CollisionMask> collision_mask);
+      explicit Entity(EntityId entity_id, EntityType entity_type,
+                      const resources::CollisionShape& collision_shape, double mass, double moment);
+
       virtual ~Entity() = default;
 
-      void set_position(Vector2<double> position);
-      void set_position(double x, double y);
-      Vector2<double> position() const;
+      void set_position(Vector2d position);
+      Vector2d position() const;
 
-      void set_velocity(Vector2<double> velocity);
-      void set_velocity(double x, double y);
-      Vector2<double> velocity() const;
+      void set_velocity(Vector2d velocity);
+      Vector2d velocity() const;
 
       double z_speed() const;
       void set_z_speed(double z_speed);
 
       void set_rotation(Rotation<double> rotation);
-      void set_rotation(double rotation, rotation_units::degrees_t);
-      void set_rotation(double rotation, rotation_units::radians_t);
       Rotation<double> rotation() const;
 
-      void set_rotating_speed(double rotation_speed);
-      double rotating_speed() const;
+      void set_angular_velocity(double rotation_speed);
+      double angular_velocity() const;
 
       void set_z_position(double z_position);
       double z_position() const;
@@ -57,13 +67,11 @@ namespace ts
       EntityType type() const;
       EntityId entity_id() const;
 
-      const resources::CollisionMask* collision_mask() const;
-
-      double bounciness() const;
-      void set_bounciness(double bounciness);
-
       double mass() const;
       void set_mass(double mass);
+
+      Vector2d center_of_mass() const;
+      void set_center_of_mass(Vector2d center);
 
       bool is_flying() const;
       void set_hover_distance(double hover_distance);
@@ -86,6 +94,10 @@ namespace ts
       RawState raw_state() const;
       void load_raw_state(RawState state);
 
+      void apply_force(Vector2d force, Vector2d point);
+
+      
+
     private:
       RawState raw_state_;
 
@@ -103,7 +115,9 @@ namespace ts
       double bounciness_ = 0.0;
       double mass_ = 100.0;
 
-      std::shared_ptr<resources::CollisionMask> collision_mask_;
+      friend PhysicsSpace;
+
+      std::unique_ptr<void, PhysicsBodyDeleter> physics_body_;
     };
   }
 }

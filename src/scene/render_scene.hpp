@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -24,17 +24,25 @@
 
 namespace ts
 {
+  namespace resources
+  {
+    struct TrackPath;
+    class TrackLayer;
+  }
+
   namespace scene
   {
     namespace render_scene
     {
       struct TrackLayerData
       {
+        TrackLayerData();
+
         graphics::Buffer vertex_buffer;
         graphics::Buffer index_buffer;
 
-        std::size_t vertex_buffer_size;
-        std::size_t index_buffer_size;
+        std::size_t vertex_buffer_size = 0;
+        std::size_t index_buffer_size = 0;
       };
 
       struct TrackComponent
@@ -93,6 +101,7 @@ namespace ts
     class RenderScene
     {
     public:
+      RenderScene() = default;
       explicit RenderScene(TrackScene track_scene);
 
       using render_callback = std::function<void(const glm::mat4& view_matrix)>;
@@ -104,7 +113,6 @@ namespace ts
 
       void clear_dynamic_state();
       void update_entities(const DynamicScene& dynamic_scene, std::uint32_t frame_duration);
-      void update_particles(const ParticleGenerator& particle_generator, std::uint32_t frame_duration);
       void set_background_color(Colorf bg_color);
 
       const TrackScene& track_scene() const;
@@ -114,6 +122,9 @@ namespace ts
 
       void remove_tile(const resources::TrackLayer* layer, std::uint32_t tile_index);
 
+      void rebuild_path_layer_geometry(const resources::TrackLayer* path_layer);
+
+
     private:
       void load_shader_programs();
       void setup_entity_buffers();
@@ -121,6 +132,7 @@ namespace ts
 
       void update_layer_geometry(const resources::TrackLayer* layer, render_scene::TrackLayerData& layer_data, 
                                  const TrackScene::GeometryUpdate& geometry_update);
+
       void reload_track_components();
 
       TrackScene track_scene_;

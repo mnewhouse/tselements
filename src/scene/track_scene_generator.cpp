@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -40,13 +40,12 @@ namespace ts
 
       
       std::int32_t atlas_size = std::min(desired_atlas_size, graphics::max_texture_size());
-      if (atlas_size < 256) throw std::runtime_error("unable to load track scene (insufficient texture size)");
 
       auto placement_map = detail::generate_atlas_placement_map(track, image_mapping,
                                                                 make_vector2(atlas_size, atlas_size),
                                                                 include_all_assets);
 
-      return detail::generate_track_scene(track, placement_map);
+      return detail::generate_track_scene(track, placement_map, include_all_assets);
     }
   }
 }

@@ -1,12 +1,12 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 #pragma once
 
-#include "server_message_distributor.hpp"
+#include "server/server_message_dispatcher.hpp"
 
 #include "cup/cup_controller.hpp"
 
@@ -16,13 +16,11 @@ namespace ts
 {
   namespace server
   {
-    class MessageConveyor;
-
     class CupController
-      : public cup::CupController<DefaultMessageDistributor>
+      : public cup::CupController<MessageDispatcher>
     {
     public:
-      using cup::CupController<DefaultMessageDistributor>::CupController;
+      using cup::CupController<MessageDispatcher>::CupController;
     };
   }
 }

@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -78,7 +78,7 @@ namespace ts
                                                               utility::AtlasList& atlas_list, ImageLoader& image_loader)
       {
         // This function attempts to put as many car images as it can
-        // into as few textures texture as it can by using a texture atlas.
+        // into as few textures as it can by using a texture atlas.
 
         std::size_t current_atlas = atlas_list.current_atlas();
         auto atlas_size = atlas_list.atlas_size();
@@ -188,7 +188,7 @@ namespace ts
       std::vector<std::size_t> texture_ids;
       for (const auto& image : atlas_images)
       {
-        auto texture = std::make_unique<graphics::Texture>(graphics::create_texture_from_image(image));
+        auto texture = std::make_unique<graphics::Texture>(graphics::create_texture(image));
         
         Vector2i image_size(image.getSize().x, image.getSize().y);
         auto texture_id = dynamic_scene.register_texture(std::move(texture), image_size);
@@ -227,7 +227,7 @@ namespace ts
       sf::Image color_scheme;
       color_scheme.loadFromFile("data/color_scheme.png");
       IntRect scheme_rect(0, 0, 32, 32);
-      dynamic_scene.register_color_schemes(graphics::create_texture_from_image(color_scheme), { 32, 32 }, &scheme_rect, 1);
+      dynamic_scene.register_color_schemes(graphics::create_texture(color_scheme), { 32, 32 }, &scheme_rect, 1);
       
       // Now, loop through the car instances and add them to the scene one by one.
       const auto& world_object = stage_object.world();

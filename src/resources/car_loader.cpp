@@ -1,13 +1,13 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 
 #include "car_loader.hpp"
 #include "pattern.hpp"
-#include "collision_mask_detail.hpp"
+#include "handling_properties.hpp"
 #include "include_path.hpp"
 
 #include "core/config.hpp"
@@ -32,14 +32,15 @@ namespace ts
 
     template <typename LineIt>
     static LineIt read_car_definition(boost::string_ref car_name, boost::string_ref working_directory, 
-                                      LineIt line_it, LineIt lines_end, CarDefinition& car_def, PatternLoader& pattern_loader)
+                                      LineIt line_it, LineIt lines_end, CarDefinition& car_def, PatternStore& pattern_loader)
     {
-      car_def.car_name.assign(car_name.begin(), car_name.end());
-      auto& handling = car_def.handling;
+      car_def.car_name.assign(car_name.begin(), car_name.end());     
+
+      auto& handling = car_def.handling_properties;
 
       enum ReaderState
       {
-        Main, DownforceEffect, StressFactor, End
+        Main, DownforceEffect, StressFactor, CollisionShape, CollisionPolygon, End
       } reader_state = Main;
 
       for (std::string directive; reader_state != End && line_it != lines_end; ++line_it)
@@ -75,21 +76,79 @@ namespace ts
         if (reader_state == DownforceEffect)
         {
           if (directive == "end") reader_state = Main;
+
+          /*
           else if (read_property("tractionlimit", handling.downforce_effect.traction_limit)) {}
           else if (read_property("braking", handling.downforce_effect.braking)) {}
           else if (read_property("cornering", handling.downforce_effect.cornering)) {}
           else if (read_property("antislide", handling.downforce_effect.antislide)) {}
           else if (read_property("rollingresistance", handling.downforce_effect.rolling_resistance)) {}
+          */
         }
 
         else if (reader_state == StressFactor)
         {
           if (directive == "end") reader_state = Main;
+
+          /*
           else if (read_property("torque", handling.stress_factor.torque)) {}
           else if (read_property("braking", handling.stress_factor.braking)) {}
           else if (read_property("cornering", handling.stress_factor.cornering)) {}
           else if (read_property("antislide", handling.stress_factor.antislide)) {}
+          */
         }
+
+        /*
+        else if (reader_state == CollisionShape)
+        {
+          if (directive == "circle")
+          {
+            float x, y, radius, bounciness;
+            if (ArrayStream(remainder) >> x >> y >> radius >> bounciness)
+            {
+              collision_shapes::Circle circle;
+              circle.center = { x, y };
+              circle.radius = radius;
+              circle.height = 1;              
+
+              car_def.collision_shape.sub_shapes.push_back({ circle, bounciness });
+            }
+          }
+
+          else if (directive == "polygon")
+          {            
+            float bounciness;
+            if (ArrayStream(remainder) >> bounciness)
+            {
+              collision_shapes::Polygon polygon;
+              polygon.height = 1;
+              polygon.num_points = 0;
+
+              car_def.collision_shape.sub_shapes.push_back({ polygon, bounciness });
+              reader_state = CollisionPolygon;
+            }
+          }
+        }
+
+        else if (reader_state == CollisionPolygon)
+        {
+          if (directive == "end") reader_state = CollisionShape;
+          else if (directive == "point")
+          {
+            float x, y;
+            if (ArrayStream(remainder) >> x >> y)
+            {
+              auto& sub_shape = car_def.collision_shape.sub_shapes.back();
+              auto& polygon = boost::get<collision_shapes::Polygon&>(sub_shape.data);
+
+              collision_shapes::Polygon::Point point;
+              point.position = { x, y };
+              polygon.points[polygon.num_points] = point;
+              ++polygon.num_points;              
+            }
+          }
+        }
+        */
 
         else if (directive == "end")
         {
@@ -141,32 +200,9 @@ namespace ts
           }
         }
 
-        else if (directive == "mask")
+        else if (directive == "collisionshape")
         {
-          std::string pattern_path;
-          IntRect rect;
-          if (ArrayStream(remainder) >> pattern_path >> rect.left >> rect.top >> rect.width >> rect.height)
-          {
-            auto full_pattern_path = find_include_path(pattern_path, { working_directory, config::data_directory });
-            if (!full_pattern_path.empty())
-            {
-              auto wall_test = [](std::uint8_t p)
-              {
-                return p != 0;
-              };
-
-              const std::uint32_t frame_count = 64;
-              const auto& pattern = pattern_loader.load_from_file(full_pattern_path.string());
-
-              car_def.collision_mask = std::make_shared<CollisionMask>(dynamic_mask, pattern, rect,
-                                                                       frame_count, wall_test);
-            }
-
-            else
-            {
-              DEBUG_RELEVANT << "Error loading car '" << car_name << "': unable to open pattern file." << debug::endl;
-            }
-          }
+          reader_state = CollisionShape;
         }
 
         else if (directive == "enginesample")
@@ -193,6 +229,7 @@ namespace ts
           reader_state = StressFactor;
         }
 
+        /*
         else if (read_property_1000("torque", handling.torque)) {}
         else if (read_property("extratorque", handling.extra_torque)) {}
         else if (read_property("maxenginerevs", handling.max_engine_revs)) {}
@@ -219,6 +256,7 @@ namespace ts
         else if (read_property("loadtransfer", handling.load_transfer)) {}
 
         else if (read_property("reversegear", handling.reverse_gear_ratio)) {}
+        */
       }
 
       return line_it;
@@ -226,7 +264,7 @@ namespace ts
 
     template <typename LineIt, typename OutIt>
     static std::size_t load_cars_from_line_data(LineIt begin, LineIt end, boost::string_ref working_directory, 
-                                                PatternLoader& pattern_loader, OutIt out)
+                                                PatternStore& pattern_loader, OutIt out)
     {
       std::size_t count = 0;
 
@@ -272,7 +310,7 @@ namespace ts
       split_by_line(file_contents.data(), file_contents.size(), std::back_inserter(lines));
 
       return load_cars_from_line_data(lines.begin(), lines.end(), working_directory, 
-                                      pattern_loader_, std::back_inserter(car_definitions_));
+                                      pattern_store_, std::back_inserter(car_definitions_));
     }
 
     std::size_t CarLoader::load_cars_from_file(const std::string& file_name)

@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -38,6 +38,7 @@ namespace ts
     class LocalPlayerRoster
     {
     public:
+      LocalPlayerRoster() = default;
       explicit LocalPlayerRoster(const cup::PlayerDefinition* players, std::size_t player_count);
 
       controls::ControlCenter create_control_center(const stage::StageDescription& stage_desc) const;

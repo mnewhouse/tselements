@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -10,7 +10,11 @@
 #include "geometry.hpp"
 #include "track_path.hpp"
 
+#include "utility/color.hpp"
+
 #include <vector>
+
+#include <boost/variant.hpp>
 
 namespace ts
 {
@@ -20,13 +24,26 @@ namespace ts
 
     enum class TrackLayerType
     {
-      Tiles, Geometry, Paths
+      Tiles, BaseTerrain, Geometry, PathStyle
+    };
+
+    struct PathLayerData
+    {
+      const resources::TrackPath* path;
+      std::vector<PathStyle> styles;
+    };
+
+    struct BaseTerrainData
+    {
+      std::uint32_t texture_id;
+      std::uint32_t terrain_id;
+      Colorb color = Colorb(255, 255, 255, 255);
     };
 
     class TrackLayer
     {
     public:
-      explicit TrackLayer(TrackLayerType type, std::uint32_t level, std::string name);      
+      explicit TrackLayer(TrackLayerType type, std::uint32_t level, std::string name); // Tile layer by default
 
       std::uint32_t level() const { return level_; }
       std::uint32_t z_index() const { return z_index_; };
@@ -34,8 +51,6 @@ namespace ts
       bool visible() const { return visible_; }
       const std::string& name() const { return name_; }
 
-      void set_level(std::uint32_t level);
-      void set_z_index(std::uint32_t z_index);
       void set_visible(bool show);
 
       void hide() { set_visible(false); }
@@ -43,26 +58,32 @@ namespace ts
 
       void rename(const std::string& new_name);
 
-      std::vector<Tile>& tiles();
-      const std::vector<Tile>& tiles() const;
+      using data_type = boost::variant<std::vector<Tile>, PathLayerData, BaseTerrainData>;
+      const data_type& data() const;
+      data_type& data();
 
-      std::vector<Geometry>& geometry();
-      const std::vector<Geometry>& geometry() const;
-      
-      std::vector<TrackPath>& paths();
-      const std::vector<TrackPath>& paths() const;
+      const std::vector<Tile>* tiles() const;
+      std::vector<Tile>* tiles();
+
+      const PathLayerData* path_styles() const;
+      PathLayerData* path_styles();      
+
+      BaseTerrainData* base_terrain();
+      const BaseTerrainData* base_terrain() const;
 
     private:
+      friend Track;
+      void set_level(std::uint32_t level);
+      void set_z_index(std::uint32_t z_index);
+
       TrackLayerType type_;
       std::uint32_t level_ = 0;
       std::uint32_t z_index_ = 0;
       
       bool visible_ = true;
       std::string name_;
-
-      std::vector<Tile> tiles_;
-      std::vector<Geometry> geometry_;      
-      std::vector<TrackPath> paths_;     
+      
+      data_type data_;
     };
   }
 }

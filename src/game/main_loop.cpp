@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -81,16 +81,17 @@ namespace ts
             }
           }
 
-          
-
-          while (frame_accumulator >= frame_duration)
+          if (frame_accumulator >= frame_duration)
           {
-            accumulator -= frame_duration;
-            frame_accumulator -= frame_duration;
+            while (frame_accumulator >= frame_duration)
+            {
+              accumulator -= frame_duration;
+              frame_accumulator -= frame_duration;
+            }
 
             if (gui_context) gui_context->new_frame(update_context.frame_duration);
-            state_machine->update(update_context);
-          }          
+            state_machine->update(update_context);            
+          }
         }
 
         if (window)

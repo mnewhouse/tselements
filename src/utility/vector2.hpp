@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -183,15 +183,17 @@ namespace ts
   }
 
   template <typename T>
-  T magnitude(const Vector2<T>& vec)
+  auto magnitude(const Vector2<T>& vec)
   {
-    using std::abs;
     using std::hypot;
 
-    if (vec.x == 0.0) return abs(vec.y);
-    if (vec.y == 0.0) return abs(vec.x);
+    return hypot(vec.x, vec.y);
+  }
 
-    return std::hypot(vec.x, vec.y);
+  template <typename T>
+  auto magnitude_squared(const Vector2<T>& vec)
+  {
+    return vec.x * vec.x + vec.y * vec.y;
   }
 
   template <typename T, typename U>

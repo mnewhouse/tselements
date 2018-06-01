@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -25,6 +25,8 @@ namespace ts
 
     struct ImmutableEditorContext
     {
+      bool canvas_focus;
+
       const EditorScene& scene;
       const InterfaceState& interface_state;
       const WorkingState& working_state;
@@ -37,6 +39,8 @@ namespace ts
 
     struct EditorContext
     {
+      bool canvas_focus;
+
       EditorScene& scene;
       InterfaceState& interface_state;
       WorkingState& working_state;
@@ -50,7 +54,7 @@ namespace ts
       {
         return
         {
-          scene, interface_state, working_state, action_history, canvas_viewport, screen_size, world_size
+          canvas_focus, scene, interface_state, working_state, action_history, canvas_viewport, screen_size, world_size
         };
       }
     };

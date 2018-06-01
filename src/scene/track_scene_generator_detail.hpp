@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -63,6 +63,7 @@ namespace ts
       TextureMapping generate_resource_texture_map(const resources::Track& track,
                                                    const PlacementMap& placement_map,
                                                    std::vector<std::unique_ptr<graphics::Texture>> atlas_textures);
+                                                   
 
       PlacementMap generate_atlas_placement_map(const resources::Track& track, const ImageMapping& image_mapping,
                                                 Vector2i atlas_size, bool include_all_assets = false);
@@ -73,10 +74,10 @@ namespace ts
       IntRect find_enclosing_rect(const ImageMapping& image_mapping,
                                   boost::string_ref file_name, const IntRect& rect);
 
-      TrackScene generate_track_scene(const resources::Track& track, const PlacementMap& placement_map);
+      TrackScene generate_track_scene(const resources::Track& track, const PlacementMap& placement_map, bool all_assets);
 
       using ImageLoader = graphics::DefaultImageLoader;
-      sf::Image build_atlas_surface(const AtlasDefinition &atlas, ImageLoader& image_loader);
+      sf::Image build_atlas_image(const AtlasDefinition &atlas, ImageLoader& image_loader);
     }
   }
 }

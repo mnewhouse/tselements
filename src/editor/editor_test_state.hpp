@@ -1,16 +1,15 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
 #pragma once
 
-#include "stage/stage_regulator.hpp"
+#include "client/local_player_roster.hpp"
+#include "client/standalone_action_state.hpp"
 
 #include "game/game_context.hpp"
-
-#include "client/local_player_roster.hpp"
 
 #include <functional>
 
@@ -24,36 +23,36 @@ namespace ts
 
   namespace scene
   {
-    struct SceneComponents;
     class RenderScene;
   }
 
   namespace editor
   {
-    namespace test
+    class EditorScene;
+
+    struct StageComponents
     {
-      class ActionEssentials;
-      class StageEssentials;
-    }
+      StageComponents();
+      ~StageComponents();
+
+      StageComponents(StageComponents&&);
+      StageComponents& operator=(StageComponents&&);
+
+      client::LocalPlayerRoster local_players;
+      std::unique_ptr<stage::Stage> stage;
+      std::unique_ptr<scene::SceneComponents> scene_components;      
+    };
+
+    void adopt_render_scene(StageComponents& stage_components, scene::RenderScene render_scene);
+    StageComponents load_test_stage_components(resources::Track track, const resources::Settings& settings);
 
     class TestState
+      : public client::StandaloneActionState
     {
     public:
-      explicit TestState(resources::Track track, const resources::Settings& settings);
-      ~TestState();
+      TestState(const game_context& ctx, StageComponents stage_components);
 
-      TestState(TestState&&);
-      TestState& operator=(TestState&&);
-
-      void launch(const game::GameContext& game_context, scene::RenderScene render_scene);
-
-      scene::RenderScene steal_render_scene();
-
-    private:
-      client::LocalPlayerRoster local_players_;
-      std::unique_ptr<test::StageEssentials> stage_essentials_;
-      std::unique_ptr<scene::SceneComponents> scene_components_;
-      std::unique_ptr<test::ActionEssentials> action_essentials_;
+      void release_scene(EditorScene& editor_scene);    
     };
   }
 }

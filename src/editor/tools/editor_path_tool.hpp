@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -40,8 +40,10 @@ namespace ts
       using Path = resources::TrackPath;
       using Node = resources::TrackPathNode;
 
+      resources::TrackPath* selected_path_ = nullptr;
       resources::TrackLayer* selected_layer_ = nullptr;
-      std::size_t selected_path_index_ = 0;     
+      std::size_t selected_stroke_style_ = 0; 
+      float default_path_width_ = 32.0f;
 
       Path working_path_;
 
@@ -56,18 +58,17 @@ namespace ts
         std::uint32_t id;
       };
 
+      void close_working_path(const EditorContext& context);
+
       void apply_node_transformation(Vector2f world_pos);
       void finalize_node_transformation(const EditorContext& context);
 
       void update_selection(const WorkingState& working_state);
-      void commit_working_path(const EditorScene& scene);
+      void commit_working_path(EditorScene& scene);
       void reload_working_path();
-      void ensure_path_layer_exists(const EditorContext& context);
+      void ensure_path_exists(const EditorContext& context);
       
-      void select_path(resources::TrackLayer* layer, std::size_t path_index, WorkingState& working_state);
-
-      float path_width_ = 32.0f;
-      float path_width_jitter_ = 0.0f;
+      void select_path(resources::TrackPath* path, WorkingState& working_state);
 
       boost::optional<NodeTransformation> node_transformation_;
     };

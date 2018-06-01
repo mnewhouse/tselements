@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -9,9 +9,7 @@
 #include "server/server.hpp"
 #include "server/server_message_conveyor.hpp"
 
-#include "client/client_message_conveyor.hpp"
 #include "client/local_player_roster.hpp"
-#include "client/local_message_dispatcher.hpp"
 
 #include "resources/resource_store.hpp"
 #include "resources/car_store.hpp"

@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -36,13 +36,6 @@ namespace ts
       bool tyre_mark = false;
       bool skid_mark = true;
       bool is_wall = false;
-    };
-
-    struct SubTerrain
-    {
-      TerrainId sub_terrain;
-      std::uint8_t level_start;
-      std::uint8_t num_levels;
     };
   }
 }

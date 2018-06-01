@@ -1,6 +1,6 @@
 /*
 * TS Elements
-* Copyright 2015-2016 M. Newhouse
+* Copyright 2015-2018 M. Newhouse
 * Released under the MIT license.
 */
 
@@ -13,10 +13,10 @@ namespace ts
     namespace shaders
     {
       static const char track_vertex_shader[] = R"(
-        #version 330
+        #version 130
         uniform mat4 u_viewMatrix;
-        layout(location = 0) in vec2 in_position;
-        layout(location = 1) in vec2 in_texCoords;
+        in vec2 in_position;
+        in vec2 in_texCoords;
         out vec2 frag_texCoords;
         void main()
         {
@@ -26,7 +26,7 @@ namespace ts
       )";
 
       static const char track_fragment_shader[] = R"(
-        #version 330
+        #version 130
         uniform sampler2D u_textureSampler;
         in vec2 frag_texCoords;
         out vec4 frag_color;
@@ -37,16 +37,16 @@ namespace ts
       )";
 
       static const char car_vertex_shader[] = R"(
-        #version 330
+        #version 130
         uniform mat4 u_viewMatrix;
         uniform mat4 u_modelMatrix;
         uniform mat4 u_newModelMatrix;
         uniform mat4 u_colorizerMatrix;
         uniform vec4 u_carColors[3];
         uniform float u_frameProgress;
-        layout(location = 0) in vec2 in_position;
-        layout(location = 1) in vec2 in_texCoord;
-        layout(location = 2) in vec3 in_colorizerCoord;
+        in vec2 in_position;
+        in vec2 in_texCoord;
+        in vec3 in_colorizerCoord;
         out vec2 frag_texCoord;
         out vec3 frag_colorizerCoord;
         out vec3 frag_carColors[3];
@@ -62,7 +62,7 @@ namespace ts
       )";
 
       static const char car_fragment_shader[] = R"(
-        #version 330
+        #version 130
         uniform sampler2D u_textureSampler;
         uniform sampler2D u_colorizerSampler;
         in vec2 frag_texCoord;
@@ -96,14 +96,14 @@ namespace ts
       )";
 
       static const char shadow_vertex_shader[] = R"(
-        #version 330
+        #version 130
         uniform mat4 u_viewMatrix;
         uniform mat4 u_modelMatrix;
         uniform mat4 u_newModelMatrix;
         uniform float u_frameProgress;
         uniform vec2 u_shadowOffset;
-        layout(location = 0) in vec2 in_position;
-        layout(location = 1) in vec2 in_texCoord;
+        in vec2 in_position;
+        in vec2 in_texCoord;
         out vec2 frag_texCoord;        
         void main()
         {
@@ -116,7 +116,7 @@ namespace ts
       )";
 
       static const char shadow_fragment_shader[] = R"(
-        #version 330
+        #version 130
         uniform vec4 u_shadowColor;
         uniform sampler2D u_texSampler;
         in vec2 frag_texCoord;
@@ -129,12 +129,12 @@ namespace ts
       )";
 
       static const char particle_vertex_shader[] = R"(
-        #version 330
+        #version 130
         uniform mat4 u_viewMatrix;
-        layout(location = 0) in vec2 in_position;
-        layout(location = 1) in vec2 in_center;
-        layout(location = 2) in vec4 in_color;
-        layout(location = 3) in float in_radius;
+        in vec2 in_position;
+        in vec2 in_center;
+        in vec4 in_color;
+        in float in_radius;
         out vec2 frag_position;
         out vec2 frag_center;
         out vec4 frag_color;        
@@ -150,7 +150,7 @@ namespace ts
       )";
 
       static const char particle_fragment_shader[] = R"(
-        #version 330
+        #version 130
         in vec2 frag_position;
         in vec2 frag_center;
         in vec4 frag_color;
@@ -166,10 +166,10 @@ namespace ts
       )";
 
       static const char boundary_vertex_shader[] = R"(
-      #version 330
+      #version 130
       uniform mat4 u_viewMatrix;
       uniform vec2 u_worldSize;
-      layout(location = 0) in vec2 in_position;
+      in vec2 in_position;
       void main()
       {
         gl_Position = u_viewMatrix * vec4(in_position * u_worldSize, 0, 1);
@@ -177,7 +177,7 @@ namespace ts
     )";
 
       static const char boundary_fragment_shader[] = R"(
-      #version 330
+      #version 130
       out vec4 out_fragColor;
       void main()
       {
