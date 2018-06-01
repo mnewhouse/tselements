@@ -1,0 +1,19 @@
+Car Porge
+  description 1
+  acceleration 25
+  tractionlimit 65
+  steering 2.0
+  cornering 34
+  antislide 30
+  braking 40
+  dragcoefficient 0.3
+  rollingresistance 0.03
+  slideresistance 0.3
+  antislideresistance 0.1
+  downforcecoefficient 0.5
+  bounciness 0.75
+  mass 600
+  
+  rotimage porge-img.png 0 0 4096 64 2.6
+  enginesample porge.wav
+End

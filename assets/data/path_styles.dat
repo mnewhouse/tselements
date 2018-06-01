@@ -1,0 +1,11 @@
+PathStyle Road
+  Texture 2
+  Terrain 2
+
+  Border
+    Texture 15
+	Terrain 15
+	Width 1.0
+  End 
+End
+  

@@ -1,0 +1,50 @@
+Car F1
+  description 1
+  torque 17
+  extratorque 1.2
+  maxenginerevs 340
+  braking 25
+  tractionlimit 30
+  
+  steering 1.3
+  minturningradius 45
+  
+  cornering 30
+  antislide 30
+  
+  dragcoefficient 0.17 
+  downforcecoefficient 1.8
+  
+  rollingresistance 2.0
+  
+  DownforceEffect
+	tractionlimit 1.0
+	braking 1.0
+	antislide 1.0
+	cornering 1.0
+	rollingresistance 0.05
+  End
+  
+  StressFactor
+	torque 1.5
+	braking 1.0
+	cornering 0.8
+	antislide 0.8
+  End
+  
+  bounciness 0.5
+  mass 400
+  
+  loadbalanceeffect 0.1
+  loadtransfer 5
+  
+  inputmoderation 0.8
+  
+  reversegear 2.0
+  
+  mask f1-pat.png 0 0 32 32
+  rotimage f1-img2.png 0 0 16200 45 2.3
+  tire -3 6
+  tire 3 6
+  enginesample f1b.wav
+End

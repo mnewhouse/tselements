@@ -1,0 +1,87 @@
+Terrain 	Null        
+  id		0
+  isWall	0
+  viscosity	1.0
+  acceleration	1.0
+  braking	1.0
+  grip		1.0
+  steering	1.0
+  red		0
+  green		0
+  blue		0
+End
+
+Terrain 	Wall
+  id		1
+  isWall	1
+  bounciness	0.6
+  red		50
+  green		80
+  blue		100
+End
+
+Terrain 	Tarmac
+  id		2
+  isWall	0
+  viscosity	1.0
+  acceleration	1.0
+  braking	1.0
+  grip		1.0
+  steering	1.0
+  red		140
+  green		140
+  blue		140
+End
+
+Terrain 	Grass
+  id		3
+  isWall	0
+  viscosity	2.0
+  acceleration	0.5
+  braking	0.5
+  grip		0.5
+  steering	0.5
+  red		30
+  green		120
+  blue		30
+End
+
+Terrain 	Sand
+  id		4
+  isWall	0
+  viscosity	1.4
+  acceleration	0.7
+  braking	0.5
+  grip		0.5
+  steering	0.8
+  red		140
+  green		80
+  blue		40
+End
+
+Terrain 	Ice
+  id		5
+  isWall	0
+  viscosity	0.5
+  acceleration	0.5
+  braking	0.1
+  grip		0.1
+  steering	1.5
+  red		210
+  green		210
+  blue		230
+End
+
+Terrain 	Rubber
+  id		6
+  isWall	0
+  viscosity	1.0
+  acceleration	2.0
+  braking	2.0
+  grip		2.0
+  steering	1.5
+  red		50
+  green		50
+  blue		60
+End
+

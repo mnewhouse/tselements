@@ -1,0 +1,224 @@
+# Note: If you edit car properties or collision patterns (Car image
+#       itself can be changed), you break all existing track records 
+#       and cannot import other people's records. It also causes 
+#  	problems in network games if the other players have a different 
+#	version of the car. 
+#
+#       If you want to make your own car, create a new file in this
+#       directory with the extension .car. You can put the image, pattern
+#       image and engine sample to this directory, too. Try to name
+#       the files and cars so that they do not collide with other people's 
+#       file names (not "formula.car" but "yourname-formula.car"). 
+#
+#       And before you modify anything, take a backup of your previous 
+#       files and lap records.
+#
+
+# "unit" is the basic length unit (normal-sized track is 640 x 400).
+#
+# Number after description tells how many lines the description is.
+#
+# Acceleration is in units / s^2
+# Viscosity slows current speed by speed x viscosity units.
+# EngineFriction is like viscosity but has effect only when accelerating.
+# NonSlideSector is the sector (in radians) in which the car is not considered
+#                to be sliding.
+# SlideBraking is the braking effect caused by sliding.
+# Slidedeceleration decreases acceleration when sliding.
+# Steering is the turning speed (radians / second)
+# Braking is the braking efficiency (units / s^2)
+# Elasticity is the bounciness in collisions
+# Grip is tyre grip.
+# Weight matters in collisions against other cars and in drafting.
+# Tires define (pattern) coordinates for the two back tires, this information
+#       is only used in visual stuff like smoke and skidmarks.
+#
+# Antislide defines when the car will not start sliding. It is a bit mask where
+#       +1 means no sliding when not accelerating and not braking
+#	+2 means no sliding when accelerating
+#	+4 means no sliding when braking
+# So, for example antislide 0 means normal sliding, 7 (1+2+4) means no sliding 
+# in any case (except in collisions etc.),  3 (1+2) means no sliding unless
+# braking. Use small nonslidesector (like 0.2) with antislide.
+
+# Changingcolor can be used to alter which color is changed for different
+# players. By default, the value is 1, which means red pixels are converted
+# to player colors. If the value is 0, nothing is changed. If the value is 2,
+# green pixels are changed.
+
+# New additions in 2.5.3 for more realistic cars:
+#   - invertturningonreverse: if 1, left and right switched when reversing
+#   - fullturningspeed: if non-zero, turning is limited when speed below this
+#   - smokelimitbraking: braking needs to be done this long (in sec) for smoke
+#   - flyingsteeringfactor: multiplied by steering when flying (0 to none)
+
+#
+# enginesample is the sample used for the motor sound. The sample can be
+#              put in the cars directory or in the sound directory.
+#
+# By default, the car has 64 rotations. You can tune that by using 
+# parameter "rotations" (min 64, max 256). If you change it, define it
+# before defining image or rotimage. Note that maximum image width is 16384.
+#
+# The car image is defined by:
+# image <file> <x> <y> <w> <h> <scale> 
+#   The image is taken from the given file file in location x, y and is of
+#   size w x h. Scale defines how much the image is zoomed in the picture. 
+#   To be able to select the color for the car, main color of the car should
+#   be red. Check the existing images for examples. The preferred way to 
+#   make a car is to make its size 32 x 32 and use scale 2. Use that to 
+#   avoid problems.
+#
+# or
+#
+# rotimage <file> <x> <y> <w> <h> <scale>
+#   This is like image but w must be rotations x h. The image must consist
+#   of a different rotated car image for each rotation. This way, rotations 
+#   are precalculated in the images which allows better light effects.
+
+#
+# Collision mask is defined by:
+# mask <file> <x> <y> <w> <h>
+#   The file must be a paletted image whose non-zero-index colors define
+#   the pattern for collisions. The size should always be 32 x 32 and so
+#   to that when the mask is rotated, it still fits in the same 32 x 32 space.
+#   Try to make the collision masks as round as possible (see defaults for
+#   examples) since otherwise the cars may get stuck on each other. 
+#   Note that as the image scale is 2 in the default cars, collision 
+#   mask size is half (or actually quarter) of the image size. 
+#   No other sizes but 32 x 32 are currently supported.
+
+# Odd description number are for localization but you can't localize
+# your own cars, so just write normal text.
+
+Car EasySlider
+  description 6
+    #601
+    #602
+    #603
+    #604
+    #605
+    #606
+  acceleration 200
+  enginefriction 0
+  viscosity 0.75
+  nonslidesector 0.8
+  slidebraking 40
+  slidedeceleration 20
+  braking 80
+  steering 2.5
+  elasticity 0.8
+  grip 100
+  weight 1000
+  mask easyslider-pat.png 0 0 32 32
+  rotimage easysliderc.png 0 0 2048 32 2
+  tire 11.5 21.0
+  tire 20.5 21.0
+  enginesample engine.wav
+End
+
+Car Slider
+  description 6
+    #607
+    #608
+    #609
+    #610
+    #611
+    #612
+  acceleration 220
+  enginefriction 0
+  viscosity 0.75
+  slidebraking 0
+  slidedeceleration 0
+  nonslidesector 0.8
+  braking 80
+  steering 2.5
+  elasticity 0.8
+  grip 20
+  weight 700
+  mask slider-pat.png 0 0 32 32
+  rotimage sliderc.png 0 0 2048 32 2
+  tire 12.5 21.0
+  tire 19.5 21.0
+  enginesample engine.wav
+End
+
+Car Speeder
+  description 6
+    #613
+    #614
+    #615
+    #616
+    #617
+    #618
+  acceleration 250
+  enginefriction 0
+  viscosity 0.75
+  slidebraking 30
+  slidedeceleration 100
+  nonslidesector 0.8
+  braking 50
+  steering 1.75
+  elasticity 0.8
+  grip 130
+  weight 500
+  mask speeder-pat.png 0 0 32 32
+  rotimage speederc.png 0 0 2048 32 2
+  tire 13.5 21.0
+  tire 18.5 21.0
+  enginesample engine.wav
+End
+
+Car AntiSlider
+  description 6
+    #619
+    #620
+    #621
+    #622
+    #623
+    #624
+  antislide 3
+  acceleration 125
+  enginefriction 0
+  viscosity 0.60
+  nonslidesector 0.2
+  slidebraking 40
+  slidedeceleration 70
+  braking 80
+  steering 2.5
+  elasticity 0.8
+  grip 250
+  weight 1000
+  mask antislider-pat.png 0 0 32 32
+  rotimage antisliderc.png 0 0 2048 32 2
+  tire 11.5 21.0
+  tire 20.5 21.0
+  enginesample engine.wav
+End
+
+Car Spinner
+  description 6
+    #625
+    #626
+    #627
+    #628
+    #629
+    #630
+  acceleration 310
+  enginefriction 0.75
+  viscosity 0.75
+  nonslidesector 0.8
+  slidebraking 20
+  slidedeceleration 50
+  braking 100
+  steering 3.0
+  elasticity 0.7
+  grip 150
+  weight 650
+  mask spinner-pat.png 0 0 32 32
+  rotimage spinnerc.png 0 0 2048 32 2
+  tire 11.5 11.0
+  tire 20.5 11.0
+  enginesample engine.wav
+End
+
