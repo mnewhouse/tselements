@@ -135,16 +135,13 @@ namespace ts
 
         if (auto tiles = layer.tiles())
         {
-          std::uint32_t tile_index = 0;
           for (const auto& tile : *tiles)
           {
             placed_tiles.clear();
             resources::expand_tiles(&tile, &tile + 1,
                                     tile_library, std::back_inserter(placed_tiles));
 
-            track_scene.add_tile_geometry(&layer, tile_index, placed_tiles.data(), placed_tiles.size());
-
-            ++tile_index;
+            track_scene.add_tile_geometry(&layer, placed_tiles.data(), placed_tiles.size());
           }
         }
 

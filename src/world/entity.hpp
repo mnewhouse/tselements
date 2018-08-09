@@ -96,7 +96,12 @@ namespace ts
 
       void apply_force(Vector2d force, Vector2d point);
 
-      
+      Vector2d applied_force() const;
+      double applied_torque() const;
+
+    protected:
+      void* physics_body();
+      const void* physics_body() const;
 
     private:
       RawState raw_state_;

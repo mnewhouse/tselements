@@ -47,6 +47,9 @@ namespace ts
 
     private:
       const std::vector<resources::PlacedTile>& expand_tile(const resources::Tile& tile) const;
+      template <typename TileIt>
+      const std::vector<resources::PlacedTile>& expand_tiles(TileIt it, TileIt end) const;
+
 
       resources::Track track_;
       boost::optional<scene::RenderScene> render_scene_;

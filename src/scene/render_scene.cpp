@@ -142,7 +142,7 @@ namespace ts
       for (const auto& scene_layer : track_scene.layers())
       {
         auto track_layer = scene_layer.associated_layer();
-        auto& layer_data = layers_[track_layer];
+        auto& layer_data = layers_[&scene_layer];
 
         const auto& vertices = scene_layer.vertices();
         const auto& faces = scene_layer.faces();
@@ -153,8 +153,8 @@ namespace ts
         layer_data.index_buffer = graphics::create_buffer();
         layer_data.vertex_buffer = graphics::create_buffer();
 
-        layer_data.index_buffer_size = utility::next_power_of_two(index_data_size);
-        layer_data.vertex_buffer_size = utility::next_power_of_two(vertex_data_size);
+        layer_data.index_buffer_size = next_power_of_two(index_data_size);
+        layer_data.vertex_buffer_size = next_power_of_two(vertex_data_size);
 
         glCheck(glBindBuffer(GL_ARRAY_BUFFER, layer_data.vertex_buffer.get()));
         glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer.get()));
@@ -369,61 +369,36 @@ namespace ts
       return track_scene_;
     }
 
-    void RenderScene::update_layer_geometry(const resources::TrackLayer* layer, 
-                                            render_scene::TrackLayerData& layer_data,
-                                            const TrackScene::GeometryUpdate& geometry_update)
+    void RenderScene::update_layer_geometry(const resources::TrackLayer* layer)
     {
-      if (auto scene_layer = track_scene_.find_layer(layer))
+      std::uint32_t index_buffer_size = 0;
+      std::uint32_t vertex_buffer_size = 0;
+
+      auto scene_layers = track_scene_.layers();
+      for (auto& scene_layer : scene_layers)
       {
-        if (geometry_update.face_begin != geometry_update.face_end)
-        {  
-          glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer.get()));
-
-          const auto& faces = scene_layer->faces();
-          auto data_size = faces.size() * sizeof(faces.front());
-
-          if (data_size > layer_data.index_buffer_size)
-          {  
-            layer_data.index_buffer_size = utility::next_power_of_two(data_size);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer_size, nullptr, GL_STATIC_DRAW);
-            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, data_size, faces.data());
-          }
-
-          else
-          {
-            auto range_start = geometry_update.face_begin * sizeof(faces.front());
-            auto range_size = geometry_update.face_end * sizeof(faces.front()) - range_start;
-            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, range_start, range_size,
-                            faces.data() + geometry_update.face_begin);
-          }
-
-          glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
-        }
-
-
-        if (geometry_update.vertex_begin != geometry_update.vertex_end)
+        if (scene_layer.associated_layer() == layer)
         {
+          auto& layer_data = layers_[&scene_layer];
+
+          const auto& faces = scene_layer.faces();
+          const auto& vertices = scene_layer.vertices();
+
+          glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer.get()));
           glCheck(glBindBuffer(GL_ARRAY_BUFFER, layer_data.vertex_buffer.get()));
 
-          const auto& vertices = scene_layer->vertices();
-          auto data_size = vertices.size() * sizeof(vertices.front());
+          auto index_data_size = faces.size() * sizeof(faces.front());
+          auto vertex_data_size = vertices.size() * sizeof(vertices.front());
 
-          if (data_size > layer_data.vertex_buffer_size)
-          {
-            layer_data.vertex_buffer_size = utility::next_power_of_two(data_size);
-            glBufferData(GL_ARRAY_BUFFER, layer_data.vertex_buffer_size, nullptr, GL_STATIC_DRAW);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, data_size, vertices.data());
-          }
+          layer_data.index_buffer_size = next_power_of_two(index_data_size);
+          layer_data.vertex_buffer_size = next_power_of_two(vertex_data_size);
 
-          else
-          {
-            auto range_start = geometry_update.vertex_begin * sizeof(vertices.front());
-            auto range_size = geometry_update.vertex_end * sizeof(vertices.front()) - range_start;
-            glBufferSubData(GL_ARRAY_BUFFER, range_start, range_size,
-                            vertices.data() + geometry_update.vertex_begin);
-          }
+          glCheck(glBufferData(GL_ARRAY_BUFFER, layer_data.vertex_buffer_size, nullptr, GL_STATIC_DRAW));
+          glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, layer_data.index_buffer_size, nullptr, GL_STATIC_DRAW));
 
-          glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
+          glCheck(glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_data_size, vertices.data()));
+          glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, index_data_size, faces.data()));
+
         }
       }
     }
@@ -436,49 +411,44 @@ namespace ts
       // Now, store the component information so that we can display the scene in the proper order.
       for (const auto& component : track_scene_.components())
       {
-        auto& layer_data = layers_[component.track_layer];
+        auto& layer_data = layers_[component.scene_layer];
 
         // Loop through the layer's components and store the information we need.
         TrackComponent track_component;
         track_component.element_buffer_offset = component.face_index * sizeof(Face);
         track_component.element_count = component.face_count * 3;
-        track_component.level = component.level;
+        track_component.level = component.scene_layer->base_level();
         track_component.texture = component.texture;
         track_component.layer_data = &layer_data;
 
         track_components_.push_back(track_component);
       }
     }
-    
-    void RenderScene::add_tile(const resources::TrackLayer* layer, std::uint32_t tile_index,
-                               const resources::PlacedTile* tile_expansion, std::size_t sub_tile_count)
-    {
-      auto& layer_data = layers_[layer];
-      auto geometry_update = track_scene_.add_tile_geometry(layer, tile_index, tile_expansion, sub_tile_count);
 
-      update_layer_geometry(layer, layer_data, geometry_update);
-      
+    void RenderScene::add_tile(const resources::TrackLayer* layer,
+                               const resources::PlacedTile* tile_expansion, std::size_t tile_count)
+    {
+      track_scene_.add_tile_geometry(layer, tile_expansion, tile_count);
+      update_layer_geometry(layer);
+
       track_scene_.reload_components();
-      reload_track_components();      
+      reload_track_components();
     }
 
-    void RenderScene::remove_tile(const resources::TrackLayer* layer, std::uint32_t tile_index)
+    void RenderScene::rebuild_tile_layer_geometry(const resources::TrackLayer* tile_layer,
+                                                  const resources::PlacedTile* tile_expansion, std::size_t tile_count)
     {
-      auto& layer_data = layers_[layer];
-      auto geometry_update = track_scene_.remove_item_geometry(layer, tile_index);
-
-      update_layer_geometry(layer, layer_data, geometry_update);
+      track_scene_.rebuild_tile_layer_geometry(tile_layer, tile_expansion, tile_count);
+      update_layer_geometry(tile_layer);
 
       track_scene_.reload_components();
-      reload_track_components();      
+      reload_track_components();
     }
 
     void RenderScene::rebuild_path_layer_geometry(const resources::TrackLayer* path_layer)
     {
-      auto& layer_data = layers_[path_layer];
-
-      auto geometry_update = track_scene_.rebuild_path_layer_geometry(path_layer);
-      update_layer_geometry(path_layer, layer_data, geometry_update);
+      track_scene_.rebuild_path_layer_geometry(path_layer);
+      update_layer_geometry(path_layer);
 
       track_scene_.reload_components();
       reload_track_components();    

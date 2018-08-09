@@ -43,10 +43,12 @@ namespace ts
     auto create_physics_body(const resources::CollisionShape& shape, double mass, double moment)
     {
       mass = std::max(mass, 1.0);
-      moment = std::max(moment, 50.0);
+      moment = std::max(moment, 100.0);
 
       auto body = cpBodyNew(mass, mass * moment);
       std::unique_ptr<void, PhysicsBodyDeleter> owned_body(body);
+
+      cpBodySetCenterOfGravity(body, { 0.0, 0.0 });
 
       if (!shape.sub_shapes.empty())
       {
@@ -59,7 +61,7 @@ namespace ts
           }, sub_shape.data);
 
           cpShapeSetElasticity(shape, sub_shape.bounciness);
-        }
+        }        
       }
       
       return owned_body;
@@ -150,7 +152,7 @@ namespace ts
 
     void Entity::set_z_speed(double z_speed)
     {
-      z_speed = utility::clamp(z_speed, -255.0, 255.0);
+      z_speed = clamp(z_speed, -255.0, 255.0);
 
       raw_state_.z_speed = static_cast<std::uint16_t>(std::abs(z_speed * 256.0));
 
@@ -162,7 +164,7 @@ namespace ts
 
     void Entity::set_z_position(double z)
     {
-      z = utility::clamp(z, 0.0, 63.0);
+      z = clamp(z, 0.0, 63.0);
 
       raw_state_.z_position = static_cast<std::uint16_t>(z * 1024.0);
     }
@@ -201,9 +203,30 @@ namespace ts
       }      
     }
 
+    const void* Entity::physics_body() const
+    {
+      return physics_body_.get();
+    }
+
+    void* Entity::physics_body()
+    {
+      return physics_body_.get();
+    }
+
     void Entity::apply_force(Vector2d force, Vector2d point)
     {
       cpBodyApplyForceAtLocalPoint(BODY_PTR, { force.x, force.y }, { point.x, point.y });
+    }
+
+    Vector2d Entity::applied_force() const
+    {
+      auto force = cpBodyGetForce(BODY_PTR);
+      return{ force.x, force.y };
+    }
+
+    double Entity::applied_torque() const
+    {
+      return cpBodyGetTorque(BODY_PTR);
     }
   }
 }

@@ -64,7 +64,7 @@ namespace ts
 
     bool Controllable::set_control_state(FreeControl control, float value)
     {
-      auto v = static_cast<std::uint8_t>(utility::clamp(value, 0.0f, 1.0f) * 255.0f);
+      auto v = static_cast<std::uint8_t>(clamp(value, 0.0f, 1.0f) * 255.0f);
 
       return set_control_state(control, v);
     }

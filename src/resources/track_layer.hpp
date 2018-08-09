@@ -81,9 +81,11 @@ namespace ts
       std::uint32_t z_index_ = 0;
       
       bool visible_ = true;
+      bool dirty_ = true;
       std::string name_;
       
       data_type data_;
+      std::vector<PlacedTile> tile_expansion_;
     };
   }
 }

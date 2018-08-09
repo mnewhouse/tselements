@@ -77,6 +77,15 @@ namespace ts
       return tile_expansion_cache_;
     }
 
+    template <typename TileIt>
+    const std::vector<resources::PlacedTile>& EditorScene::expand_tiles(TileIt it, TileIt end) const
+    {
+      tile_expansion_cache_.clear();
+      resources::expand_tiles(it, end, track_.tile_library(), std::back_inserter(tile_expansion_cache_));
+      return tile_expansion_cache_;
+    }
+
+
     void EditorScene::append_tile(resources::TrackLayer* layer, const resources::Tile& tile)
     {
       if (auto tiles = layer->tiles())
@@ -87,7 +96,7 @@ namespace ts
         if (render_scene_)
         {
           const auto& tile_expansion = expand_tile(tile);
-          render_scene_->add_tile(layer, tile_index, tile_expansion.data(), tile_expansion.size());
+          render_scene_->add_tile(layer, tile_expansion.data(), tile_expansion.size());
         }
       }
     }
@@ -100,7 +109,8 @@ namespace ts
 
         if (render_scene_)
         {
-          render_scene_->remove_tile(layer, tile_index);
+          auto& expansion = expand_tiles(tiles->begin(), tiles->end());
+          render_scene_->rebuild_tile_layer_geometry(layer, expansion.data(), expansion.size());
         }
       }
     }

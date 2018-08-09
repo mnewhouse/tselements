@@ -113,6 +113,7 @@ TEST_CASE("Track loading is a complex process, which is required to work perfect
 
       resources::TrackLayer track_layer(resources::TrackLayerType::Tiles, 0, "dummy");
 
+      /*
       scene::TrackSceneLayer layer(&track_layer);
       layer.append_item_geometry(0, &a, verts, 4, faces, 2, 0);
       layer.append_item_geometry(1, &a, verts, 4, faces, 2, 0);
@@ -131,7 +132,8 @@ TEST_CASE("Track loading is a complex process, which is required to work perfect
       layer.append_item_geometry(1, &b, verts, 4, faces, 2, 0);
       REQUIRE(layer.components().size() == 2);
       REQUIRE(layer.vertices().size() == 8);
-      REQUIRE(layer.faces().size() == 4);      
+      REQUIRE(layer.faces().size() == 4);
+      */
     }
 
     detail::ImageLoader image_loader;

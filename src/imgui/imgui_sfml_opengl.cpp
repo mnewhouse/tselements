@@ -144,8 +144,8 @@ namespace ts
       glCheck(glVertexAttribPointer(color_location, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert),
                                     reinterpret_cast<const void*>(offsetof(ImDrawVert, col))));
 
-      vertex_buffer_size_ = utility::next_power_of_two(0x2000 * sizeof(ImDrawVert));
-      index_buffer_size_ = utility::next_power_of_two(0x10000 * sizeof(ImDrawIdx));
+      vertex_buffer_size_ = next_power_of_two(0x2000 * sizeof(ImDrawVert));
+      index_buffer_size_ = next_power_of_two(0x10000 * sizeof(ImDrawIdx));
 
       glCheck(glBufferData(GL_ARRAY_BUFFER, vertex_buffer_size_, nullptr, GL_DYNAMIC_DRAW));
       glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_buffer_size_, nullptr, GL_DYNAMIC_DRAW));
@@ -232,8 +232,8 @@ void main()
       required_vertex_buffer_size *= sizeof(ImDrawVert);
       required_index_buffer_size *= sizeof(ImDrawIdx);
 
-      auto desired_vertex_buffer_size = utility::next_power_of_two(required_vertex_buffer_size * 3);
-      auto desired_index_buffer_size = utility::next_power_of_two(required_index_buffer_size * 3);
+      auto desired_vertex_buffer_size = next_power_of_two(required_vertex_buffer_size * 3);
+      auto desired_index_buffer_size = next_power_of_two(required_index_buffer_size * 3);
 
       if (desired_vertex_buffer_size > vertex_buffer_size_)
       {

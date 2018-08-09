@@ -20,7 +20,7 @@
 
 #include <vector>
 #include <memory>
-#include <unordered_map>
+#include <map>
 
 namespace ts
 {
@@ -38,37 +38,27 @@ namespace ts
       using vertex_type = resources::Vertex;
       using face_type = resources::Face;
 
-      explicit TrackSceneLayer(const resources::TrackLayer* associated_layer);
+      explicit TrackSceneLayer(const resources::TrackLayer* associated_layer, std::uint32_t base_level, std::int32_t patch_size = 0);
 
       struct Component
       {
-        std::uint32_t level;
-        const texture_type* texture;        
-
+        const texture_type* texture;
         std::uint32_t face_index;
         std::uint32_t face_count;
-      };
-
-      struct GeometryUpdate
-      {
-        std::uint32_t vertex_begin;
-        std::uint32_t vertex_end;
-        std::uint32_t face_begin;
-        std::uint32_t face_end;
+        IntRect bounding_box;
       };
 
       std::uint32_t base_level() const;
 
-      const std::vector<Component>& components() const;
+      using ComponentContainer = std::vector<Component>;
+
+      const ComponentContainer& components() const;
       const std::vector<vertex_type>& vertices() const;
       const std::vector<face_type>& faces() const;
 
-      GeometryUpdate append_item_geometry(std::uint32_t item_index, const texture_type* texture,
-                                          const vertex_type* vertices, std::uint32_t vertex_count,
-                                          const face_type* faces, std::uint32_t face_count,
-                                          std::uint32_t level);
-
-      GeometryUpdate remove_item_geometry(std::uint32_t item_index, bool shift = true);
+      void append_geometry(const texture_type* texture,
+                           const vertex_type* vertices, std::uint32_t vertex_count,
+                           const face_type* faces, std::uint32_t face_count);
       
       bool visible() const;
       void hide();
@@ -79,25 +69,14 @@ namespace ts
 
 
     private:
-      struct ItemInfo
-      {
-        std::uint32_t item_index;
-        std::uint32_t level;
-        std::uint32_t vertex_index;
-        std::uint32_t vertex_count;
-        std::uint32_t face_index;
-        std::uint32_t face_count;
-      };
-
-      std::vector<Component> components_;
-      std::vector<ItemInfo> items_;
-
-      std::vector<vertex_type> vertices_; 
-      std::vector<face_type> faces_;
+      ComponentContainer components_;
 
       const resources::TrackLayer* associated_layer_;
+      std::vector<vertex_type> vertices_;
+      std::vector<face_type> faces_;
 
-      std::uint32_t base_level_;
+      std::uint32_t base_level_ = 0;
+      std::int32_t patch_size_ = 0;
       bool is_visible_ = true;
     };
 
@@ -117,26 +96,24 @@ namespace ts
       using texture_type = TrackSceneLayer::texture_type;
       using vertex_type = TrackSceneLayer::vertex_type;
       
-      TrackSceneLayer& scene_layer(LayerHandle layer_handle);
+      TrackSceneLayer& scene_layer(LayerHandle layer_handle, std::uint32_t level = 0);
       void deactivate_layer(LayerHandle layer_handle);
 
       const TextureMapping& texture_mapping() const;
 
-      using GeometryUpdate = TrackSceneLayer::GeometryUpdate;
-      GeometryUpdate add_tile_geometry(const resources::TrackLayer* layer, std::uint32_t tile_index,
+      void add_tile_geometry(const resources::TrackLayer* layer,
+                             const resources::PlacedTile* expanded_tile, std::size_t count);
+      void rebuild_tile_layer_geometry(const resources::TrackLayer* layer,
                                        const resources::PlacedTile* expanded_tile, std::size_t count);
 
-      GeometryUpdate remove_item_geometry(const resources::TrackLayer* layer, 
-                                          std::uint32_t item_index);
+      void add_base_terrain_geometry(const resources::TrackLayer* layer);
 
-      GeometryUpdate add_base_terrain_geometry(const resources::TrackLayer* layer);
-
-      GeometryUpdate rebuild_path_layer_geometry(const resources::TrackLayer* layer);
+      void rebuild_path_layer_geometry(const resources::TrackLayer* layer);
       
       using layer_range = boost::iterator_range<boost::indirect_iterator<const TrackSceneLayer* const*>>;
       layer_range layers() const;
 
-      const TrackSceneLayer* find_layer(LayerHandle) const;      
+      const TrackSceneLayer* find_layer(const resources::TrackLayer* layer, std::uint32_t level) const;      
 
       struct Component
       {
@@ -144,8 +121,9 @@ namespace ts
         const resources::TrackLayer* track_layer;
         const graphics::Texture* texture;
         std::uint32_t face_index;
-        std::uint32_t face_count;
-        std::uint32_t level;
+        std::uint32_t face_count;       
+
+        IntRect bounding_box;
       };
 
       const std::vector<Component>& components() const;
@@ -153,9 +131,9 @@ namespace ts
       const std::vector<Component>& sort_components();
 
     private:
-      TrackSceneLayer* find_layer_internal(LayerHandle);
+      TrackSceneLayer* find_layer_internal(LayerHandle, std::uint32_t level = 0);      
 
-      std::unordered_map<LayerHandle, TrackSceneLayer> layer_map_;
+      std::map<std::pair<LayerHandle, std::uint32_t>, TrackSceneLayer> layer_map_;
       std::vector<TrackSceneLayer*> layer_list_;
       std::vector<Component> components_;
       std::vector<OutlinePoint> path_outline_cache_;

@@ -84,7 +84,7 @@ namespace ts
           return acc + component.vertices.size();
         });
 
-        buffer_size_ = utility::next_power_of_two(total_vertex_count * sizeof(vertex_type));
+        buffer_size_ = next_power_of_two(total_vertex_count * sizeof(vertex_type));
         glBufferData(GL_ARRAY_BUFFER, buffer_size_,
                      nullptr, GL_STATIC_DRAW);
 

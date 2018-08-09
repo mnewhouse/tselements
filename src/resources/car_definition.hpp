@@ -43,7 +43,7 @@ namespace ts
 
       double bounciness = 1.0;
       double mass = 500.0;
-      double moment_of_inertia = 40.0;
+      double moment_of_inertia = 70.0;
       Vector2d center_of_gravity = { 0.0, 0.0 };
 
       HandlingProperties handling_properties;

@@ -191,6 +191,12 @@ namespace ts
   }
 
   template <typename T>
+  auto tangent(const Vector2<T>& vec)
+  {
+    return make_vector2(-vec.y, vec.x);
+  }
+
+  template <typename T>
   auto magnitude_squared(const Vector2<T>& vec)
   {
     return vec.x * vec.x + vec.y * vec.y;

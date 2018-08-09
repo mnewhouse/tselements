@@ -117,12 +117,12 @@ namespace ts
 
       const TrackScene& track_scene() const;
       
-      void add_tile(const resources::TrackLayer* layer, std::uint32_t tile_index, 
+      void add_tile(const resources::TrackLayer* layer,
                     const resources::PlacedTile* tile_expansion, std::size_t tile_count);
 
-      void remove_tile(const resources::TrackLayer* layer, std::uint32_t tile_index);
-
       void rebuild_path_layer_geometry(const resources::TrackLayer* path_layer);
+      void rebuild_tile_layer_geometry(const resources::TrackLayer* tile_layer,
+                                       const resources::PlacedTile* tile_expansion, std::size_t tile_count);
 
 
     private:
@@ -130,8 +130,7 @@ namespace ts
       void setup_entity_buffers();
       void load_track_components(const TrackScene& track_scene);
 
-      void update_layer_geometry(const resources::TrackLayer* layer, render_scene::TrackLayerData& layer_data, 
-                                 const TrackScene::GeometryUpdate& geometry_update);
+      void update_layer_geometry(const resources::TrackLayer* layer);
 
       void reload_track_components();
 
@@ -151,7 +150,7 @@ namespace ts
       render_scene::CarUniformLocations car_uniform_locations_;
       render_scene::BoundaryUniformLocations boundary_uniform_locations_;
 
-      std::unordered_map<const resources::TrackLayer*, render_scene::TrackLayerData> layers_;
+      std::unordered_map<const TrackSceneLayer*, render_scene::TrackLayerData> layers_;
       std::vector<render_scene::TrackComponent> track_components_;
       std::vector<render_scene::EntityInfo> drawable_entities_;
       std::vector<DrawableEntity::Vertex> car_vertex_buffer_cache_;

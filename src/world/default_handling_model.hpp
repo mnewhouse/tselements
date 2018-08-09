@@ -5,17 +5,3 @@
 */
 
 #pragma once
-
-#include "handling_model.hpp"
-
-namespace ts
-{
-  namespace world
-  {
-    class DefaultHandlingModel 
-      : public HandlingModel
-    {
-      
-    };
-  }
-}
