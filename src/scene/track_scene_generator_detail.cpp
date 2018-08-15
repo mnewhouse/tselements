@@ -632,7 +632,6 @@ namespace ts
 
         TrackScene track_scene(track.size(), std::move(texture_mapping));
         scene::build_track_vertices(track, track_scene);
-        track_scene.reload_components();
         return track_scene;
       }
     }

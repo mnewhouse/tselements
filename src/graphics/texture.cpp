@@ -150,11 +150,14 @@ namespace ts
 
       auto name = tex.get();
       auto target = tex.target();
+
       glBindTexture(target, name);
       glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0);
       glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0);
+      glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-      glTexStorage2D(target, 1, GL_RGBA8, size.x, size.y);
+      glTexStorage2D(target, 1, GL_RGBA8, size.x, size.y);            
 
       glTexSubImage2D(target, 0, 0, 0, size.x, size.y,
                       GL_RGBA, GL_UNSIGNED_BYTE, image.getPixelsPtr());

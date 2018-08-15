@@ -16,10 +16,12 @@ namespace ts
         #version 130
         uniform mat4 u_viewMatrix;
         in vec2 in_position;
-        in vec2 in_texCoords;
+        in vec2 in_texCoords;   
+        out vec2 frag_position;     
         out vec2 frag_texCoords;
         void main()
         {
+          frag_position = in_position;
           frag_texCoords = in_texCoords;
           gl_Position = u_viewMatrix * vec4(in_position, 0.0, 1.0);
         }
@@ -27,12 +29,24 @@ namespace ts
 
       static const char track_fragment_shader[] = R"(
         #version 130
+        uniform vec2 u_minCorner;
+        uniform vec2 u_maxCorner;
         uniform sampler2D u_textureSampler;
-        in vec2 frag_texCoords;
+        in vec2 frag_position;
+        in vec2 frag_texCoords;        
         out vec4 frag_color;
         void main()
         {
-          frag_color = texture2D(u_textureSampler, frag_texCoords);
+          if (frag_position.x < u_minCorner.x || frag_position.y < u_minCorner.y ||
+              frag_position.x > u_maxCorner.x || frag_position.y > u_maxCorner.y)
+          {
+            discard;
+          }
+
+          else
+          {
+            frag_color = texture2D(u_textureSampler, frag_texCoords);
+          }
         };
       )";
 
@@ -42,19 +56,19 @@ namespace ts
         uniform mat4 u_modelMatrix;
         uniform mat4 u_newModelMatrix;
         uniform mat4 u_colorizerMatrix;
-        uniform vec4 u_carColors[3];
+        uniform vec2 u_texCoordsOffset;
+        uniform vec2 u_texCoordsScale;
         uniform float u_frameProgress;
+
         in vec2 in_position;
-        in vec2 in_texCoord;
-        in vec3 in_colorizerCoord;
-        out vec2 frag_texCoord;
-        out vec3 frag_colorizerCoord;
-        out vec3 frag_carColors[3];
+        in vec2 in_texCoords;
+        out vec2 frag_texCoords;
+        out vec2 frag_colorizerCoords;
         void main()
         {
-          frag_texCoord = in_texCoord;
-          vec4 transformedCoord = u_colorizerMatrix * vec4(in_colorizerCoord.xy, 0.0, 1.0);
-          frag_colorizerCoord = vec3(transformedCoord.xy, in_colorizerCoord.z);
+          frag_texCoords = in_texCoords * u_texCoordsScale + u_texCoordsOffset;
+          frag_colorizerCoords = (u_colorizerMatrix * vec4(in_texCoords.xy, 0.0, 1.0)).xy;
+   
           vec4 position = u_viewMatrix * u_modelMatrix * vec4(in_position, 0.0, 1.0);
           vec4 newPosition = u_viewMatrix * u_newModelMatrix * vec4(in_position, 0.0, 1.0);
           gl_Position = mix(position, newPosition, u_frameProgress);
@@ -65,9 +79,9 @@ namespace ts
         #version 130
         uniform sampler2D u_textureSampler;
         uniform sampler2D u_colorizerSampler;
-        in vec2 frag_texCoord;
-        in vec3 frag_colorizerCoord;
-        in vec3 frag_carColors[3];
+        uniform vec3 u_carColors[3];
+        in vec2 frag_texCoords;
+        in vec2 frag_colorizerCoords;
         out vec4 frag_color;
         vec4 colorize(vec4 source, vec4 target)
         {
@@ -85,12 +99,14 @@ namespace ts
         }
         void main()
         {
-          vec4 textureColor = texture2D(u_textureSampler, frag_texCoord);
-          vec4 colorizerColor = texture2D(u_colorizerSampler, frag_colorizerCoord.xy);
-          vec4 totalColor = colorizerColor.r * vec4(frag_carColors[0], 1.0) + 
-                            colorizerColor.g * vec4(frag_carColors[1], 1.0) + 
-                            colorizerColor.b * vec4(frag_carColors[2], 1.0);
-          vec4 avgColor = totalColor / 3.0; avgColor = vec4(1.0, 0.85, 0.0, 1.0);
+          vec4 textureColor = texture2D(u_textureSampler, frag_texCoords);
+          vec4 colorizerColor = texture2D(u_colorizerSampler, frag_colorizerCoords);
+          vec3 totalColor = colorizerColor.r * u_carColors[0] + 
+                            colorizerColor.g * u_carColors[1] + 
+                            colorizerColor.b * u_carColors[2];
+          
+          float d = colorizerColor.r + colorizerColor.g + colorizerColor.b;
+          vec4 avgColor = vec4(totalColor / max(d, 1.0), 1.0);
           frag_color = colorize(textureColor, avgColor);
         };
       )";
@@ -103,8 +119,8 @@ namespace ts
         uniform float u_frameProgress;
         uniform vec2 u_shadowOffset;
         in vec2 in_position;
-        in vec2 in_texCoord;
-        out vec2 frag_texCoord;        
+        in vec2 in_texCoords;
+        out vec2 frag_texCoords;        
         void main()
         {
           vec4 position = u_modelMatrix * in_position;
@@ -119,11 +135,11 @@ namespace ts
         #version 130
         uniform vec4 u_shadowColor;
         uniform sampler2D u_texSampler;
-        in vec2 frag_texCoord;
+        in vec2 frag_texCoords;
         out vec4 out_fragColor;
         void main()
         {
-          vec4 texColor = texture(u_texSampler, frag_texCoord);
+          vec4 texColor = texture(u_texSampler, frag_texCoords);
           out_fragColor = vec4(u_shadowColor.rgb, u_shadowColor.a * texColor.a);
         }
       )";

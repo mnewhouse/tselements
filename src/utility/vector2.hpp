@@ -220,7 +220,7 @@ namespace ts
     auto mag = magnitude(vec);
     if (mag == 0) return vec;
 
-    return vec /= mag;
+    return vec * (1 / mag);
   }
 
   template <typename T>

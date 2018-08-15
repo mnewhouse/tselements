@@ -17,6 +17,7 @@
 #include <boost/optional.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/range/iterator_range.hpp>
+#include <boost/container/small_vector.hpp>
 
 #include <vector>
 #include <memory>
@@ -38,23 +39,22 @@ namespace ts
       using vertex_type = resources::Vertex;
       using face_type = resources::Face;
 
-      explicit TrackSceneLayer(const resources::TrackLayer* associated_layer, std::uint32_t base_level, std::int32_t patch_size = 0);
+      explicit TrackSceneLayer(const resources::TrackLayer* associated_layer, std::uint32_t level_offset);
 
       struct Component
       {
         const texture_type* texture;
-        std::uint32_t face_index;
-        std::uint32_t face_count;
+        std::vector<face_type> faces;
         IntRect bounding_box;
       };
 
-      std::uint32_t base_level() const;
+      std::uint32_t level() const;
+      std::uint32_t z_index() const;
 
-      using ComponentContainer = std::vector<Component>;
+      using ComponentContainer = std::vector<boost::container::small_vector<Component, 1>>;
 
-      const ComponentContainer& components() const;
+      const ComponentContainer& component_regions() const;
       const std::vector<vertex_type>& vertices() const;
-      const std::vector<face_type>& faces() const;
 
       void append_geometry(const texture_type* texture,
                            const vertex_type* vertices, std::uint32_t vertex_count,
@@ -73,10 +73,8 @@ namespace ts
 
       const resources::TrackLayer* associated_layer_;
       std::vector<vertex_type> vertices_;
-      std::vector<face_type> faces_;
 
-      std::uint32_t base_level_ = 0;
-      std::int32_t patch_size_ = 0;
+      std::uint32_t level_offset_ = 0;
       bool is_visible_ = true;
     };
 
@@ -107,7 +105,6 @@ namespace ts
                                        const resources::PlacedTile* expanded_tile, std::size_t count);
 
       void add_base_terrain_geometry(const resources::TrackLayer* layer);
-
       void rebuild_path_layer_geometry(const resources::TrackLayer* layer);
       
       using layer_range = boost::iterator_range<boost::indirect_iterator<const TrackSceneLayer* const*>>;
@@ -115,27 +112,25 @@ namespace ts
 
       const TrackSceneLayer* find_layer(const resources::TrackLayer* layer, std::uint32_t level) const;      
 
+      /*
       struct Component
       {
         const TrackSceneLayer* scene_layer;
         const resources::TrackLayer* track_layer;
-        const graphics::Texture* texture;
-        std::uint32_t face_index;
-        std::uint32_t face_count;       
-
-        IntRect bounding_box;
+        const graphics::Texture* texture;  
+        const TrackSceneLayer::Component* scene_component;
       };
 
       const std::vector<Component>& components() const;
       const std::vector<Component>& reload_components();
       const std::vector<Component>& sort_components();
+      */
 
     private:
       TrackSceneLayer* find_layer_internal(LayerHandle, std::uint32_t level = 0);      
 
       std::map<std::pair<LayerHandle, std::uint32_t>, TrackSceneLayer> layer_map_;
       std::vector<TrackSceneLayer*> layer_list_;
-      std::vector<Component> components_;
       std::vector<OutlinePoint> path_outline_cache_;
       std::vector<resources::Vertex> vertex_cache_;
       std::vector<resources::Face> face_cache_;

@@ -10,66 +10,19 @@
 
 #include "resources/track_layer.hpp"
 
+#include "utility/math_utilities.hpp"
+
 #include <boost/range/iterator_range.hpp>
 
 #include <algorithm>
 
 namespace ts
 {
+  const std::int32_t region_size = 1024;
+  const std::int32_t max_regions = 16;
+
   namespace scene
   {
-    namespace detail
-    {
-      template <typename Components>
-      auto component_range(Components& components, std::uint32_t face_index, std::uint32_t face_count)
-      {
-        using std::begin;
-        using std::end;
-
-        auto first = std::lower_bound(begin(components), end(components), face_index, 
-                                      [](const auto& component, auto face_index)
-        {
-          return component.face_index + component.face_count < face_index;
-        });
-
-        auto last = std::upper_bound(begin(components), end(components), face_index + face_count,
-                                     [](auto face_index, const auto& component)
-        {
-          return face_index < component.face_index + component.face_count;
-        });
-
-        // Find the matching component
-        return boost::make_iterator_range(first, last);
-      }
-
-      template <typename Components>
-      auto find_component(Components& component_range, const graphics::Texture* texture)
-      {
-        using std::begin;
-        using std::end;
-
-        return std::find_if(begin(component_range), end(component_range), 
-                            [=](const auto& component)
-        {
-          return component.texture == texture;
-        });
-      }
-
-      template <typename Items>
-      auto find_item(Items& items, std::uint32_t item_index, std::uint32_t level)
-      {
-        using std::begin;
-        using std::end;
-
-        return std::lower_bound(begin(items), end(items), std::make_tuple(level, item_index),
-                                [=](const auto& item, auto pair)
-        {
-          return std::tie(item.level, item.item_index) < pair;
-        });
-      }
-    }
-    
-
     TrackScene::TrackScene(Vector2i track_size, TextureMapping texture_mapping)
       : texture_mapping_(std::move(texture_mapping)),
         track_size_(track_size)  
@@ -119,22 +72,11 @@ namespace ts
       return layer_range(layer_list_.data(), layer_list_.data() + layer_list_.size());
     }
 
-    const std::vector<TrackScene::Component>& TrackScene::components() const
-    {
-      return components_;
-    }
-
-
-    TrackSceneLayer::TrackSceneLayer(const resources::TrackLayer* layer, std::uint32_t base_level, std::int32_t patch_size)
+    TrackSceneLayer::TrackSceneLayer(const resources::TrackLayer* layer, std::uint32_t level_offset)
       : associated_layer_(layer),
-        base_level_(layer->level() + base_level),
-        patch_size_(patch_size)
-    {
-    }
-
-    const std::vector<resources::Face>& TrackSceneLayer::faces() const
-    {
-      return faces_;
+        level_offset_(level_offset),
+        components_(max_regions * max_regions)
+    {      
     }
 
     const std::vector<resources::Vertex>& TrackSceneLayer::vertices() const
@@ -142,14 +84,19 @@ namespace ts
       return vertices_;
     }
 
-    const TrackSceneLayer::ComponentContainer& TrackSceneLayer::components() const
+    const TrackSceneLayer::ComponentContainer& TrackSceneLayer::component_regions() const
     {
       return components_;
     }
 
-    std::uint32_t TrackSceneLayer::base_level() const
+    std::uint32_t TrackSceneLayer::level() const
     {
-      return base_level_;
+      return associated_layer_->level() + level_offset_;
+    }
+
+    std::uint32_t TrackSceneLayer::z_index() const
+    {
+      return associated_layer_->z_index();
     }
 
     const resources::TrackLayer* TrackSceneLayer::associated_layer() const
@@ -162,6 +109,32 @@ namespace ts
       components_.clear();      
     }
 
+    namespace detail
+    {
+      bool region_contains_triangle(FloatRect region, Vector2f t1, Vector2f t2, Vector2f t3)
+      {
+        auto cross = [=](auto a, auto b, auto p)
+        {
+          return cross_product(b - a, p - a);
+        };
+
+        auto top_left = make_vector2(region.left, region.top);
+        auto bottom_right = make_vector2(region.right(), region.bottom());
+        auto top_right = make_vector2(bottom_right.x, top_left.y);
+        auto bottom_left = make_vector2(top_left.x, bottom_right.y);
+
+        auto test_edge = [=](Vector2f a, Vector2f b)
+        {
+          return cross(a, b, top_left) < 0 ||
+            cross(a, b, bottom_left) < 0 ||
+            cross(a, b, bottom_right) < 0 ||
+            cross(a, b, top_right) < 0;
+        };
+
+        return test_edge(t1, t2) && test_edge(t2, t3) && test_edge(t3, t1);
+      }     
+    }
+
     void TrackSceneLayer::append_geometry(const texture_type* texture,
                                           const vertex_type* vertices, std::uint32_t vertex_count,
                                           const face_type* faces, std::uint32_t face_count)
@@ -171,30 +144,66 @@ namespace ts
       auto vertices_end = vertices + vertex_count;
       auto faces_end = faces + face_count;
 
-      auto face_index = faces_.size();      
-      if (components_.empty() || components_.back().texture != texture)
-      {
-        components_.emplace_back();        
-        components_.back().face_index = face_index;
-        components_.back().texture = texture;        
-      }
-
       auto vertex_offset = vertices_.size();
       vertices_.insert(vertices_.end(), vertices, vertices_end);
 
-      auto& component = components_.back();
-      faces_.insert(faces_.end(), faces, faces_end);
-
-      auto face_it = faces_.begin() + face_index;
-      std::transform(face_it, faces_.end(), face_it,
-                     [=](face_type f)
+      const auto inv_region_size = 1.0f / region_size;
+      for (auto face = faces; face != faces_end; ++face)
       {
-        for (auto& i : f.indices) i += vertex_offset;
+        face_type f = *face;
+        f.indices[0] += vertex_offset;
+        f.indices[1] += vertex_offset;
+        f.indices[2] += vertex_offset;
 
-        return f;
-      });   
+        auto a = vertices[face->indices[0]].position;
+        auto b = vertices[face->indices[1]].position;
+        auto c = vertices[face->indices[2]].position;
 
-      component.face_count += face_count;
+        if (cross_product(b - a, c - a) > 0.0)
+        {
+          std::swap(a, c);
+        }
+
+        FloatRect bounding_rect(a, Vector2f(0, 0));
+        bounding_rect = combine(bounding_rect, b);
+        bounding_rect = combine(bounding_rect, c);
+
+        auto min_cell_x = static_cast<std::int32_t>(std::floor(bounding_rect.left * inv_region_size));
+        auto min_cell_y = static_cast<std::int32_t>(std::floor(bounding_rect.top * inv_region_size));
+        auto max_cell_x = static_cast<std::int32_t>(std::floor(bounding_rect.right() * inv_region_size));
+        auto max_cell_y = static_cast<std::int32_t>(std::floor(bounding_rect.bottom() * inv_region_size));
+
+        min_cell_x = clamp(min_cell_x, 0, 15);
+        max_cell_x = clamp(max_cell_x, 0, 15);
+        min_cell_y = clamp(min_cell_y, 0, 15);
+        max_cell_y = clamp(max_cell_y, 0, 15);
+
+        //if (max_cell_x > min_cell_x && max_cell_y > min_cell_y)
+        {
+          for (auto cell_y = min_cell_y; cell_y <= max_cell_y; ++cell_y)
+          {
+            auto bounding_box = IntRect(min_cell_x * region_size, cell_y * region_size, region_size, region_size);
+
+            for (auto cell_x = min_cell_x; cell_x <= max_cell_x; ++cell_x, bounding_box.left += region_size)
+            {
+              if (detail::region_contains_triangle(rect_cast<float>(bounding_box), a, b, c))
+              {
+                auto& entry = components_[cell_y * 16 + cell_x];
+                if (entry.empty() || entry.back().texture != texture)
+                {
+                  Component component;
+                  component.bounding_box = IntRect(cell_x * region_size, cell_y * region_size, region_size, region_size);
+                  component.texture = texture;
+
+                  entry.push_back(component);
+                }
+
+                entry.back().faces.push_back(f);
+              }
+            }
+          }
+        }
+      }
     }
 
     void TrackScene::add_base_terrain_geometry(const resources::TrackLayer* layer)
@@ -338,20 +347,23 @@ namespace ts
       }
     }
 
+    /*
     const std::vector<TrackScene::Component>& TrackScene::reload_components()
     {
       components_.clear();
       for (auto scene_layer : layer_list_)
       {
-        for (const auto& scene_component : scene_layer->components())
+        for (const auto& region : scene_layer->components())
         {
-          Component component;
-          component.scene_layer = scene_layer;
-          component.face_index = scene_component.face_index;
-          component.face_count = scene_component.face_count;          
-          component.texture = scene_component.texture;
-          component.track_layer = scene_layer->associated_layer();
-          components_.push_back(component);
+          for (const auto& scene_component : region)
+          {
+            Component component;
+            component.scene_layer = scene_layer;
+            component.scene_component = &scene_component;
+            component.texture = scene_component.texture;
+            component.track_layer = scene_layer->associated_layer();
+            components_.push_back(component);
+          }
         }
       }
 
@@ -363,8 +375,8 @@ namespace ts
       std::stable_sort(components_.begin(), components_.end(), 
                        [](const Component& a, const Component& b)
       {
-        auto a_level = a.scene_layer->base_level();
-        auto b_level = b.scene_layer->base_level();
+        auto a_level = a.scene_layer->level();
+        auto b_level = b.scene_layer->level();
         auto a_index = a.track_layer->z_index();
         auto b_index = b.track_layer->z_index();
 
@@ -373,5 +385,6 @@ namespace ts
 
       return components_;
     }
+    */
   }
 }

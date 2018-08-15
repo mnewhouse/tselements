@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <glm/mat4x4.hpp>
+#include <SFML/Graphics/Transform.hpp>
 
 #include "utility/vector2.hpp"
 
@@ -16,6 +16,6 @@ namespace ts
   {
     class Viewport;
 
-    glm::mat4 compute_view_matrix(const Viewport& viewport, Vector2i world_size, double frame_progress = 0.0);
+    sf::Transform compute_view_matrix(const Viewport& viewport, Vector2i world_size, double frame_progress = 0.0);
   }
 }

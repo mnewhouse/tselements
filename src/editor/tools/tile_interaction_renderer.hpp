@@ -12,7 +12,7 @@
 #include "graphics/shader.hpp"
 #include "graphics/buffer.hpp"
 
-#include <glm/mat4x4.hpp>
+#include <SFML/Graphics/Transform.hpp>
 
 namespace ts
 {
@@ -33,8 +33,8 @@ namespace ts
     public:
       TileInteractionRenderer();
 
-      void set_transform(const glm::mat4& model_matrix);
-      void render(const glm::mat4& view_matrix) const;
+      void set_transform(const sf::Transform& model_matrix);
+      void render(const sf::Transform& view_matrix) const;
 
       void update_tile_geometry(const resources::PlacedTile*, std::size_t tile_count,
                                 const scene::TextureMapping& texture_mapping);
@@ -67,7 +67,7 @@ namespace ts
       std::vector<resources::Vertex> vertex_cache_;
       std::vector<resources::Face> face_cache_;
 
-      glm::mat4 model_matrix_;
+      sf::Transform model_matrix_;
     };
   }
 }

@@ -94,7 +94,7 @@ namespace ts
     {
       if (editor_scene_)
       {
-        auto callback = [this](const glm::mat4& view_matrix)
+        auto callback = [this](const sf::Transform& view_matrix)
         {
           if (active_tool_)
           {

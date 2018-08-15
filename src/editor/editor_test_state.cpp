@@ -33,7 +33,7 @@ namespace ts
 
     static auto load_scene_components(const stage::Stage* stage_ptr)
     {
-      return std::make_unique<scene::SceneComponents>(scene::load_scene_components(stage_ptr));
+      return std::make_unique<scene::SceneComponents>(scene::load_scene_components_no_render(stage_ptr));
     }
 
     static auto make_local_player_roster(const client::PlayerSettings& player_settings)

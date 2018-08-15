@@ -49,7 +49,7 @@ namespace ts
       virtual void activate(const EditorContext& context) override;
       virtual void deactivate(const EditorContext& context) override;
 
-      virtual void on_canvas_render(const ImmutableEditorContext& context, const glm::mat4& matrix) const override;
+      virtual void on_canvas_render(const ImmutableEditorContext& context, const sf::Transform& matrix) const override;
 
       virtual const char* tool_name() const override;
       virtual mode_name_range mode_names() const override;

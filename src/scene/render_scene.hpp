@@ -15,9 +15,9 @@
 
 #include "utility/color.hpp"
 #include "utility/vector2.hpp"
+#include "utility/rect.hpp"
 
-#include <glm/mat2x2.hpp>
-#include <glm/mat4x4.hpp>
+#include <SFML/Graphics/Transform.hpp>
 
 #include <cstdint>
 #include <functional>
@@ -40,9 +40,12 @@ namespace ts
 
         graphics::Buffer vertex_buffer;
         graphics::Buffer index_buffer;
+        graphics::VertexArray vertex_array;
 
         std::size_t vertex_buffer_size = 0;
         std::size_t index_buffer_size = 0;
+
+        const TrackSceneLayer* scene_layer = nullptr;
       };
 
       struct TrackComponent
@@ -51,41 +54,47 @@ namespace ts
         const graphics::Texture* texture;        
 
         std::uint32_t level;
+        std::uint32_t z_index;
         std::uint32_t element_buffer_offset;
         std::uint32_t element_count;
+
+        FloatRect bounding_box;
       };
 
-      struct TrackComponentUniformLocations
+      struct TrackComponentLocations
       {
+        std::uint32_t in_position;
+        std::uint32_t in_texCoords;
+
         std::uint32_t view_matrix;
-        std::uint32_t texture_sampler;
+        std::uint32_t texture_sampler;        
+        std::uint32_t min_corner;
+        std::uint32_t max_corner;
       };
 
-      struct CarUniformLocations
+      struct BoundaryLocations
       {
-        std::uint32_t frame_progress;
-        std::uint32_t view_matrix;
-        std::uint32_t model_matrix;
-        std::uint32_t new_model_matrix;
-        std::uint32_t colorizer_matrix;
-        std::uint32_t car_colors;
-        std::uint32_t texture_sampler;
-        std::uint32_t colorizer_sampler;
-      };
+        std::uint32_t in_position;
 
-      struct BoundaryUniformLocations
-      {
         std::uint32_t view_matrix;
         std::uint32_t world_size;
       };
 
-      struct EntityInfo
+      struct CarLocations
       {
-        const graphics::Texture* texture;
-        glm::mat4 model_matrix;
-        glm::mat4 new_model_matrix;
-        glm::mat4 colorizer_matrix;
-        std::array<float, 12> colors;
+        std::uint32_t in_position;
+        std::uint32_t in_texCoords;
+
+        std::uint32_t frame_progress;
+        std::uint32_t view_matrix;
+        std::uint32_t model_matrix;
+        std::uint32_t new_model_matrix;
+        std::uint32_t texture_coords_offset;
+        std::uint32_t texture_coords_scale;
+        std::uint32_t colorizer_matrix;        
+        std::uint32_t car_colors;
+        std::uint32_t texture_sampler;
+        std::uint32_t colorizer_sampler;
       };
     }
 
@@ -95,7 +104,7 @@ namespace ts
 
     struct PostRenderCallback
     {
-      virtual void operator()(const glm::mat4& view_matrix, IntRect screen_rect) const {}
+      virtual void operator()(const sf::Transform& view_matrix, IntRect screen_rect) const {}
     };
 
     class RenderScene
@@ -104,7 +113,7 @@ namespace ts
       RenderScene() = default;
       explicit RenderScene(TrackScene track_scene);
 
-      using render_callback = std::function<void(const glm::mat4& view_matrix)>;
+      using render_callback = std::function<void(const sf::Transform& view_matrix)>;
       // Render a viewport with an optional callback. The callback can be used to draw more stuff.
       // The scissor region, viewport and stencil buffer are retained when the callback is invoked, 
       // but no guarantees are made about anything else.
@@ -112,7 +121,7 @@ namespace ts
                   const render_callback& = nullptr) const;
 
       void clear_dynamic_state();
-      void update_entities(const DynamicScene& dynamic_scene, std::uint32_t frame_duration);
+      void update_entities(const DynamicScene& dynamic_scene);
       void set_background_color(Colorf bg_color);
 
       const TrackScene& track_scene() const;
@@ -124,11 +133,13 @@ namespace ts
       void rebuild_tile_layer_geometry(const resources::TrackLayer* tile_layer,
                                        const resources::PlacedTile* tile_expansion, std::size_t tile_count);
 
+      void reorder_track_components();      
 
     private:
       void load_shader_programs();
-      void setup_entity_buffers();
-      void load_track_components(const TrackScene& track_scene);
+      void setup_entity_buffers(); 
+      void setup_vertex_arrays();
+      void update_track_vertex_arrays();
 
       void update_layer_geometry(const resources::TrackLayer* layer);
 
@@ -139,23 +150,27 @@ namespace ts
       graphics::ShaderProgram track_shader_program_;
       graphics::ShaderProgram car_shader_program_;
       graphics::ShaderProgram boundary_shader_program_;
-
-      graphics::Buffer boundary_index_buffer_;
-      graphics::Buffer boundary_vertex_buffer_;      
       
       graphics::Buffer car_vertex_buffer_;
       graphics::Buffer car_index_buffer_;
+      graphics::VertexArray car_vertex_array_;
+
+      graphics::Buffer boundary_vertex_buffer_;
+      graphics::Buffer boundary_index_buffer_;
+      graphics::VertexArray boundary_vertex_array_;
       
-      render_scene::TrackComponentUniformLocations track_component_uniform_locations_;
-      render_scene::CarUniformLocations car_uniform_locations_;
-      render_scene::BoundaryUniformLocations boundary_uniform_locations_;
+      render_scene::TrackComponentLocations track_component_locations_;
+      render_scene::CarLocations car_locations_;
+      render_scene::BoundaryLocations boundary_locations_;
 
       std::unordered_map<const TrackSceneLayer*, render_scene::TrackLayerData> layers_;
       std::vector<render_scene::TrackComponent> track_components_;
-      std::vector<render_scene::EntityInfo> drawable_entities_;
-      std::vector<DrawableEntity::Vertex> car_vertex_buffer_cache_;
+      std::vector<DrawableEntity> drawable_entities_;
 
-      Colorf background_color_ = Colorf(0.f, 0.f, 0.f, 1.0f);
+      bool update_vaos_ = true;
+      bool update_track_vaos_ = false;
+
+      Colorf background_color_ = Colorf(0.f, 0.f, 0.f, 1.0f);      
     };
   }
 }

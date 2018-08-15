@@ -15,7 +15,7 @@
 
 #include <boost/range/iterator_range.hpp>
 
-#include <glm/mat4x4.hpp>
+#include <SFML/Graphics/Transform.hpp>
 
 namespace ts
 {
@@ -46,7 +46,7 @@ namespace ts
       virtual void next(const EditorContext& context) {}
       virtual void previous(const EditorContext& context) {}
 
-      virtual void on_canvas_render(const ImmutableEditorContext& context, const glm::mat4& matrix) const {}
+      virtual void on_canvas_render(const ImmutableEditorContext& context, const sf::Transform& matrix) const {}
 
       virtual const char* tool_name() const { return "Tool"; }
 

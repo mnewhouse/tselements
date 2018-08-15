@@ -73,6 +73,8 @@ namespace ts
       Vector2d center_of_mass() const;
       void set_center_of_mass(Vector2d center);
 
+      double moment_of_inertia() const;
+
       bool is_flying() const;
       void set_hover_distance(double hover_distance);
       double hover_distance() const;
@@ -95,6 +97,7 @@ namespace ts
       void load_raw_state(RawState state);
 
       void apply_force(Vector2d force, Vector2d point);
+      void apply_torque(double t);
 
       Vector2d applied_force() const;
       double applied_torque() const;

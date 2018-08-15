@@ -76,11 +76,8 @@ namespace ts
 
       DrawableEntity entity_info(std::size_t instance_id) const;
       std::size_t entity_count() const;
-
-      void register_color_schemes(graphics::Texture texture, Vector2i texture_size,
-                                  const IntRect* schemerects, std::size_t num_schemes);
-
-      const graphics::Texture* color_scheme_texture() const;
+      
+      std::uint32_t register_color_scheme(graphics::Texture texture);
 
       void update_entity_positions();
 

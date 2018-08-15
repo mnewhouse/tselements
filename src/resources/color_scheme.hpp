@@ -17,7 +17,7 @@ namespace ts
   {
     struct ColorScheme
     {
-      std::uint16_t scheme_id = 0;
+      std::uint32_t scheme_id = 0;
       std::array<Colorb, 3> colors;
     };
   }

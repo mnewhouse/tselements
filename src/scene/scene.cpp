@@ -60,7 +60,7 @@ namespace ts
 
     void Scene::update(std::uint32_t frame_duration)
     {
-      impl_->render_scene_.update_entities(impl_->dynamic_scene_, frame_duration);
+      impl_->render_scene_.update_entities(impl_->dynamic_scene_);
 
       impl_->car_sound_controller_.update(frame_duration);
       impl_->particle_generator_.update(frame_duration);

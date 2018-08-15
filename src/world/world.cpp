@@ -55,7 +55,7 @@ namespace ts
       user_data_(std::make_unique<UserData>())
     {     
       auto space = static_cast<cpSpace*>(physics_space_.get());
-      cpSpaceSetUserData(space, user_data_.get());
+      cpSpaceSetUserData(space, user_data_.get());      
 
       user_data_->size = size;
     }

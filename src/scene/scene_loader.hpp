@@ -55,5 +55,6 @@ namespace ts
     };
 
     SceneComponents load_scene_components(const stage::Stage* stage_ptr);
+    SceneComponents load_scene_components_no_render(const stage::Stage* stage_ptr);
   }
 }

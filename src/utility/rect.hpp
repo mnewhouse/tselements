@@ -70,16 +70,12 @@ namespace ts
   {
     using result_type = typename std::common_type<T, U>::type;
 
-    auto min_x = std::min<result_type>(a.left, p.x);
-    auto max_x = std::max<result_type>(a.right(), p.x);
+    auto minmax_x = std::minmax<result_type>({ a.left, a.right(), p.x });
+    auto minmax_y = std::minmax<result_type>({ a.top, a.bottom(), p.y });
+    auto width = minmax_x.second - minmax_x.first;
+    auto height = minmax_y.second - minmax_y.first;
 
-    auto min_y = std::min<result_type>(a.top, p.y);
-    auto max_y = std::max<result_type>(a.bottom(), p.y);
-
-    auto width = max_x - min_x;
-    auto height = max_y - min_y;
-
-    return Rect<result_type>(min_x, min_y, width, height);
+    return Rect<result_type>(minmax_x.first, minmax_y.first, width, height);
   }
 
   template <typename T>

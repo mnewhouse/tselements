@@ -12,8 +12,6 @@
 #include "scene/texture_mapping.hpp"
 #include "scene/track_vertices.hpp"
 
-#include <glm/gtc/type_ptr.hpp>
-
 namespace ts
 {
   namespace editor
@@ -69,12 +67,12 @@ namespace ts
       glCheck(glBindVertexArray(0));
     }
 
-    void TileInteractionRenderer::render(const glm::mat4& view_matrix) const
+    void TileInteractionRenderer::render(const sf::Transform& view_matrix) const
     {
       glCheck(glUseProgram(default_geometry_shader_.get()));
 
       auto matrix = view_matrix * model_matrix_;
-      glCheck(glUniformMatrix4fv(default_view_matrix_location_, 1, GL_FALSE, glm::value_ptr(matrix)));
+      glCheck(glUniformMatrix4fv(default_view_matrix_location_, 1, GL_FALSE, matrix.getMatrix()));
       glCheck(glUniform1i(default_sampler_location_, 0));
 
       glCheck(glBindVertexArray(vertex_array_.get()));
@@ -153,7 +151,7 @@ namespace ts
       render_components_.clear();
     }
 
-    void TileInteractionRenderer::set_transform(const glm::mat4& matrix)
+    void TileInteractionRenderer::set_transform(const sf::Transform& matrix)
     {
       model_matrix_ = matrix;
     }

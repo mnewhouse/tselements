@@ -226,9 +226,8 @@ namespace ts
 
       sf::Image color_scheme;
       color_scheme.loadFromFile("data/color_scheme.png");
-      IntRect scheme_rect(0, 0, 32, 32);
-      dynamic_scene.register_color_schemes(graphics::create_texture(color_scheme), { 32, 32 }, &scheme_rect, 1);
-      
+      auto scheme_id = dynamic_scene.register_color_scheme(graphics::create_texture(color_scheme));
+
       // Now, loop through the car instances and add them to the scene one by one.
       const auto& world_object = stage_object.world();
       for (const auto& car_instance : stage_desc.car_instances)
@@ -241,7 +240,7 @@ namespace ts
           auto model_id = model_ids[car_model_index + car_instance.model_id];
 
           resources::ColorScheme color_scheme;
-          color_scheme.scheme_id = 0;
+          color_scheme.scheme_id = scheme_id;
           color_scheme.colors[0] = { 255, 255, 255, 255 };          
           color_scheme.colors[1] = { 255, 150, 0, 255 };
           color_scheme.colors[2] = { 180, 0, 0, 255 };
@@ -249,6 +248,7 @@ namespace ts
         }
       }
 
+      glFinish();
       return dynamic_scene;
     }
   }

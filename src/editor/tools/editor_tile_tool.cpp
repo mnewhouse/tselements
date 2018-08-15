@@ -22,9 +22,6 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_guards.hpp"
 
-#include <glm/mat4x4.hpp>
-#include <glm/gtx/transform.hpp>
-
 namespace ts
 {
   namespace editor
@@ -281,7 +278,7 @@ namespace ts
       }
     }
 
-    void TileTool::on_canvas_render(const ImmutableEditorContext& context, const glm::mat4& view_matrix) const
+    void TileTool::on_canvas_render(const ImmutableEditorContext& context, const sf::Transform& view_matrix) const
     {
       if (context.working_state.selected_layer() != nullptr)
       {
@@ -471,10 +468,7 @@ namespace ts
 
       auto rad = degrees(static_cast<float>(placement_tile_rotation_)).radians();
 
-      auto model_matrix = glm::rotate(glm::translate(glm::vec3(world_pos.x, world_pos.y, 0.0f)),
-                                      rad,
-                                      glm::vec3(0, 0, 1));
-
+      auto model_matrix = sf::Transform().translate(world_pos.x, world_pos.y).rotate(rad);
       tile_interaction_renderer_.set_transform(model_matrix);
     }
 

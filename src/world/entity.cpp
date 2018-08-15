@@ -29,7 +29,7 @@ namespace ts
       return cpCircleShapeNew(body, circle.radius, { circle.center.x, circle.center.y });      
     }
 
-    cpShape* create_shape(cpBody* body, const resources::collision_shapes::Polygon& poly)                      
+    cpShape* create_shape(cpBody* body, const resources::collision_shapes::Polygon& poly)                  
     {
       boost::container::small_vector<cpVect, 16> vertices;
       for (auto& p : poly.points)
@@ -190,6 +190,11 @@ namespace ts
       return{ cog.x, cog.y };
     }
 
+    double Entity::moment_of_inertia() const
+    {
+      return cpBodyGetMoment(BODY_PTR);
+    }
+
     void Entity::set_mass(double mass)
     {
       cpBodySetMass(BODY_PTR, mass);
@@ -216,6 +221,11 @@ namespace ts
     void Entity::apply_force(Vector2d force, Vector2d point)
     {
       cpBodyApplyForceAtLocalPoint(BODY_PTR, { force.x, force.y }, { point.x, point.y });
+    }
+
+    void Entity::apply_torque(double t)
+    {
+      cpBodySetTorque(BODY_PTR, cpBodyGetTorque(BODY_PTR) + t);
     }
 
     Vector2d Entity::applied_force() const
