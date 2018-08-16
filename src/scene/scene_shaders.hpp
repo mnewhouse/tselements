@@ -50,6 +50,38 @@ namespace ts
         };
       )";
 
+      static const char track_path_fragment_shader[] = R"(
+        #version 130
+        uniform sampler2D u_weightSampler;
+        uniform sampler2D u_primarySampler;
+        uniform sampler2D u_secondarySampler;
+        uniform vec2 u_primaryScale;
+        uniform vec2 u_secondaryScale;
+        uniform vec2 u_minCorner;
+        uniform vec2 u_maxCorner;
+        
+        in vec2 frag_position;
+        in vec2 frag_texCoords;        
+        out vec4 frag_color;
+        void main()
+        {
+          if (frag_position.x < u_minCorner.x || frag_position.y < u_minCorner.y ||
+              frag_position.x > u_maxCorner.x || frag_position.y > u_maxCorner.y)
+          {
+            discard;
+          }
+
+          else
+          {
+            vec4 weights = texture2D(u_weightSampler, frag_texCoords);
+            vec4 primary = texture2D(u_primarySampler, frag_position * u_primaryScale) * weights.r;
+            vec4 secondary = texture2D(u_secondarySampler, frag_position * u_secondaryScale) * weights.g;                       
+
+            frag_color = (primary + secondary) / max(weights.r + weights.g, 1.0);
+          }
+        };
+      )";
+
       static const char car_vertex_shader[] = R"(
         #version 130
         uniform mat4 u_viewMatrix;

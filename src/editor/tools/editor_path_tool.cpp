@@ -65,18 +65,10 @@ namespace ts
         auto path = track.path_library().create_path();
 
         auto layer = track.create_layer(resources::TrackLayerType::PathStyle, "wtf", 0);
-        auto styles = layer->path_styles();
-        styles->path = path;
-
-        resources::BorderStyle edge;
-        edge.texture_id = 15;
-        edge.width = 1.0f;
-
-        resources::PathStyle style;
-        style.border_styles.push_back(edge);
-        style.texture_id = 2;        
-        styles->styles.push_back(style);       
-
+        auto style = layer->path_style();
+        style->path = path;
+        style->style.primary_texture = 2;
+        style->style.secondary_texture = 15;
 
         select_path(path, context.working_state);
       }

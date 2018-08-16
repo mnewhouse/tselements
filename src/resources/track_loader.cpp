@@ -415,9 +415,14 @@ namespace ts
     
     bool process_path_style_directive(BaseStyle& style, const std::string& directive, boost::string_ref remainder)
     {
-      if (directive == "texture")
+      if (directive == "primarytexture")
       {
-        ArrayStream(remainder) >> style.texture_id;
+        ArrayStream(remainder) >> style.primary_texture;
+      }
+
+      else if (directive == "secondarytexture")
+      {
+        ArrayStream(remainder) >> style.secondary_texture;
       }
 
       else if (directive == "terrain")

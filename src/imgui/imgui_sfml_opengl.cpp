@@ -185,7 +185,13 @@ void main()
 }
 )";
 
-      return graphics::create_shader_program(vertex_shader, fragment_shader);
+      auto prog = graphics::create_shader_program(vertex_shader, fragment_shader);
+      glBindAttribLocation(prog.get(), 0, "in_position");
+      glBindAttribLocation(prog.get(), 1, "in_texCoord");
+      glBindAttribLocation(prog.get(), 2, "in_color");
+
+      graphics::link_shader_program(prog);
+      return prog;
     }
 
     void Context::Renderer::render(ImDrawData* draw_data) const

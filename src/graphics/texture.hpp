@@ -61,7 +61,7 @@ namespace ts
       GLenum target_ = GL_TEXTURE_2D;
     };
 
-    Texture create_texture(const sf::Image& image);
+    Texture create_texture(const sf::Image& image, bool generate_mipmaps = false);
     Texture create_texture(const gli::texture2d& texture);
     Texture create_texture_array(const gli::texture2d* layers, std::size_t num_layers);
 

@@ -135,7 +135,7 @@ namespace ts
             glTexSubImage3D(target, static_cast<GLint>(level), 0, 0, 0, extent.x, extent.y, layer,
                             layer_format.External, layer_format.Type,
                             tex.data(0, 0, level));
-          }
+          }          
         }        
       }
 
@@ -143,26 +143,42 @@ namespace ts
       return result;
     }
 
-    Texture create_texture(const sf::Image& image)
+    Texture create_texture(const sf::Image& image, bool generate_mipmaps)
     {
       Vector2u size = { image.getSize().x, image.getSize().y };
-      Texture tex(size, 1, 1);
+      auto num_levels = 1;
+      if (generate_mipmaps)
+      {
+        auto m = std::min(size.x, size.y);
+        while (m >= 2)
+        {
+          ++num_levels;
+          m /= 2;
+        }
+      }
+
+      Texture tex(size, num_levels, 1);
 
       auto name = tex.get();
       auto target = tex.target();
 
       glBindTexture(target, name);
       glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0);
-      glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0);
-      glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, num_levels - 1);
 
-      glTexStorage2D(target, 1, GL_RGBA8, size.x, size.y);            
-
+      glTexStorage2D(target, num_levels, GL_RGBA8, size.x, size.y);            
       glTexSubImage2D(target, 0, 0, 0, size.x, size.y,
-                      GL_RGBA, GL_UNSIGNED_BYTE, image.getPixelsPtr());
-      glBindTexture(target, 0);
+                      GL_RGBA, GL_UNSIGNED_BYTE, image.getPixelsPtr());      
 
+      if (generate_mipmaps)
+      {
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+        glGenerateMipmap(target);
+      }
+
+      glBindTexture(target, 0);
       return tex;
     }    
 

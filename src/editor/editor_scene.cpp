@@ -132,8 +132,8 @@ namespace ts
 
       for (auto& layer : track_.layers())
       {
-        auto styles = layer.path_styles();
-        if (styles && styles->path == path)
+        auto style = layer.path_style();
+        if (style && style->path == path)
         {
           render_scene_->rebuild_path_layer_geometry(&layer);
         }

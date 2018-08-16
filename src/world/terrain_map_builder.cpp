@@ -28,10 +28,6 @@ namespace ts
       std::vector<TerrainMapComponent> components;
       std::vector<resources::PlacedTile> tile_expansion;
 
-      std::vector<scene::OutlinePoint> outline_points;
-      std::vector<scene::PathVertex> path_vertices;
-      std::vector<scene::PathFace> path_faces;
-
       const auto& tile_library = track.tile_library();
       const auto& texture_library = track.texture_library().textures();
 
@@ -91,7 +87,7 @@ namespace ts
           }
         }
 
-        else if (auto* path_styles = layer.path_styles())
+        else if (auto* path_style = layer.path_style())
         {
           /*
           for (const auto& style : path_styles->styles)

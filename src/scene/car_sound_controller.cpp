@@ -101,13 +101,16 @@ namespace ts
           car_info.engine_sound.set_pitch(static_cast<float>(std::min(pitch, 1.1)));
         }
 
-        /*
-        auto traction = handling_state.traction;
+        
+        auto max_skid_magnitude = 0.0;
+        for (auto& ws : handling_state.wheel_states)
+        {
+          max_skid_magnitude = std::max(max_skid_magnitude, ws.speed * ws.slide_ratio);
+        }
 
-        if (traction < 0.95)
+        if (max_skid_magnitude >= 1.0)
         {          
-          auto volume = std::min(magnitude(car.velocity()) * 0.004, 1.0) *
-            std::sqrt(1.0 - std::max(traction, 0.5)) * 0.5;
+          auto volume = std::min(max_skid_magnitude * 0.006, 1.0);
 
           if (!car_info.skid_sound)
           {
@@ -117,7 +120,7 @@ namespace ts
 
           if (car_info.skid_sound)
           {
-            car_info.skid_sound.set_volume(static_cast<float>(volume * volume * 0.6));
+            car_info.skid_sound.set_volume(static_cast<float>(volume * volume * 0.5));
           }          
         }
 
@@ -126,7 +129,6 @@ namespace ts
           skid_playback_controller_.stop_sound_playback(car_info.skid_sound);
           car_info.skid_sound = {};
         }
-        */
       }
     }
   }

@@ -30,7 +30,7 @@ namespace ts
     struct PathLayerData
     {
       const resources::TrackPath* path;
-      std::vector<PathStyle> styles;
+      PathStyle style;
     };
 
     struct BaseTerrainData
@@ -65,8 +65,8 @@ namespace ts
       const std::vector<Tile>* tiles() const;
       std::vector<Tile>* tiles();
 
-      const PathLayerData* path_styles() const;
-      PathLayerData* path_styles();      
+      const PathLayerData* path_style() const;
+      PathLayerData* path_style();      
 
       BaseTerrainData* base_terrain();
       const BaseTerrainData* base_terrain() const;

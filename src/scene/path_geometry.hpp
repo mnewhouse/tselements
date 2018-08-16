@@ -22,47 +22,20 @@ namespace ts
 {
   namespace scene
   {
-    struct OutlineIndices
-    {
-      std::uint32_t start, partition, end;
-      bool closed = false;
-    };
-
-    struct OutlinePoint
-    {
-      double time_point;
-      Vector2f point;
-      Vector2f normal;
-    };
-
-    struct RenderedPath
-    {
-      struct Pixel
-      {
-        std::uint8_t e, b;
-      };
-
-      std::vector<Pixel> data;
-      int source_cell_size;
-      int dest_cell_size;  
-    };
-
     using PathVertex = resources::Vertex;
     using PathFace = resources::Face;
 
-    OutlineIndices generate_path_outline(const resources::TrackPath& path, const resources::PathStyle& path_style,
-                                         float tolerance,
-                                         std::vector<OutlinePoint>& outline_points);
-    
-    void create_base_geometry(const std::vector<OutlinePoint>& outline, OutlineIndices outline_indices,
-                              const resources::PathStyle& path_style, Vector2f texture_size,
+    void create_path_geometry(const resources::TrackPath& path, const resources::PathStyle& path_style,
+                              float tolerance, sf::Image& path_texture,
                               std::vector<PathVertex>& vertices, std::vector<PathFace>& faces);
 
+    /*
     void create_border_geometry(const std::vector<OutlinePoint>& outline, OutlineIndices outline_indices,
                                 const resources::BorderStyle& border_style, Vector2f texture_size,
                                 std::vector<PathVertex>& vertices, std::vector<PathFace>& faces);
 
     RenderedPath render_path(const std::vector<OutlinePoint>& path_outline,
                              Vector2i track_size, int cell_bits);
+                             */
   }
 }

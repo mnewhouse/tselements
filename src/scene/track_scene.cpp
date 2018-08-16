@@ -26,7 +26,7 @@ namespace ts
     TrackScene::TrackScene(Vector2i track_size, TextureMapping texture_mapping)
       : texture_mapping_(std::move(texture_mapping)),
         track_size_(track_size)  
-    {
+    {      
     }
 
     const TextureMapping& TrackScene::texture_mapping() const
@@ -74,9 +74,34 @@ namespace ts
 
     TrackSceneLayer::TrackSceneLayer(const resources::TrackLayer* layer, std::uint32_t level_offset)
       : associated_layer_(layer),
-        level_offset_(level_offset),
-        components_(max_regions * max_regions)
-    {      
+        level_offset_(level_offset)        
+    {     
+      using T = resources::TrackLayerType;
+      if (layer->type() == T::BaseTerrain) components_.resize(1);
+      else components_.resize(256);
+
+      switch (layer->type())
+      {
+      case T::BaseTerrain:
+        type_ = Type::BaseTerrain;
+        break;
+
+      case T::PathStyle:
+        type_ = Type::Path;
+        break;
+
+      case T::Tiles:
+        type_ = Type::Tiles;
+        break;
+
+      default:
+        break;
+      }
+    }
+    
+    TrackSceneLayer::Type TrackSceneLayer::type() const
+    {
+      return type_;
     }
 
     const std::vector<resources::Vertex>& TrackSceneLayer::vertices() const
@@ -106,7 +131,50 @@ namespace ts
 
     void TrackSceneLayer::clear()
     {
-      components_.clear();      
+      for (auto& region : components_)
+      {
+        region.clear();
+      }
+    }
+
+    void TrackSceneLayer::set_primary_texture(const texture_type* tex)
+    {
+      primary_texture_ = tex;
+    }
+
+    void TrackSceneLayer::set_secondary_texture(const texture_type* tex)
+    {
+      secondary_texture_ = tex;
+    }
+
+    const TrackSceneLayer::texture_type* TrackSceneLayer::primary_texture() const
+    {
+      return primary_texture_;
+    }
+
+    const TrackSceneLayer::texture_type* TrackSceneLayer::secondary_texture() const
+    {
+      return secondary_texture_;
+    }
+
+    Vector2f TrackSceneLayer::primary_texture_tile_size() const
+    {
+      return primary_texture_tile_size_;
+    }
+
+    Vector2f TrackSceneLayer::secondary_texture_tile_size() const
+    {
+      return secondary_texture_tile_size_;
+    }
+
+    void TrackSceneLayer::set_primary_texture_tile_size(Vector2f size)
+    {
+      primary_texture_tile_size_ = size;
+    }
+
+    void TrackSceneLayer::set_secondary_texture_tile_size(Vector2f size)
+    {
+      secondary_texture_tile_size_ = size;
     }
 
     namespace detail
@@ -135,6 +203,11 @@ namespace ts
       }     
     }
 
+    void TrackSceneLayer::store_texture(std::unique_ptr<graphics::Texture> tex)
+    {
+      stored_texture_ = std::move(tex);
+    }
+
     void TrackSceneLayer::append_geometry(const texture_type* texture,
                                           const vertex_type* vertices, std::uint32_t vertex_count,
                                           const face_type* faces, std::uint32_t face_count)
@@ -155,31 +228,31 @@ namespace ts
         f.indices[1] += vertex_offset;
         f.indices[2] += vertex_offset;
 
-        auto a = vertices[face->indices[0]].position;
-        auto b = vertices[face->indices[1]].position;
-        auto c = vertices[face->indices[2]].position;
-
-        if (cross_product(b - a, c - a) > 0.0)
+        if (associated_layer_->type() != resources::TrackLayerType::BaseTerrain)
         {
-          std::swap(a, c);
-        }
+          auto a = vertices[face->indices[0]].position;
+          auto b = vertices[face->indices[1]].position;
+          auto c = vertices[face->indices[2]].position;
 
-        FloatRect bounding_rect(a, Vector2f(0, 0));
-        bounding_rect = combine(bounding_rect, b);
-        bounding_rect = combine(bounding_rect, c);
+          if (cross_product(b - a, c - a) > 0.0)
+          {
+            std::swap(a, c);
+          }
 
-        auto min_cell_x = static_cast<std::int32_t>(std::floor(bounding_rect.left * inv_region_size));
-        auto min_cell_y = static_cast<std::int32_t>(std::floor(bounding_rect.top * inv_region_size));
-        auto max_cell_x = static_cast<std::int32_t>(std::floor(bounding_rect.right() * inv_region_size));
-        auto max_cell_y = static_cast<std::int32_t>(std::floor(bounding_rect.bottom() * inv_region_size));
+          FloatRect bounding_rect(a, Vector2f(0, 0));
+          bounding_rect = combine(bounding_rect, b);
+          bounding_rect = combine(bounding_rect, c);
 
-        min_cell_x = clamp(min_cell_x, 0, 15);
-        max_cell_x = clamp(max_cell_x, 0, 15);
-        min_cell_y = clamp(min_cell_y, 0, 15);
-        max_cell_y = clamp(max_cell_y, 0, 15);
+          auto min_cell_x = static_cast<std::int32_t>(std::floor(bounding_rect.left * inv_region_size));
+          auto min_cell_y = static_cast<std::int32_t>(std::floor(bounding_rect.top * inv_region_size));
+          auto max_cell_x = static_cast<std::int32_t>(std::floor(bounding_rect.right() * inv_region_size));
+          auto max_cell_y = static_cast<std::int32_t>(std::floor(bounding_rect.bottom() * inv_region_size));
 
-        //if (max_cell_x > min_cell_x && max_cell_y > min_cell_y)
-        {
+          min_cell_x = clamp(min_cell_x, 0, 15);
+          max_cell_x = clamp(max_cell_x, 0, 15);
+          min_cell_y = clamp(min_cell_y, 0, 15);
+          max_cell_y = clamp(max_cell_y, 0, 15);
+
           for (auto cell_y = min_cell_y; cell_y <= max_cell_y; ++cell_y)
           {
             auto bounding_box = IntRect(min_cell_x * region_size, cell_y * region_size, region_size, region_size);
@@ -203,6 +276,20 @@ namespace ts
             }
           }
         }
+
+        else
+        {
+          auto& entry = components_[0];
+          if (entry.empty() || entry.back().texture != texture)
+          {
+            Component component;
+            component.bounding_box = IntRect(0, 0, region_size * max_regions, region_size * max_regions);
+            component.texture = texture;
+            entry.push_back(component);
+          }
+          
+          entry.back().faces.push_back(f);
+        }
       }
     }
 
@@ -210,7 +297,7 @@ namespace ts
     {
       if (auto base_terrain = layer->base_terrain())
       {        
-        auto& scene_layer = this->scene_layer(layer);
+        auto& scene_layer = this->scene_layer(layer);        
 
         scene_layer.clear();
 
@@ -223,8 +310,8 @@ namespace ts
           auto track_width = static_cast<float>(track_size_.x);
           auto track_height = static_cast<float>(track_size_.y);          
 
-          auto tex_right = (track_width * 4.0f) / tex_info.texture->size().x;
-          auto tex_bottom = (track_height * 4.0f) / tex_info.texture->size().y;
+          auto tex_right = (track_width * 2.0f) / tex_info.texture->size().x;
+          auto tex_bottom = (track_height * 2.0f) / tex_info.texture->size().y;
 
           resources::Vertex vertices[4];
           vertices[0].position = { 0.0f, 0.0f };
@@ -295,96 +382,42 @@ namespace ts
     {
       // Generate vertices and faces and add them to the list of components
       auto& scene_layer = this->scene_layer(path_layer, 0);
-      auto path_styles = path_layer->path_styles();
+      auto path_style = path_layer->path_style();
 
       scene_layer.clear();
-      
-      if (path_styles)
-      {
-        for (auto& style : path_styles->styles)
+      scene_layer.set_primary_texture(nullptr);
+      scene_layer.set_secondary_texture(nullptr);     
+      if (path_style)
+      {        
+        const auto& style = path_style->style;
+        auto primary = texture_mapping_.find(texture_mapping_.texture_id(style.primary_texture));
+        auto secondary = texture_mapping_.find(texture_mapping_.texture_id(style.secondary_texture));
+        if (!primary.empty())
         {
-          auto texture_range = texture_mapping_.find(texture_mapping_.texture_id(style.texture_id));
-
-          path_outline_cache_.clear();
-          auto outline_indices = generate_path_outline(*path_styles->path, style, 0.15f, path_outline_cache_);
-
-          for (auto& border_style : style.border_styles)
-          {
-            vertex_cache_.clear();
-            face_cache_.clear();
-
-            auto border_texture = texture_mapping_.find(texture_mapping_.texture_id(border_style.texture_id));
-            if (!border_texture.empty())
-            {
-              const auto& texture_info = border_texture.front();
-              auto texture_size = vector2_cast<float>(texture_info.texture->size());
-
-              create_border_geometry(path_outline_cache_, outline_indices, border_style, texture_size,
-                                     vertex_cache_, face_cache_);
-
-              scene_layer.append_geometry(texture_info.texture,
-                                          vertex_cache_.data(), vertex_cache_.size(),
-                                          face_cache_.data(), face_cache_.size());
-            }
-          }
-
-          if (!texture_range.empty())
-          {
-            auto& texture_info = texture_range.front();
-            auto texture_size = vector2_cast<float>(texture_info.texture->size());
-
-            vertex_cache_.clear();
-            face_cache_.clear();
-
-            create_base_geometry(path_outline_cache_, outline_indices, style, texture_size, 
-                                 vertex_cache_, face_cache_);        
-            
-            scene_layer.append_geometry(texture_info.texture,
-                                        vertex_cache_.data(), vertex_cache_.size(),
-                                        face_cache_.data(), face_cache_.size());
-          }          
+          scene_layer.set_primary_texture(primary.front().texture);
         }
+
+        if (!secondary.empty())
+        {
+          scene_layer.set_secondary_texture(secondary.front().texture);
+        }
+
+        vertex_cache_.clear();
+        face_cache_.clear();
+
+        sf::Image path_texture;
+        create_path_geometry(*path_style->path, path_style->style, 0.1f, path_texture, vertex_cache_, face_cache_);        
+
+        auto tex = std::make_unique<graphics::Texture>(graphics::create_texture(path_texture));
+        glBindTexture(tex->target(), tex->get());
+        glTexParameteri(tex->target(), GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+        glTexParameteri(tex->target(), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glBindTexture(tex->target(), 0);
+
+        scene_layer.append_geometry(tex.get(), vertex_cache_.data(), vertex_cache_.size(),
+                                    face_cache_.data(), face_cache_.size());
+        scene_layer.store_texture(std::move(tex));
       }
     }
-
-    /*
-    const std::vector<TrackScene::Component>& TrackScene::reload_components()
-    {
-      components_.clear();
-      for (auto scene_layer : layer_list_)
-      {
-        for (const auto& region : scene_layer->components())
-        {
-          for (const auto& scene_component : region)
-          {
-            Component component;
-            component.scene_layer = scene_layer;
-            component.scene_component = &scene_component;
-            component.texture = scene_component.texture;
-            component.track_layer = scene_layer->associated_layer();
-            components_.push_back(component);
-          }
-        }
-      }
-
-      return sort_components();
-    }
-
-    const std::vector<TrackScene::Component>& TrackScene::sort_components()
-    {
-      std::stable_sort(components_.begin(), components_.end(), 
-                       [](const Component& a, const Component& b)
-      {
-        auto a_level = a.scene_layer->level();
-        auto b_level = b.scene_layer->level();
-        auto a_index = a.track_layer->z_index();
-        auto b_index = b.track_layer->z_index();
-
-        return std::tie(a_level, a_index) < std::tie(b_level, b_index);
-      });
-
-      return components_;
-    }
-    */
   }
 }

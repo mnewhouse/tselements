@@ -567,12 +567,10 @@ namespace ts
         {
           for (const auto& layer : track.layers())
           {
-            if (auto styles = layer.path_styles())
+            if (auto style = layer.path_style())
             {
-              for (auto& style : styles->styles)
-              {
-                load_texture_by_id(style.texture_id);
-              }             
+              load_texture_by_id(style->style.primary_texture);
+              load_texture_by_id(style->style.secondary_texture);
             }                     
           }
         }        

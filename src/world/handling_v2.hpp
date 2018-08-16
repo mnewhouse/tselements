@@ -10,6 +10,8 @@
 
 #include "utility/vector2.hpp"
 
+#include <boost/container/small_vector.hpp>
+
 namespace ts
 {
   namespace world
@@ -23,6 +25,16 @@ namespace ts
       std::int8_t gear_shift_state = 0;
       double engine_rev_speed = 0.0;
       Vector2d net_force;
+
+      struct WheelState
+      {
+        Vector2d pos;
+        double speed;
+        double slide_ratio;
+        // Terrain #TODO
+      };
+
+      boost::container::small_vector<WheelState, 4> wheel_states;      
     };
 
     HandlingState update_car_state(Car& car, const TerrainMap& terrain_map,

@@ -19,6 +19,20 @@ namespace ts
 {
   namespace scene
   {
+    struct OutlineIndices
+    {
+      std::uint32_t start, partition, end;
+      bool closed = false;
+    };
+
+    struct OutlinePoint
+    {
+      float time_point;
+      Vector2f point;
+      Vector2f normal;
+      float width;
+    };
+
     struct OutlineProperties
     {
       bool use_relative_width = true;
@@ -46,7 +60,7 @@ namespace ts
       {
         auto width = props.use_relative_width ?
           resources::path_width_at(a, b, time_point) * props.width :
-          props.width;
+          resources::path_width_at(a, b, time_point) + props.width;
 
         auto normal = resources::path_normal_at(a, b, time_point);
         if (props.invert_normal) normal = -normal;
@@ -55,7 +69,8 @@ namespace ts
         {
           time_point,
           resources::path_point_at(a, b, time_point) + normal * std::max(width, 0.0f),
-          normal
+          normal,
+          width
         };
       }
 
@@ -206,11 +221,8 @@ namespace ts
 
       auto fix_normal = [](OutlinePoint& point, const OutlinePoint& prev, const OutlinePoint& next)
       {
-        auto a = normalize(flip_orientation(point.point - prev.point));
-        auto b = normalize(flip_orientation(next.point - point.point));
-
-        a.x = -a.x;
-        b.x = -b.x;
+        auto a = normalize(tangent(point.point - prev.point));
+        auto b = normalize(tangent(next.point - point.point));
 
         if (dot_product(a, point.normal) < 0.0f) a = -a;
         if (dot_product(b, point.normal) < 0.0f) b = -b;
@@ -272,9 +284,7 @@ namespace ts
       generate_path_outline(path, second_outline, outline_points);
       outline_indices.end = static_cast<std::uint32_t>(outline_points.size());
 
-      adjust_outline_normals(outline_points, outline_indices, path.closed);
-      
-
+      //adjust_outline_normals(outline_points, outline_indices, path.closed);
       return outline_indices;
     }
 
@@ -289,236 +299,93 @@ namespace ts
       return generate_path_outline(path, path_style, properties, invert(properties), outline_points);
     }
 
-
-    RenderedPath render_path(const std::vector<OutlinePoint>& path_outline, const OutlineIndices& indices,
-                             Vector2i track_size, int source_cell_size, int dest_cell_size,
-                             int num_samples = 1)
-    {
-      if (indices.end == indices.partition || indices.partition == indices.start) return{};
-
-      auto inv_source_cell_size = 1.0 / source_cell_size;
-      auto num_rows = (track_size.y + source_cell_size - 1) / source_cell_size;
-      auto num_columns = (track_size.x + source_cell_size - 1) / source_cell_size;
-
-      struct EdgeInfo
-      {
-        double slope;
-        double base;
-        double min_y;
-        double max_y;
-        double avg_x;
-        bool open;
-        bool border;
-      };
-
-      std::vector<EdgeInfo> edge_info;
-      std::vector<std::pair<std::int32_t, std::uint32_t>> edge_rows;
-
-      auto compute_edge_info = [&](const OutlinePoint& a, const OutlinePoint& b)
-      {
-        auto start_row = static_cast<std::int32_t>(std::floor(a.point.y * inv_source_cell_size));
-        auto end_row = static_cast<std::int32_t>(std::floor(b.point.y * inv_source_cell_size));
-
-        auto diff = b.point - a.point;
-        if (std::abs(diff.y) != 0.0f)
-        {
-          EdgeInfo info;
-          info.slope = diff.x / diff.y;
-          info.min_y = std::min(a.point.y, b.point.y);
-          info.max_y = std::max(a.point.y, b.point.y);
-          info.avg_x = (a.point.x + b.point.x) * 0.5;
-
-          // x = slope*y + base
-          // x - slope*y = base
-          info.base = a.point.x - info.slope * a.point.y;
-          info.border = false;
-          info.open = (cross_product(b.point - a.point, make_vector2(1.0f, 0.0f)) < 0.0f) ==
-            (cross_product(b.point - a.point, -a.normal) < 0.0f);
-
-          auto edge_idx = static_cast<std::uint32_t>(edge_info.size());
-          edge_info.push_back(info);
-
-          if (end_row < start_row) std::swap(start_row, end_row);
-
-          start_row = clamp(start_row, 0, num_rows);
-          end_row = clamp(end_row, 0, num_rows);
-
-          for (auto row = start_row; row <= end_row; ++row)
-          {
-            edge_rows.push_back({ row, edge_idx });
-          }
-        }
-      };
-
-      for (auto idx = indices.start + 1; idx < indices.partition; ++idx)
-      {
-        compute_edge_info(path_outline[idx - 1], path_outline[idx]);
-      }
-
-      for (auto idx = indices.partition + 1; idx < indices.end; ++idx)
-      {
-        compute_edge_info(path_outline[idx - 1], path_outline[idx]);
-      }
-
-      if (!indices.closed)
-      {
-        compute_edge_info(path_outline[indices.start], path_outline[indices.partition]);
-        compute_edge_info(path_outline[indices.partition - 1], path_outline[indices.end - 1]);
-      }
-
-      std::sort(edge_rows.begin(), edge_rows.end(),
-                [&](const auto& a, const auto& b)
-      {
-        if (a.first == b.first)
-        {
-          return edge_info[a.second].avg_x < edge_info[b.second].avg_x;
-        }
-
-        return a.first < b.first;
-      });
-
-      struct RenderPoint
-      {
-        float x;
-
-        bool is_border;
-        bool is_open;
-      };
-
-      auto scale = static_cast<float>(dest_cell_size * num_samples) / source_cell_size;
-      auto inv_scale = 1.0 / scale;
-
-      std::vector<RenderPoint> render_points;
-      std::vector<RenderedPath::Pixel> pixels;
-
-      auto dest_size = make_vector2(num_columns, num_rows) * dest_cell_size * num_samples;
-      pixels.resize(dest_size.x * dest_size.y);
-
-      RenderedPath result;
-      for (auto it = edge_rows.begin(); it != edge_rows.end(); )
-      {
-        auto row = it->first;
-        auto source_y = row * source_cell_size + 0.5 * inv_scale;
-
-        auto range_end = std::find_if(std::next(it), edge_rows.end(), [=](const auto& v)
-        {
-          return v.first != row;
-        });
-
-        for (auto y = 0; y < dest_cell_size * num_samples; ++y, source_y += inv_scale)
-        {
-          render_points.clear();
-          for (auto edge_it = it; edge_it != range_end; ++edge_it)
-          {
-            auto& edge = edge_info[edge_it->second];
-            if (source_y < edge.min_y || source_y > edge.max_y) continue;
-
-            RenderPoint point;
-            point.x = source_y * edge.slope + edge.base;
-            point.is_open = edge.open;
-            point.is_border = edge.border;
-            render_points.push_back(point);
-          }
-
-          // Every pixel in the scanline for which there are more open render_points before it than closed
-          // ones is is filled.
-          if (render_points.size() >= 2)
-          {
-            // Should already be mostly sorted.
-            std::sort(render_points.begin(), render_points.end(),
-                      [](const RenderPoint& a, const RenderPoint& b)
-            {
-              return a.x < b.x;
-            });
-
-            std::int32_t border_counter = 0;
-            std::int32_t base_counter = 0;
-
-            auto dest_y = row * num_samples * dest_cell_size + y;
-            auto row_ptr = &pixels[dest_y * dest_size.x];
-
-            auto it = render_points.begin(), next_it = std::next(it);
-            for (; next_it != render_points.end(); ++it, ++next_it)
-            {
-              if (base_counter == 0) ++base_counter;
-              else --base_counter;
-
-              if (it->is_open)
-              {
-                if (it->is_border) ++border_counter;
-                else ++base_counter;
-              }
-
-              else
-              {
-                if (it->is_border) --border_counter;
-                else --base_counter;
-              }
-
-              auto start_x = static_cast<std::int32_t>(it->x * scale + 0.5f);
-              auto end_x = static_cast<std::int32_t>(next_it->x * scale + 0.5f);
-
-              start_x = clamp(start_x, 0, track_size.x);
-              end_x = clamp(end_x, 0, track_size.x);
-
-              // Fill pixels
-              if (base_counter > 0)
-              {
-                for (auto x = start_x; x < end_x; ++x)
-                {
-                  row_ptr[x].b = 255;
-                }
-              }
-
-              else if (border_counter > 0)
-              {
-                for (auto x = start_x; x < end_x; ++x)
-                {
-                  row_ptr[x].e = 255;
-                }
-              }
-            }
-          }
-        }
-
-        it = range_end;
-      }
-
-      sf::Image image;
-      image.create(dest_size.x, dest_size.y);
-
-      auto p = pixels.data();
-      for (auto y = 0; y < dest_size.y; ++y)
-      {
-        for (auto x = 0; x < dest_size.x; ++x, ++p)
-        {          
-          image.setPixel(x, y, sf::Color(p->b, p->e, 0, 255));
-        }
-      }
-
-      image.saveToFile("cunt.png");
-      return{};
-    }
-
     void create_base_geometry(const std::vector<OutlinePoint>& outline_points, OutlineIndices outline_indices,
-                              const resources::PathStyle& path_style, Vector2f texture_size,
+                              const resources::PathStyle& path_style, float inv_max_width,
                               std::vector<PathVertex>& vertices, std::vector<PathFace>& faces)
     {
       create_base_geometry(outline_points, outline_indices, faces);
 
-      auto inv_texture_scale = path_style.texture_scale / texture_size;
       for (auto idx = outline_indices.start; idx != outline_indices.end; ++idx)
       {
         PathVertex v;
         v.position = outline_points[idx].point;
-        v.texture_coords = v.position * inv_texture_scale;
+
+        auto m = outline_points[idx].width * inv_max_width;
+        if (idx >= outline_indices.partition) v.texture_coords = { -m, 1.0f - m };
+        else v.texture_coords = { m, 1.0f - m };
+
         v.color = path_style.color;
         vertices.push_back(v);
       }
-
-      render_path(outline_points, outline_indices, { 640, 400 }, 16, 16, 1);
     }
 
+    void create_path_texture_image(sf::Image& image, float max_width, float border_width, float scale)
+    {
+      auto image_size = next_power_of_two(static_cast<int>(max_width * scale));
+
+      image.create(image_size, image_size, sf::Color(0, 0, 0, 0));
+
+      for (auto y = 0; y < image_size; ++y)
+      {
+        auto w = image_size - y;
+        auto base_width = w - border_width * scale;
+        auto p = static_cast<int>(base_width);
+        
+        for (auto x = 0; x < p; ++x)
+        {
+          image.setPixel(x, y, sf::Color(255, 0, 0, 255));
+        }
+
+        if (p >= 0)
+        {
+          auto frac = base_width - std::floor(base_width);
+          image.setPixel(p, y, sf::Color(static_cast<std::uint8_t>(255.0f * (1.0f - frac)),
+                                         static_cast<std::uint8_t>(255.0f * frac), 0, 255));
+        }
+
+        for (auto x = std::max(p + 1, 0); x < w; ++x)
+        {
+          image.setPixel(x, y, sf::Color(0, 255, 0, 255));
+        }
+      }
+    }
+
+    void create_path_geometry(const resources::TrackPath& path, const resources::PathStyle& path_style,
+                              float tolerance, sf::Image& path_texture,
+                              std::vector<PathVertex>& vertices, std::vector<PathFace>& faces)
+    {
+      std::vector<OutlinePoint> outline_points;
+
+      OutlineProperties properties;
+      properties.tolerance = tolerance;
+      properties.use_relative_width = path_style.relative_width;
+      properties.width = path_style.width;
+      auto outline_indices = generate_path_outline(path, path_style, properties, 
+                                                   invert(properties), outline_points);
+
+      faces.clear();
+      vertices.clear();
+
+      auto max_width = 0.0f;
+      for (const auto& node : path.nodes)
+      {
+        auto width = properties.use_relative_width ?
+          node.width * properties.width :
+          node.width + properties.width;
+
+        if (width > max_width)
+        {
+          max_width = width;
+        }
+      }
+
+      auto scale = 2.0f;
+      create_path_texture_image(path_texture, max_width, 1.5f, scale);
+
+      auto inv_max_width = scale / path_texture.getSize().y;      
+      create_base_geometry(outline_points, outline_indices, path_style, inv_max_width, vertices, faces);
+    }
+    /*
     void create_border_geometry(const std::vector<OutlinePoint>& outline, OutlineIndices outline_indices,
                                 const resources::BorderStyle& border_style, Vector2f texture_size,
                                 std::vector<PathVertex>& vertices, std::vector<PathFace>& faces)
@@ -558,5 +425,6 @@ namespace ts
       create_border(outline_indices.start, outline_indices.partition);
       create_border(outline_indices.partition, outline_indices.end);
     }
+    */
   }
 }

@@ -51,13 +51,36 @@ namespace ts
                                                                 shaders::track_fragment_shader);
 
         auto prog = track_shader_program_.get();
-
         auto& locations = track_component_locations_;
-        locations.in_position = glCheck(glGetAttribLocation(prog, "in_position"));
-        locations.in_texCoords = glCheck(glGetAttribLocation(prog, "in_texCoords"));
+        glBindAttribLocation(prog, 0, "in_position");
+        glBindAttribLocation(prog, 1, "in_texCoords");
+
+        graphics::link_shader_program(track_shader_program_);
         
         locations.view_matrix = glCheck(glGetUniformLocation(prog, "u_viewMatrix"));
         locations.texture_sampler = glCheck(glGetUniformLocation(prog, "u_textureSampler"));
+        locations.min_corner = glCheck(glGetUniformLocation(prog, "u_minCorner"));
+        locations.max_corner = glCheck(glGetUniformLocation(prog, "u_maxCorner"));
+      }
+
+      {
+        track_path_shader_program_ = graphics::create_shader_program(shaders::track_vertex_shader,
+                                                                     shaders::track_path_fragment_shader);
+        
+
+        auto prog = track_path_shader_program_.get();
+        glBindAttribLocation(prog, 0, "in_position");
+        glBindAttribLocation(prog, 1, "in_texCoords");
+
+        auto& locations = track_path_component_locations_;
+        graphics::link_shader_program(track_path_shader_program_);
+
+        locations.view_matrix = glCheck(glGetUniformLocation(prog, "u_viewMatrix"));
+        locations.weight_sampler = glCheck(glGetUniformLocation(prog, "u_weightSampler"));
+        locations.primary_sampler = glCheck(glGetUniformLocation(prog, "u_primarySampler"));
+        locations.secondary_sampler = glCheck(glGetUniformLocation(prog, "u_secondarySampler"));
+        locations.primary_scale = glCheck(glGetUniformLocation(prog, "u_primaryScale"));
+        locations.secondary_scale = glCheck(glGetUniformLocation(prog, "u_secondaryScale"));
         locations.min_corner = glCheck(glGetUniformLocation(prog, "u_minCorner"));
         locations.max_corner = glCheck(glGetUniformLocation(prog, "u_maxCorner"));
       }
@@ -68,8 +91,10 @@ namespace ts
 
         auto prog = car_shader_program_.get();
         auto& locations = car_locations_;
-        locations.in_position = glCheck(glGetAttribLocation(prog, "in_position"));
-        locations.in_texCoords = glCheck(glGetAttribLocation(prog, "in_texCoords"));
+        glBindAttribLocation(prog, 0, "in_position");
+        glBindAttribLocation(prog, 1, "in_texCoords");
+
+        graphics::link_shader_program(car_shader_program_);
 
         locations.car_colors = glCheck(glGetUniformLocation(prog, "u_carColors"));
         locations.view_matrix = glCheck(glGetUniformLocation(prog, "u_viewMatrix"));
@@ -90,9 +115,11 @@ namespace ts
 
         auto& locations = boundary_locations_;
         auto prog = boundary_shader_program_.get();
+        glBindAttribLocation(prog, 0, "in_position");
+        graphics::link_shader_program(boundary_shader_program_);
+
         locations.view_matrix = glCheck(glGetUniformLocation(prog, "u_viewMatrix"));
-        locations.world_size = glCheck(glGetUniformLocation(prog, "u_worldSize"));
-        locations.in_position = glCheck(glGetAttribLocation(prog, "in_position"));
+        locations.world_size = glCheck(glGetUniformLocation(prog, "u_worldSize"));        
       }
     }
 
@@ -109,12 +136,12 @@ namespace ts
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, car_vertex_buffer_.get()));
       glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, car_index_buffer_.get()));
 
-      glCheck(glEnableVertexAttribArray(car_locations_.in_position));
-      glCheck(glEnableVertexAttribArray(car_locations_.in_texCoords));
+      glCheck(glEnableVertexAttribArray(0));
+      glCheck(glEnableVertexAttribArray(1));
 
-      glCheck(glVertexAttribPointer(car_locations_.in_position, 2, GL_FLOAT, GL_FALSE, sizeof(CarVertex),
+      glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(CarVertex),
                                     reinterpret_cast<const void*>(offsetof(CarVertex, position))));
-      glCheck(glVertexAttribPointer(car_locations_.in_texCoords, 2, GL_FLOAT, GL_FALSE, sizeof(CarVertex),
+      glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(CarVertex),
                                     reinterpret_cast<const void*>(offsetof(CarVertex, texture_coords))));
 
       boundary_vertex_array_ = graphics::create_vertex_array();
@@ -122,17 +149,15 @@ namespace ts
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, boundary_vertex_buffer_.get()));
       glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, boundary_index_buffer_.get()));
 
-      glCheck(glEnableVertexAttribArray(boundary_locations_.in_position));
+      glCheck(glEnableVertexAttribArray(0));
 
       using resources::Vertex;
-      glCheck(glVertexAttribPointer(boundary_locations_.in_position, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+      glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                                     reinterpret_cast<const void*>(offsetof(Vertex, position))));
 
       glCheck(glBindVertexArray(0));
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
       glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)); 
-
-      update_vaos_ = false;
     }
 
     void RenderScene::update_track_vertex_arrays()
@@ -148,13 +173,13 @@ namespace ts
           glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, layer_data.second.index_buffer.get()));
           glCheck(glBindBuffer(GL_ARRAY_BUFFER, layer_data.second.vertex_buffer.get()));
 
-          glCheck(glEnableVertexAttribArray(track_component_locations_.in_position));
-          glCheck(glEnableVertexAttribArray(track_component_locations_.in_texCoords));
+          glCheck(glEnableVertexAttribArray(0));
+          glCheck(glEnableVertexAttribArray(1));          
 
           using resources::Vertex;
-          glCheck(glVertexAttribPointer(track_component_locations_.in_position, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+          glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                                         reinterpret_cast<const void*>(offsetof(Vertex, position))));
-          glCheck(glVertexAttribPointer(track_component_locations_.in_texCoords, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+          glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                                         reinterpret_cast<const void*>(offsetof(Vertex, texture_coords))));
         }
       }
@@ -224,9 +249,24 @@ namespace ts
     void RenderScene::render(const Viewport& view_port, Vector2i screen_size, double frame_progress,
                              const render_callback& post_render) const
     {
-      if (update_vaos_)
+      if (first_time_setup_)
       {
         const_cast<RenderScene*>(this)->setup_vertex_arrays();
+
+        glUseProgram(track_path_shader_program_.get());
+        glUniform1i(track_path_component_locations_.weight_sampler, 0);
+        glUniform1i(track_path_component_locations_.primary_sampler, 1);
+        glUniform1i(track_path_component_locations_.secondary_sampler, 2);        
+
+        glUseProgram(car_shader_program_.get());
+        glCheck(glUniform1i(car_locations_.texture_sampler, 0));
+        glCheck(glUniform1i(car_locations_.colorizer_sampler, 1)); 
+
+        glUseProgram(track_shader_program_.get());
+        glUniform1i(track_component_locations_.texture_sampler, 0);
+        glUseProgram(0);
+
+        const_cast<bool&>(first_time_setup_) = false;
       }
 
       if (update_track_vaos_)
@@ -277,16 +317,15 @@ namespace ts
       glCheck(glUniformMatrix4fv(track_component_locations_.view_matrix, 1, GL_FALSE,
                                  view_matrix.getMatrix()));
 
-      glCheck(glUniform1i(track_component_locations_.texture_sampler, 0));
+      glCheck(glUseProgram(track_path_shader_program_.get()));
+      glCheck(glUniformMatrix4fv(track_path_component_locations_.view_matrix, 1, GL_FALSE,
+                                 view_matrix.getMatrix()));
 
       std::uint32_t max_level = 0;
       if (!track_components_.empty()) max_level = std::max(track_components_.back().level, max_level);
       if (!drawable_entities_.empty()) max_level = std::max(drawable_entities_.back().level, max_level);
 
-
       glCheck(glUseProgram(car_shader_program_.get()));
-      glCheck(glUniform1i(car_locations_.texture_sampler, 0));
-      glCheck(glUniform1i(car_locations_.colorizer_sampler, 1));
       glCheck(glUniform1f(car_locations_.frame_progress, static_cast<float>(frame_progress)));
       glCheck(glUniformMatrix4fv(car_locations_.view_matrix, 1, GL_FALSE,
                                  view_matrix.getMatrix()));
@@ -294,31 +333,55 @@ namespace ts
       auto component_it = track_components_.begin();
       auto entity_it = drawable_entities_.begin();
       for (std::uint32_t level = 0; level <= max_level; ++level)
-      {        
-        if (component_it != track_components_.end() && level == component_it->level)
+      {
+        while (component_it != track_components_.end() && level == component_it->level)
         {
-          glUseProgram(track_shader_program_.get());
-          while (component_it != track_components_.end() && level == component_it->level)
-          {            
-            const auto& component = *component_it++;
+          const auto& component = *component_it++;
 
-            auto bb = component.bounding_box;
-            auto screen_rect = view_matrix.transformRect(sf::FloatRect(bb.left, bb.top, bb.width, bb.height));
+          auto bb = component.bounding_box;
+          auto screen_rect = view_matrix.transformRect(sf::FloatRect(bb.left, bb.top, bb.width, bb.height));
 
-            if (screen_rect.left > 1.0 || screen_rect.top > 1.0 ||
-                screen_rect.left + screen_rect.width < -1.0 || screen_rect.top + screen_rect.height < -1.0) continue;
+          if (screen_rect.left > 1.0 || screen_rect.top > 1.0 ||
+              screen_rect.left + screen_rect.width < -1.0 || screen_rect.top + screen_rect.height < -1.0) continue;
 
-            glCheck(glBindVertexArray(component.layer_data->vertex_array.get()));
+          glCheck(glBindVertexArray(component.layer_data->vertex_array.get()));
 
-            glUniform2f(track_component_locations_.min_corner, bb.left - 0.13, bb.top - 0.13);
-            glUniform2f(track_component_locations_.max_corner, bb.left + bb.width + 0.13, bb.top + bb.height + 0.13);
+          auto min_corner_loc = track_component_locations_.min_corner;
+          auto max_corner_loc = track_component_locations_.max_corner;
 
-            glCheck(glActiveTexture(GL_TEXTURE0));
-            glCheck(glBindTexture(GL_TEXTURE_2D, component.texture->get()));
-
-            auto offset = reinterpret_cast<const void*>(static_cast<std::uintptr_t>(component.element_buffer_offset));
-            glCheck(glDrawElements(GL_TRIANGLES, component.element_count, GL_UNSIGNED_INT, offset));
+          if (component.type == TrackComponent::Default)
+          {
+            glUseProgram(track_shader_program_.get());
           }
+
+          else if (component.type == TrackComponent::Path)
+          {
+            glUseProgram(track_path_shader_program_.get());
+
+            min_corner_loc = track_path_component_locations_.min_corner;
+            max_corner_loc = track_path_component_locations_.max_corner;
+
+            glCheck(glActiveTexture(GL_TEXTURE0 + 1));
+            glCheck(glBindTexture(GL_TEXTURE_2D, component.textures[1]->get()));
+
+            glCheck(glActiveTexture(GL_TEXTURE0 + 2));
+            glCheck(glBindTexture(GL_TEXTURE_2D, component.textures[2]->get()));
+
+            glUniform2f(track_path_component_locations_.primary_scale, 
+                        component.texture_scales[0].x, component.texture_scales[0].y);
+
+            glUniform2f(track_path_component_locations_.secondary_scale,
+                        component.texture_scales[1].x, component.texture_scales[1].y);
+          }
+
+          glUniform2f(min_corner_loc, bb.left - 0.2, bb.top - 0.2);
+          glUniform2f(max_corner_loc, bb.left + bb.width + 0.2, bb.top + bb.height + 0.2);
+
+          glCheck(glActiveTexture(GL_TEXTURE0));
+          glCheck(glBindTexture(GL_TEXTURE_2D, component.textures[0]->get()));
+
+          auto offset = reinterpret_cast<const void*>(static_cast<std::uintptr_t>(component.element_buffer_offset));
+          glCheck(glDrawElements(GL_TRIANGLES, component.element_count, GL_UNSIGNED_INT, offset));
         }
 
         if (entity_it != drawable_entities_.end() && level == entity_it->level)
@@ -450,13 +513,32 @@ namespace ts
 
               TrackComponent track_component;
               track_component.layer_data = &layer_data;
-              track_component.texture = component.texture;
+              track_component.textures[0] = component.texture;
               track_component.element_buffer_offset = buffer_offset;
               track_component.element_count = component.faces.size() * 3;
               track_component.level = scene_layer.level();
               track_component.z_index = scene_layer.z_index();
               track_component.bounding_box = rect_cast<float>(component.bounding_box);
-              track_components_.push_back(track_component);
+              track_component.type = TrackComponent::Default;
+              track_component.textures[1] = scene_layer.primary_texture();
+              track_component.textures[2] = scene_layer.secondary_texture();
+
+              using T = TrackSceneLayer::Type;
+              if (scene_layer.type() == T::Path || scene_layer.type() == T::PathWithTransparency)
+              {
+                track_component.type = TrackComponent::Path;                
+
+                if (track_component.textures[1] == nullptr) track_component.textures[0] = nullptr;
+                if (track_component.textures[2] == nullptr) track_component.textures[2] = track_component.textures[1];              
+              }
+
+              track_component.texture_scales[0] = 1.0f / scene_layer.primary_texture_tile_size();
+              track_component.texture_scales[1] = 1.0f / scene_layer.secondary_texture_tile_size();
+
+              if (track_component.textures[0] != nullptr)
+              {
+                track_components_.push_back(track_component);
+              }             
 
               buffer_offset += size;
             }

@@ -61,12 +61,12 @@ namespace ts
       return boost::get<std::vector<Tile>>(&data_);
     }
 
-    const PathLayerData* TrackLayer::path_styles() const
+    const PathLayerData* TrackLayer::path_style() const
     {
       return boost::get<PathLayerData>(&data_);
     }
 
-    PathLayerData* TrackLayer::path_styles()
+    PathLayerData* TrackLayer::path_style()
     {
       return boost::get<PathLayerData>(&data_);
     }

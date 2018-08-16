@@ -53,13 +53,13 @@ namespace ts
 
     struct BaseStyle
     {
-      std::uint32_t texture_id;
+      std::uint32_t primary_texture;
+      std::uint32_t secondary_texture;
       std::uint32_t terrain_id;
       Colorb color = { 255, 255, 255, 255 };
       bool is_segmented = false;
       bool relative_width = true;
       float width = 1.0f;
-      float texture_scale = 4.0f;
 
       enum TextureMode
       {

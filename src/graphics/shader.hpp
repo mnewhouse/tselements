@@ -79,8 +79,6 @@ namespace ts
       attach_shader(shader_program, vertex_shader);
       attach_shader(shader_program, fragment_shader);
 
-      link_shader_program(shader_program);
-
       return shader_program;
     }
 

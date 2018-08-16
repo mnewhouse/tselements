@@ -39,6 +39,14 @@ namespace ts
       using vertex_type = resources::Vertex;
       using face_type = resources::Face;
 
+      enum Type
+      {
+        BaseTerrain,
+        Tiles,
+        Path,
+        PathWithTransparency
+      };
+
       explicit TrackSceneLayer(const resources::TrackLayer* associated_layer, std::uint32_t level_offset);
 
       struct Component
@@ -64,15 +72,37 @@ namespace ts
       void hide();
       void show();
       void clear();
+      Type type() const;
 
       const resources::TrackLayer* associated_layer() const;
 
+      void store_texture(std::unique_ptr<graphics::Texture> tex);
+      
+      void set_primary_texture(const texture_type* tex);
+      void set_secondary_texture(const texture_type* tex);
+
+      const texture_type* primary_texture() const;
+      const texture_type* secondary_texture() const;
+
+      void set_primary_texture_tile_size(Vector2f tile_size);
+      void set_secondary_texture_tile_size(Vector2f tile_size);
+
+      Vector2f primary_texture_tile_size() const;
+      Vector2f secondary_texture_tile_size() const;
 
     private:
       ComponentContainer components_;
+      Type type_ = Type::Tiles;
 
       const resources::TrackLayer* associated_layer_;
       std::vector<vertex_type> vertices_;
+
+      std::unique_ptr<graphics::Texture> stored_texture_;
+      const texture_type* primary_texture_ = nullptr;
+      const texture_type* secondary_texture_ = nullptr;
+
+      Vector2f primary_texture_tile_size_ = { 256.0f, 256.0f };
+      Vector2f secondary_texture_tile_size_ = { 256.0f, 256.0f };
 
       std::uint32_t level_offset_ = 0;
       bool is_visible_ = true;
@@ -112,26 +142,11 @@ namespace ts
 
       const TrackSceneLayer* find_layer(const resources::TrackLayer* layer, std::uint32_t level) const;      
 
-      /*
-      struct Component
-      {
-        const TrackSceneLayer* scene_layer;
-        const resources::TrackLayer* track_layer;
-        const graphics::Texture* texture;  
-        const TrackSceneLayer::Component* scene_component;
-      };
-
-      const std::vector<Component>& components() const;
-      const std::vector<Component>& reload_components();
-      const std::vector<Component>& sort_components();
-      */
-
     private:
       TrackSceneLayer* find_layer_internal(LayerHandle, std::uint32_t level = 0);      
 
       std::map<std::pair<LayerHandle, std::uint32_t>, TrackSceneLayer> layer_map_;
       std::vector<TrackSceneLayer*> layer_list_;
-      std::vector<OutlinePoint> path_outline_cache_;
       std::vector<resources::Vertex> vertex_cache_;
       std::vector<resources::Face> face_cache_;
 

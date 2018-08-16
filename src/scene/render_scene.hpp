@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <array>
 
 namespace ts
 {
@@ -50,9 +51,17 @@ namespace ts
 
       struct TrackComponent
       {
-        const TrackLayerData* layer_data;
-        const graphics::Texture* texture;        
+        enum Type
+        {
+          Default,
+          Path
+        };
 
+        const TrackLayerData* layer_data;
+        std::array<const graphics::Texture*, 3> textures;
+        std::array<Vector2f, 3> texture_scales;
+
+        Type type = Default;
         std::uint32_t level;
         std::uint32_t z_index;
         std::uint32_t element_buffer_offset;
@@ -63,28 +72,32 @@ namespace ts
 
       struct TrackComponentLocations
       {
-        std::uint32_t in_position;
-        std::uint32_t in_texCoords;
-
         std::uint32_t view_matrix;
         std::uint32_t texture_sampler;        
         std::uint32_t min_corner;
         std::uint32_t max_corner;
       };
 
+      struct TrackPathComponentLocations
+      {
+        std::uint32_t view_matrix;
+        std::uint32_t weight_sampler;
+        std::uint32_t primary_sampler;
+        std::uint32_t secondary_sampler;
+        std::uint32_t primary_scale;
+        std::uint32_t secondary_scale;
+        std::uint32_t min_corner;
+        std::uint32_t max_corner;
+      };
+
       struct BoundaryLocations
       {
-        std::uint32_t in_position;
-
         std::uint32_t view_matrix;
         std::uint32_t world_size;
       };
 
       struct CarLocations
       {
-        std::uint32_t in_position;
-        std::uint32_t in_texCoords;
-
         std::uint32_t frame_progress;
         std::uint32_t view_matrix;
         std::uint32_t model_matrix;
@@ -148,6 +161,7 @@ namespace ts
       TrackScene track_scene_;
 
       graphics::ShaderProgram track_shader_program_;
+      graphics::ShaderProgram track_path_shader_program_;
       graphics::ShaderProgram car_shader_program_;
       graphics::ShaderProgram boundary_shader_program_;
       
@@ -160,6 +174,7 @@ namespace ts
       graphics::VertexArray boundary_vertex_array_;
       
       render_scene::TrackComponentLocations track_component_locations_;
+      render_scene::TrackPathComponentLocations track_path_component_locations_;
       render_scene::CarLocations car_locations_;
       render_scene::BoundaryLocations boundary_locations_;
 
@@ -167,7 +182,7 @@ namespace ts
       std::vector<render_scene::TrackComponent> track_components_;
       std::vector<DrawableEntity> drawable_entities_;
 
-      bool update_vaos_ = true;
+      bool first_time_setup_ = true;
       bool update_track_vaos_ = false;
 
       Colorf background_color_ = Colorf(0.f, 0.f, 0.f, 1.0f);      
