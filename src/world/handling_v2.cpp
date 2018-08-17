@@ -23,19 +23,19 @@ namespace ts
   {
     struct Handling
     {
-      double max_acceleration_force = 11000.0;
+      double max_acceleration_force = 13000.0;
       double max_engine_revs = 300.0;
 
       boost::container::small_vector<double, 8> gear_ratios = { 2.5, 2.0, 1.6, 1.3, 1.1 };
       double reverse_gear_ratio = 2.3;
       int gear_shift_duration = 3;
 
-      double max_braking_force = 30000.0;
+      double max_braking_force = 33000.0;
       double drag_coefficient = 0.13;
       double downforce_coefficient = 0.22;
       double rolling_drag_coefficient = 0.03;
 
-      double traction_limit = 40000.0;
+      double traction_limit = 57000.0;
       double load_transfer = 0.13;
 
       double brake_balance = 0.47;

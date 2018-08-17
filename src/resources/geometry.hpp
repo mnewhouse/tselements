@@ -23,6 +23,7 @@ namespace ts
     struct Vertex
     {
       Vector2f position;
+      float z;
       Vector2f texture_coords;
       Colorb color;
     };

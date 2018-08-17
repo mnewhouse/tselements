@@ -14,16 +14,16 @@ namespace ts
     {
       static const char track_vertex_shader[] = R"(
         #version 130
-        uniform mat4 u_viewMatrix;
-        in vec2 in_position;
+        uniform mat4 u_viewMatrix;        
+        in vec3 in_position;
         in vec2 in_texCoords;   
         out vec2 frag_position;     
         out vec2 frag_texCoords;
         void main()
-        {
-          frag_position = in_position;
+        {          
+          frag_position = in_position.xy;
           frag_texCoords = in_texCoords;
-          gl_Position = u_viewMatrix * vec4(in_position, 0.0, 1.0);
+          gl_Position = u_viewMatrix * vec4(frag_position, 0.0, 1.0);
         }
       )";
 
@@ -48,6 +48,24 @@ namespace ts
             frag_color = texture2D(u_textureSampler, frag_texCoords);
           }
         };
+      )";
+
+      static const char track_path_vertex_shader[] = R"(
+        #version 130
+        uniform mat4 u_viewMatrix;
+        uniform float u_zBase;
+        uniform float u_zScale;   
+        in vec3 in_position;
+        in vec2 in_texCoords;   
+        out vec2 frag_position;     
+        out vec2 frag_texCoords;
+        void main()
+        {
+          float z = u_zBase + in_position.z * u_zScale;
+          frag_position = in_position.xy;
+          frag_texCoords = in_texCoords;
+          gl_Position = u_viewMatrix * vec4(frag_position.xy, z, 1.0);
+        }
       )";
 
       static const char track_path_fragment_shader[] = R"(
@@ -220,7 +238,7 @@ namespace ts
       in vec2 in_position;
       void main()
       {
-        gl_Position = u_viewMatrix * vec4(in_position * u_worldSize, 0, 1);
+        gl_Position = u_viewMatrix * vec4(in_position * u_worldSize, 1, 1);
       }
     )";
 

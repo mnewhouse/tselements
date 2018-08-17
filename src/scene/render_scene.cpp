@@ -64,7 +64,7 @@ namespace ts
       }
 
       {
-        track_path_shader_program_ = graphics::create_shader_program(shaders::track_vertex_shader,
+        track_path_shader_program_ = graphics::create_shader_program(shaders::track_path_vertex_shader,
                                                                      shaders::track_path_fragment_shader);
         
 
@@ -83,6 +83,8 @@ namespace ts
         locations.secondary_scale = glCheck(glGetUniformLocation(prog, "u_secondaryScale"));
         locations.min_corner = glCheck(glGetUniformLocation(prog, "u_minCorner"));
         locations.max_corner = glCheck(glGetUniformLocation(prog, "u_maxCorner"));
+        locations.z_base = glCheck(glGetUniformLocation(prog, "u_zBase"));
+        locations.z_scale = glCheck(glGetUniformLocation(prog, "u_zScale"));
       }
 
       {
@@ -119,7 +121,7 @@ namespace ts
         graphics::link_shader_program(boundary_shader_program_);
 
         locations.view_matrix = glCheck(glGetUniformLocation(prog, "u_viewMatrix"));
-        locations.world_size = glCheck(glGetUniformLocation(prog, "u_worldSize"));        
+        locations.world_size = glCheck(glGetUniformLocation(prog, "u_worldSize"));
       }
     }
 
@@ -177,7 +179,7 @@ namespace ts
           glCheck(glEnableVertexAttribArray(1));          
 
           using resources::Vertex;
-          glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+          glCheck(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                                         reinterpret_cast<const void*>(offsetof(Vertex, position))));
           glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                                         reinterpret_cast<const void*>(offsetof(Vertex, texture_coords))));
@@ -281,7 +283,6 @@ namespace ts
 
       glCheck(glDisable(GL_DEPTH_TEST));
       glCheck(glDisable(GL_STENCIL_TEST));
-      glCheck(glEnable(GL_TEXTURE_2D));
 
       auto screen_rect = view_port.screen_rect();
       glCheck(glViewport(screen_rect.left, screen_size.y - screen_rect.bottom(),
@@ -292,14 +293,15 @@ namespace ts
       auto world_size = track_scene_.track_size();
       auto view_matrix = compute_view_matrix(view_port, world_size, frame_progress);
       
+      glCheck(glDepthMask(GL_TRUE));
       glCheck(glStencilMask(0xFF));
       glCheck(glClearColor(background_color_.r, background_color_.g, background_color_.b, background_color_.a));
-      glCheck(glClear(GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT));
+      glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
       glCheck(glUseProgram(boundary_shader_program_.get()));
       
       glStencilFunc(GL_ALWAYS, 1, 0xFF);
-      glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+      glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);      
       
       glCheck(glUniformMatrix4fv(boundary_locations_.view_matrix, 1, GL_FALSE,
                                  view_matrix.getMatrix()));
@@ -352,6 +354,9 @@ namespace ts
           if (component.type == TrackComponent::Default)
           {
             glUseProgram(track_shader_program_.get());
+
+            glDisable(GL_DEPTH_TEST);
+            glDepthMask(GL_FALSE);
           }
 
           else if (component.type == TrackComponent::Path)
@@ -372,6 +377,14 @@ namespace ts
 
             glUniform2f(track_path_component_locations_.secondary_scale,
                         component.texture_scales[1].x, component.texture_scales[1].y);
+
+            auto base_z = component.level * z_level_increment_ + component.z_index * z_index_increment_;
+            glUniform1f(track_path_component_locations_.z_base, base_z);
+            glUniform1f(track_path_component_locations_.z_scale, z_index_increment_);
+
+            glEnable(GL_DEPTH_TEST);
+            glDepthMask(GL_TRUE);
+            glDepthFunc(GL_LESS);
           }
 
           glUniform2f(min_corner_loc, bb.left - 0.2, bb.top - 0.2);
@@ -388,6 +401,9 @@ namespace ts
         {          
           glCheck(glUseProgram(car_shader_program_.get()));
           glCheck(glBindVertexArray(car_vertex_array_.get()));
+
+          glDisable(GL_DEPTH_TEST);
+          glDepthMask(GL_FALSE);
 
           while (entity_it != drawable_entities_.end() && level == entity_it->level)
           {
@@ -425,6 +441,8 @@ namespace ts
       glCheck(glUseProgram(0));
       glCheck(glBindTexture(GL_TEXTURE_2D, 0));
       glCheck(glDisable(GL_STENCIL_TEST));
+      glCheck(glDisable(GL_DEPTH_TEST));
+      glCheck(glDepthMask(GL_TRUE));
 
       if (post_render) post_render(view_matrix);
 
@@ -513,13 +531,13 @@ namespace ts
 
               TrackComponent track_component;
               track_component.layer_data = &layer_data;
-              track_component.textures[0] = component.texture;
               track_component.element_buffer_offset = buffer_offset;
               track_component.element_count = component.faces.size() * 3;
               track_component.level = scene_layer.level();
               track_component.z_index = scene_layer.z_index();
               track_component.bounding_box = rect_cast<float>(component.bounding_box);
               track_component.type = TrackComponent::Default;
+              track_component.textures[0] = component.texture;
               track_component.textures[1] = scene_layer.primary_texture();
               track_component.textures[2] = scene_layer.secondary_texture();
 
@@ -533,7 +551,7 @@ namespace ts
               }
 
               track_component.texture_scales[0] = 1.0f / scene_layer.primary_texture_tile_size();
-              track_component.texture_scales[1] = 1.0f / scene_layer.secondary_texture_tile_size();
+              track_component.texture_scales[1] = 1.0f / scene_layer.secondary_texture_tile_size();              
 
               if (track_component.textures[0] != nullptr)
               {
@@ -551,6 +569,17 @@ namespace ts
       {
         return std::tie(a.level, a.z_index) < std::tie(b.level, b.z_index);
       });
+
+      std::uint32_t max_z_index = 0;
+      std::uint32_t max_z_level = 0;
+      for (auto& component : track_components_)
+      {
+        max_z_index = std::max(max_z_index, component.z_index);
+        max_z_level = std::max(max_z_level, component.level);
+      }
+
+      z_level_increment_ = -1.0f / (max_z_level + 1);
+      z_index_increment_ = z_level_increment_ / (max_z_index + 1);      
 
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
       glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));

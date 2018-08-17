@@ -88,6 +88,8 @@ namespace ts
         std::uint32_t secondary_scale;
         std::uint32_t min_corner;
         std::uint32_t max_corner;
+        std::uint32_t z_base;
+        std::uint32_t z_scale;
       };
 
       struct BoundaryLocations
@@ -184,6 +186,9 @@ namespace ts
 
       bool first_time_setup_ = true;
       bool update_track_vaos_ = false;
+
+      float z_level_increment_ = 0.0f;
+      float z_index_increment_ = 0.0f;
 
       Colorf background_color_ = Colorf(0.f, 0.f, 0.f, 1.0f);      
     };

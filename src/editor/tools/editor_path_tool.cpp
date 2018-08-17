@@ -67,8 +67,8 @@ namespace ts
         auto layer = track.create_layer(resources::TrackLayerType::PathStyle, "wtf", 0);
         auto style = layer->path_style();
         style->path = path;
-        style->style.primary_texture = 2;
-        style->style.secondary_texture = 15;
+        style->style.base_texture = 2;
+        style->style.border_texture = 15;
 
         select_path(path, context.working_state);
       }
@@ -157,24 +157,16 @@ namespace ts
             draw_list->AddCircle(screen_pos, control_size, color, 12, 2.0f);
 
             if (!node_transformation_ && hover && ImGui::IsMouseClicked(0))
-            {              
-              if (!working_path_.closed && &node == &nodes.front())
-              {
-                close_working_path(context);
-              }
+            { 
+              auto node_id = static_cast<std::uint32_t>(&node - nodes.data());
 
-              else
-              {
-                auto node_id = static_cast<std::uint32_t>(&node - nodes.data());
+              NodeTransformation transformation;
+              transformation.control = control;
+              transformation.id = node_id;
+              transformation.action = NodeTransformation::Initiate;
+              transformation.original_state = node;
 
-                NodeTransformation transformation;
-                transformation.control = control;
-                transformation.id = node_id;
-                transformation.action = NodeTransformation::Move;
-                transformation.original_state = node;
-
-                node_transformation_.emplace(transformation);
-              }
+              node_transformation_.emplace(transformation);
             }
           };
 
@@ -283,6 +275,15 @@ namespace ts
     {
       auto& nodes = working_path_.nodes;
 
+      if (node_transformation_->action == NodeTransformation::Initiate)
+      {
+        auto offset = final_position - node_transformation_->original_state.position;
+        if (magnitude_squared(offset) >= 0.25f)
+        {
+          node_transformation_->action = NodeTransformation::Move;
+        }        
+      }
+
       switch (node_transformation_->action)
       {
       case NodeTransformation::Append:
@@ -345,6 +346,12 @@ namespace ts
 
       switch (transformation.action)
       {
+      case NodeTransformation::Initiate:
+        if (transformation.id == 0)
+        {
+          close_working_path(context);
+        }
+        break;
       case NodeTransformation::Append:
       {
         const auto& node = working_path_.nodes.back();

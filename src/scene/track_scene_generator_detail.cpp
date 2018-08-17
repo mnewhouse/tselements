@@ -569,8 +569,8 @@ namespace ts
           {
             if (auto style = layer.path_style())
             {
-              load_texture_by_id(style->style.primary_texture);
-              load_texture_by_id(style->style.secondary_texture);
+              load_texture_by_id(style->style.base_texture);
+              load_texture_by_id(style->style.border_texture);
             }                     
           }
         }        

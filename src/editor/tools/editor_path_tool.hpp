@@ -49,7 +49,7 @@ namespace ts
 
       struct NodeTransformation
       {
-        enum Action { Append, Move, Insert };
+        enum Action { Initiate, Append, Move, Insert };
         enum Control { Base, First, Second };
 
         Node original_state;

@@ -317,7 +317,7 @@ namespace ts
           vertices[0].position = { 0.0f, 0.0f };
           vertices[1].position = { track_width, 0.0f };
           vertices[2].position = { track_width, track_height };
-          vertices[3].position = { 0.0f, track_height };
+          vertices[3].position = { 0.0f, track_height };          
 
           vertices[0].texture_coords = { 0.0f, 0.0f };
           vertices[1].texture_coords = { tex_right,  0.0f };
@@ -326,6 +326,7 @@ namespace ts
 
           for (auto& v : vertices)
           {
+            v.z = 0.0f;
             v.color = base_terrain->color;
           }
 
@@ -390,17 +391,20 @@ namespace ts
       if (path_style)
       {        
         const auto& style = path_style->style;
-        auto primary = texture_mapping_.find(texture_mapping_.texture_id(style.primary_texture));
-        auto secondary = texture_mapping_.find(texture_mapping_.texture_id(style.secondary_texture));
+        auto primary = texture_mapping_.find(texture_mapping_.texture_id(style.base_texture));
+        auto secondary = texture_mapping_.find(texture_mapping_.texture_id(style.border_texture));
         if (!primary.empty())
-        {
+        {          
           scene_layer.set_primary_texture(primary.front().texture);
         }
 
         if (!secondary.empty())
         {
-          scene_layer.set_secondary_texture(secondary.front().texture);
+          scene_layer.set_secondary_texture(secondary.front().texture);          
         }
+
+        scene_layer.set_primary_texture_tile_size(style.base_texture_tile_size);
+        scene_layer.set_secondary_texture_tile_size(style.border_texture_tile_size);
 
         vertex_cache_.clear();
         face_cache_.clear();
@@ -408,15 +412,18 @@ namespace ts
         sf::Image path_texture;
         create_path_geometry(*path_style->path, path_style->style, 0.1f, path_texture, vertex_cache_, face_cache_);        
 
-        auto tex = std::make_unique<graphics::Texture>(graphics::create_texture(path_texture));
-        glBindTexture(tex->target(), tex->get());
-        glTexParameteri(tex->target(), GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-        glTexParameteri(tex->target(), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glBindTexture(tex->target(), 0);
+        if (!face_cache_.empty())
+        {
+          auto tex = std::make_unique<graphics::Texture>(graphics::create_texture(path_texture));
+          glBindTexture(tex->target(), tex->get());
+          glTexParameteri(tex->target(), GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+          glTexParameteri(tex->target(), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+          glBindTexture(tex->target(), 0);
 
-        scene_layer.append_geometry(tex.get(), vertex_cache_.data(), vertex_cache_.size(),
-                                    face_cache_.data(), face_cache_.size());
-        scene_layer.store_texture(std::move(tex));
+          scene_layer.append_geometry(tex.get(), vertex_cache_.data(), vertex_cache_.size(),
+                                      face_cache_.data(), face_cache_.size());
+          scene_layer.store_texture(std::move(tex));
+        }
       }
     }
   }

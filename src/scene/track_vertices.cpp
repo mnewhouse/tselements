@@ -63,7 +63,11 @@ namespace ts
       vertices[2].texture_coords = make_vector2(tex_right, tex_top) * texture_scale;
       vertices[3].texture_coords = make_vector2(tex_right, tex_bottom) * texture_scale;
 
-      for (auto i = 0; i != 4; ++i) vertices[i].color = Colorb(255, 255, 255, 255);
+      for (auto i = 0; i != 4; ++i)
+      {
+        vertices[i].color = Colorb(255, 255, 255, 255);
+        vertices[i].z = 0.0f;
+      }
 
       return vertices;
     }
