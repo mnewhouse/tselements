@@ -18,7 +18,7 @@ namespace ts
     {
       enum Type
       {
-        FinishLine, HorizontalLine, VerticalLine, Area,
+        Arbitrary, HorizontalLine, VerticalLine, Area,
       };
 
       enum Flags : std::uint32_t

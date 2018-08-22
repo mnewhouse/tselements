@@ -75,6 +75,8 @@ namespace ts
       glTexParameteri(target, GL_TEXTURE_SWIZZLE_G, format.Swizzles[1]);
       glTexParameteri(target, GL_TEXTURE_SWIZZLE_B, format.Swizzles[2]);
       glTexParameteri(target, GL_TEXTURE_SWIZZLE_A, format.Swizzles[3]);
+      glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+      glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
       glTexStorage2D(target, static_cast<GLint>(tex_2d.levels()), format.Internal, base_extent.x, base_extent.y);
 
@@ -95,6 +97,7 @@ namespace ts
         }
       }
 
+      glGenerateMipmap(target);
       return result;
     }
 
@@ -113,6 +116,8 @@ namespace ts
       glBindTexture(target, name);
       glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0);
       glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, layers->levels());
+      glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+      glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       glTexStorage3D(target, layers->levels(), format.Internal, base_extent.x, base_extent.y, num_layers);
 
       for (std::size_t layer = 0; layer != num_layers; ++layer)

@@ -13,40 +13,40 @@ namespace ts
 {
   namespace editor
   {
-    InterfaceState::InterfaceState(ToolType active_tool, std::size_t mode_id)
-      : active_tool_(active_tool),
-        active_mode_id_(mode_id)
+    InterfaceState::InterfaceState(ModeType active_mode, std::size_t tool_id)
+      : active_mode_(active_mode),
+        active_tool_id_(tool_id)
     {
     }
 
-    void InterfaceState::set_active_tool(ToolType tool)
+    void InterfaceState::set_active_mode(ModeType mode)
     {
-      if (tool != active_tool_)
+      if (mode != active_mode_)
       {
-        auto old = active_tool_;
-        active_tool_ = tool;
-        active_tool_changed(old, tool);
+        auto old = active_mode_;
+        active_mode_ = mode;
+        active_mode_changed(old, mode);
       }
     }
 
-    void InterfaceState::set_active_mode(std::size_t mode_id)
+    void InterfaceState::set_active_tool(std::size_t tool_id)
     {
-      if (mode_id != active_mode_id_)
+      if (tool_id != active_tool_id_)
       {
-        auto old = active_mode_id_;
-        active_mode_id_ = mode_id;
-        active_mode_changed(old, mode_id);
+        auto old = active_tool_id_;
+        active_tool_id_ = tool_id;
+        active_tool_changed(old, tool_id);
       }
     }
 
-    ToolType InterfaceState::active_tool() const
+    ModeType InterfaceState::active_mode() const
     {
-      return active_tool_;
+      return active_mode_;
     }
 
-    std::uint32_t InterfaceState::active_mode() const
+    std::uint32_t InterfaceState::active_tool() const
     {
-      return active_mode_id_;
+      return active_tool_id_;
     }
 
     void InterfaceState::set_active_state(StateId state_id)

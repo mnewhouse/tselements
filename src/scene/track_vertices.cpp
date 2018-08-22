@@ -106,37 +106,6 @@ namespace ts
 
       for (const auto& layer : track.layers())
       {
-        /*
-        for (const auto& vertex_array : layer.geometry)
-        {
-        auto texture_it = textures.find(vertex_array.texture_id);
-
-        if (texture_it != textures.end())
-        {
-        const auto& texture_def = *texture_it;
-        auto mapping_range = texture_lookup(texture_mapping.texture_id(texture_def.id));
-        for (const auto& mapping : mapping_range)
-        {
-        current_texture = mapping.texture;
-
-        auto vertex_transform = [=](auto vertex)
-        {
-        // Make sure the texture coordinates are updated to match the ones in the texture mapping.
-        vertex.texture_coords.x += static_cast<float>(mapping.texture_rect.left - texture_def.image_rect.left);
-        vertex.texture_coords.y += static_cast<float>(mapping.texture_rect.top - texture_def.image_rect.top);
-
-        return convert_vertex(vertex, *current_texture);
-        };
-
-        auto begin = boost::make_transform_iterator(vertex_array.vertices.begin(), vertex_transform);
-        auto end = boost::make_transform_iterator(vertex_array.vertices.end(), vertex_transform);
-
-        vertex_interface.append_vertices(convert_texture(mapping.texture), begin, end, layer.level);
-        }
-        }
-        }
-        */
-
         if (auto tiles = layer.tiles())
         {
           for (const auto& tile : *tiles)
@@ -147,6 +116,11 @@ namespace ts
 
             track_scene.add_tile_geometry(&layer, placed_tiles.data(), placed_tiles.size());
           }
+        }
+
+        else if (auto path_style = layer.path_style())
+        {
+          track_scene.rebuild_path_layer_geometry(&layer);
         }
 
         else if (auto base_terrain = layer.base_terrain())

@@ -128,37 +128,30 @@ namespace ts
       double fd = frame_duration * 0.001;
 
       auto max_corner = vector2_cast<std::int32_t>(world_size()) - make_vector2(1, 1);
-      
+
+      const auto& terrain_lib = track_.terrain_library();
+
+      entity_states_.clear();      
       for (auto* car : cars_)
       {
-        auto old_position = car->position();
-        auto old_rotation = car->rotation();
+        entity_states_.push_back({ car, car->position() });
 
-        auto z_level = car->z_level();
+        car->update(*this, fd);
+      }
 
-        car->update(terrain_map_, fd);
+      physics_space_.update(frame_duration);
 
-        /*
-        auto new_position = accomodate_position(car->position() + fd * car->velocity());
-        auto new_rotation = radians(car->rotation().radians() + fd * car->rotating_speed());
-        auto new_z_position = accomodate_z_position(car->z_position() + fd * car->z_speed());
-
+      for (auto& es : entity_states_)
+      {
         auto cp_hit_callback = [&](const ControlPoint& point, double time_point)
         {
           auto frame_offset = static_cast<std::uint32_t>(frame_duration * time_point);
 
-          event_interface.on_control_point_hit(car, point, frame_offset);
+          event_interface.on_control_point_hit(es.entity, point, frame_offset);
         };
 
-        control_point_manager_.test_control_point_intersections(old_position, new_position, cp_hit_callback);
-
-        car->set_position(new_position);
-        car->set_rotation(new_rotation);
-        car->set_z_position(new_z_position);
-        */
+        control_point_manager_.test_control_point_intersections(es.old_position, es.entity->position(), cp_hit_callback);
       }
-
-      physics_space_.update(frame_duration);
     }
 
     Car* World::find_car(std::uint8_t car_id)
@@ -181,28 +174,6 @@ namespace ts
     Vector2<double> World::world_size() const
     {
       return vector2_cast<double>(track().size());
-    }
-
-    Vector2<double> World::accomodate_position(Vector2<double> position) const
-    {
-      if (position.x < 0.0) position.x = 0.0;
-      if (position.y < 0.0) position.y = 0.0;
-
-      auto bounds = world_size() - make_vector2(0.25, 0.25);
-      if (position.x > bounds.x) position.x = bounds.x;
-      if (position.y > bounds.y) position.y = bounds.y;
-
-      return position;
-    }
-
-    double World::accomodate_z_position(double z_position) const
-    {
-      if (z_position < 0.0) z_position = 0.0;
-
-      auto max = static_cast<double>(track_.height_level_count() - 1);
-      if (z_position > max) z_position = max;
-
-      return z_position;
     }
 
     const resources::Track& World::track() const noexcept

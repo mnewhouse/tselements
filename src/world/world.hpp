@@ -111,6 +111,13 @@ namespace ts
       std::vector<Car*> cars_;
       std::vector<std::unique_ptr<Entity>> entity_map_;
 
+      struct EntityState
+      {
+        Entity* entity;
+        Vector2d old_position;
+      };
+      std::vector<EntityState> entity_states_;
+
       resources::Track track_;
       TerrainMap terrain_map_;
       ControlPointManager control_point_manager_;

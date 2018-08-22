@@ -106,12 +106,17 @@ namespace ts
       ConstLayerOrderInterface layers() const;      
 
       void add_control_point(const ControlPoint& point);
+      void add_control_point(const ControlPoint& point, std::size_t idx);
       const std::vector<ControlPoint>& control_points() const;
+      void remove_control_point(std::size_t idx);
 
       void add_start_point(const StartPoint& point);
       const std::vector<StartPoint>& custom_start_points() const;
 
       const std::vector<StartPoint>& start_points() const;
+
+      void add_asset(const std::string& path);
+      const std::vector<std::string>& assets() const;
 
     private:
       std::string path_;
@@ -124,6 +129,8 @@ namespace ts
       TerrainLibrary terrain_library_;
       TextureLibrary texture_library_;
       PathLibrary path_library_;
+
+      std::vector<std::string> assets_;
 
       std::map<LayerId, TrackLayer> layers_;
       std::vector<TrackLayer*> layer_order_;

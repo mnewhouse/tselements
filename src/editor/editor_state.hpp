@@ -7,14 +7,15 @@
 #pragma once
 
 #include "editor_scene.hpp"
-#include "editor_tool.hpp"
+#include "editor_mode.hpp"
 #include "editor_test_state.hpp"
 #include "editor_interface_state.hpp"
 #include "editor_working_state.hpp"
 #include "editor_action_history.hpp"
 
-#include "tools/editor_tile_tool.hpp"
-#include "tools/editor_path_tool.hpp"
+#include "modes/editor_tile_mode.hpp"
+#include "modes/editor_path_mode.hpp"
+#include "modes/editor_control_points_mode.hpp"
 
 #include "game/game_state.hpp"
 
@@ -46,8 +47,8 @@ namespace ts
       void update_loading_state();
       void select_default_layer();
 
-      virtual void active_tool_changed(ToolType previous, ToolType current) override;
-      virtual void active_mode_changed(std::uint32_t previous, std::uint32_t current) override;
+      virtual void active_mode_changed(ModeType previous, ModeType current) override;
+      virtual void active_tool_changed(std::uint32_t previous, std::uint32_t current) override;
 
       void editor_scene_interface();
       void tool_pane_windows();
@@ -73,9 +74,10 @@ namespace ts
       bool canvas_focus_state_ = false;
       bool canvas_drag_state_ = false;
 
-      EditorTool* active_tool_ = nullptr;
-      PathTool path_tool_;
-      TileTool tile_tool_;
+      EditorMode* active_mode_ = nullptr;
+      PathMode path_mode_;
+      TileMode tile_mode_;
+      ControlPointsMode control_points_mode_;
 
       WorkingState working_state_;
       ActionHistory action_history_;

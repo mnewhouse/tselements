@@ -8,7 +8,7 @@
 
 #include "vector2.hpp"
 #include "vector3.hpp"
-
+#include "rect.hpp"
 #include "line_intersection.hpp"
 
 #include <array>
@@ -128,5 +128,35 @@ namespace ts
     }
 
     return out;
+  }
+
+  // Winding order must be such that cross_product(t2 - t1, t3 - t1) < 0
+  template <typename T>
+  bool region_contains_triangle(Rect<T> region, Vector2<T> t1, Vector2<T> t2, Vector2<T> t3)
+  {
+    auto cross = [](auto a, auto b, auto p)
+    {
+      return cross_product(b - a, p - a);
+    };
+
+    if (cross(t1, t2, t3) > 0)
+    {
+      std::swap(t1, t3);
+    }
+
+    auto top_left = make_vector2(region.left, region.top);
+    auto bottom_right = make_vector2(region.right(), region.bottom());
+    auto top_right = make_vector2(bottom_right.x, top_left.y);
+    auto bottom_left = make_vector2(top_left.x, bottom_right.y);
+
+    auto test_edge = [=](auto a, auto b)
+    {
+      return cross(a, b, top_left) < 0 ||
+        cross(a, b, bottom_left) < 0 ||
+        cross(a, b, bottom_right) < 0 ||
+        cross(a, b, top_right) < 0;
+    };
+
+    return test_edge(t1, t2) && test_edge(t2, t3) && test_edge(t3, t1);
   }
 }

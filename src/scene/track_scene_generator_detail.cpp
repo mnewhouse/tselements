@@ -490,7 +490,7 @@ namespace ts
           std::memcpy(dest, src, data_size);         
 
           discard_excess_levels(tex_data, max_texture_size);
-          return gli::generate_mipmaps(tex_data, gli::FILTER_LINEAR);
+          return tex_data;
         }
 
         return gli::texture2d();
@@ -516,15 +516,6 @@ namespace ts
         auto levels = gli::levels(extent);
 
         discard_excess_levels(tex_data, max_texture_size);
-
-        auto min_extent = tex_data.extent(tex_data.max_level());
-        if (min_extent.x != 1 && min_extent.y != 1)
-        {
-          gli::texture2d mipped_texture(tex_data.format(), tex_data.extent(tex_data.base_level()), tex_data.levels());
-          gli::copy(tex_data, 0, 0, tex_data.base_level(), mipped_texture, 0, 0, 0);
-          return gli::generate_mipmaps(mipped_texture, gli::FILTER_LINEAR);
-        }
-
         return gli::texture2d(tex_data);
       }
 

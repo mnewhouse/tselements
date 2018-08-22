@@ -4,7 +4,7 @@
 * Released under the MIT license.
 */
 
-#include "editor_path_tool.hpp"
+#include "editor_path_mode.hpp"
 
 #include "editor/editor_context.hpp"
 #include "editor/editor_state.hpp"
@@ -15,32 +15,32 @@ namespace ts
 {
   namespace editor
   {
-    namespace modes
+    namespace tools
     {
-      enum PathToolModes
+      enum PathModeTools
       {
         Nodes,
         Segments
       };
 
-      const char* const mode_names[] =
+      const char* const tool_names[] =
       {
         "Node",
         "Segments"
       };
     }
 
-    const char* PathTool::tool_name() const
+    const char* PathMode::mode_name() const
     {
-      return "Path Tool";
+      return "Paths";
     }
 
-    PathTool::mode_name_range PathTool::mode_names() const
+    PathMode::tool_name_range PathMode::tool_names() const
     {
-      return { std::begin(modes::mode_names), std::end(modes::mode_names) };
+      return { std::begin(tools::tool_names), std::end(tools::tool_names) };
     }
 
-    void PathTool::update_selection(const WorkingState& working_state)
+    void PathMode::update_selection(const WorkingState& working_state)
     {
       auto path = working_state.selected_path();
       if (path != selected_path_)
@@ -56,7 +56,7 @@ namespace ts
       }
     }
 
-    void PathTool::ensure_path_exists(const EditorContext& context)
+    void PathMode::ensure_path_exists(const EditorContext& context)
     {
       // If we have a node transformation but no selected layer, create and select a layer.
       if (selected_path_ == nullptr)
@@ -64,22 +64,35 @@ namespace ts
         auto& track = context.scene.track();
         auto path = track.path_library().create_path();
 
-        auto layer = track.create_layer(resources::TrackLayerType::PathStyle, "wtf", 0);
+        auto kerb_layer = track.create_layer(resources::TrackLayerType::PathStyle, "Kerb 1", 0);
+        auto kerb_style = kerb_layer->path_style();
+        kerb_style->path = path;
+        kerb_style->style.border_only = true;
+        kerb_style->style.terrain_id = 15;
+        kerb_style->style.border_texture = 16;
+        kerb_style->style.width = 64.0f;
+        kerb_style->style.border_width = 5.0f;
+        kerb_style->style.texture_mode = resources::PathStyle::Directional;
+
+        auto layer = track.create_layer(resources::TrackLayerType::PathStyle, "Path 1", 0);
         auto style = layer->path_style();
         style->path = path;
         style->style.base_texture = 2;
         style->style.border_texture = 15;
+        style->style.terrain_id = 2;
+        style->style.border_width = 1.5f;
+        style->style.width = 64.0f;
 
         select_path(path, context.working_state);
       }
     }
 
-    void PathTool::reload_working_path()
+    void PathMode::reload_working_path()
     {
-      if (selected_path_)
+      if (selected_path_ && selected_sub_path_index_ < selected_path_->sub_paths.size())
       {
         // Reload the working path.
-        working_path_ = *selected_path_;
+        working_path_ = selected_path_->sub_paths[selected_sub_path_index_];
       }
 
       else
@@ -88,17 +101,17 @@ namespace ts
       }
     }
 
-    void PathTool::update_tool_info(const EditorContext& context)
+    void PathMode::update_tool_info(const EditorContext& context)
     {
       update_selection(context.working_state);
     }
 
-    void PathTool::update_canvas_interface(const EditorContext& context)
+    void PathMode::update_canvas_interface(const EditorContext& context)
     {
       update_selection(context.working_state);
 
-      auto mode = active_mode();
-      if (mode == modes::Nodes)
+      auto tool = active_tool();
+      if (tool == tools::Nodes)
       {
         /*** Features
          * Display current path and its nodes
@@ -187,7 +200,7 @@ namespace ts
             {
               Node node;
               node.first_control = node.position = node.second_control = world_pos;
-              node.width = default_path_width_;
+              node.width = 0.0f;
               nodes.push_back(node);
 
               NodeTransformation transformation{};
@@ -242,13 +255,13 @@ namespace ts
         }
       }
 
-      else if (mode == modes::Segments)
+      else if (tool == tools::Segments)
       {
 
       }
     }
 
-    void PathTool::close_working_path(const EditorContext& context)
+    void PathMode::close_working_path(const EditorContext& context)
     {
       auto path = selected_path_;
 
@@ -271,7 +284,7 @@ namespace ts
       context.action_history.push_action("Close path", action, undo_action);
     }
 
-    void PathTool::apply_node_transformation(Vector2f final_position)
+    void PathMode::apply_node_transformation(Vector2f final_position)
     {
       auto& nodes = working_path_.nodes;
 
@@ -338,7 +351,7 @@ namespace ts
       }
     }
 
-    void PathTool::finalize_node_transformation(const EditorContext& context)
+    void PathMode::finalize_node_transformation(const EditorContext& context)
     {
       auto& transformation = *node_transformation_;
 
@@ -412,7 +425,7 @@ namespace ts
       node_transformation_ = boost::none;
     }
 
-    void PathTool::select_path(resources::TrackPath* path, WorkingState& working_state)
+    void PathMode::select_path(resources::TrackPath* path, WorkingState& working_state)
     {
       working_state.select_path(path);
 
@@ -424,17 +437,23 @@ namespace ts
       }
     }
 
-    void PathTool::commit_working_path(EditorScene& scene)
+    void PathMode::commit_working_path(EditorScene& scene)
     {
       if (selected_path_)
-      {       
-        *selected_path_ = working_path_;
+      {   
+        auto& sub_paths = selected_path_->sub_paths;
+        if (selected_sub_path_index_ >= sub_paths.size())
+        {
+          sub_paths.resize(selected_sub_path_index_ + 1);
+        }
+
+        sub_paths[selected_sub_path_index_] = working_path_;
 
         scene.rebuild_path_geometry(selected_path_);
       }
     }
 
-    void PathTool::delete_last(const EditorContext& editor_context)
+    void PathMode::delete_last(const EditorContext& editor_context)
     {
       auto path = selected_path_;
       if (!working_path_.nodes.empty() && path)
@@ -480,7 +499,7 @@ namespace ts
       }
     }
 
-    void PathTool::delete_selected(const EditorContext& context)
+    void PathMode::delete_selected(const EditorContext& context)
     {
 
     }

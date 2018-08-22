@@ -12,6 +12,7 @@
 
 #include "resources/resource_store.hpp"
 #include "resources/track_loader.hpp"
+#include "resources/track_saving.hpp"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_guards.hpp"
@@ -58,12 +59,12 @@ namespace ts
 
     EditorState::EditorState(const game_context& ctx)
       : GameState(ctx),
-      InterfaceState(ToolType::Path, 0),
-      active_tool_(&path_tool_),
+      InterfaceState(ModeType::Path, 0),
+      active_mode_(&path_mode_),
       view_port_({}),
       action_history_(64)
     {
-      if (active_tool_) active_tool_->set_active_mode(active_mode());
+      if (active_mode_) active_mode_->set_active_tool(active_tool());
     }
 
     EditorState::EditorState(const game_context& ctx, const std::string& file_name)
@@ -96,9 +97,9 @@ namespace ts
       {
         auto callback = [this](const sf::Transform& view_matrix)
         {
-          if (active_tool_)
+          if (active_mode_)
           {
-            active_tool_->on_canvas_render(make_context(), view_matrix);
+            active_mode_->on_canvas_render(make_context(), view_matrix);
           }
         };
 
@@ -113,7 +114,7 @@ namespace ts
         {
           editor_scene_ = loading_future_.get();
 
-          select_default_layer();
+          select_default_layer();         
           set_active_state(StateId::Editor);
         }
       }
@@ -164,7 +165,11 @@ namespace ts
           ImGui::MenuItem("New...", "Ctrl+N");
           ImGui::MenuItem("Open...", "Ctrl+O");
           ImGui::Separator();
-          ImGui::MenuItem("Save", "Ctrl+S");
+          if (ImGui::MenuItem("Save", "Ctrl+S"))
+          {
+            resources::save_track(editor_scene_->track());
+          }
+
           ImGui::MenuItem("Save As...");
           ImGui::Separator();
           ImGui::MenuItem("Exit", "Alt+F4");
@@ -190,12 +195,12 @@ namespace ts
 
           if (ImGui::MenuItem("Delete", "Delete", false, false))
           {
-            active_tool_->delete_selected(make_context());
+            active_mode_->delete_selected(make_context());
           }
 
-          if (ImGui::MenuItem("Delete Last", "Backspace", false, active_tool_ != nullptr))
+          if (ImGui::MenuItem("Delete Last", "Backspace", false, active_mode_ != nullptr))
           {
-            active_tool_->delete_last(make_context());
+            active_mode_->delete_last(make_context());
           }
 
           ImGui::Separator();
@@ -223,45 +228,45 @@ namespace ts
           ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("Tools", has_scene))
+        if (ImGui::BeginMenu("Modes", has_scene))
         {
           struct Item
           {
-            EditorTool* tool;
-            ToolType type;
+            EditorMode* mode;
+            ModeType type;
             const char* shortcut;
           };
 
-          Item tools[] =
+          Item modes[] =
           {
-            { &path_tool_, ToolType::Path, "P" },
-            { &tile_tool_, ToolType::Tiles, "T" }
+            { &path_mode_, ModeType::Path, "P" },
+            { &tile_mode_, ModeType::Tiles, "T" },
+            { &control_points_mode_, ModeType::ControlPoints, "C" }
           };
 
-          for (auto item : tools)
+          for (auto item : modes)
           {
-            if (ImGui::MenuItem(item.tool->tool_name(), item.shortcut, active_tool_ == item.tool))
+            if (ImGui::MenuItem(item.mode->mode_name(), item.shortcut, active_mode_ == item.mode))
             {
-              set_active_tool(item.type);
+              set_active_mode(item.type);
             }
           }
 
           ImGui::EndMenu();
         }
 
-        EditorTool::mode_name_range mode_names(nullptr, nullptr);
-        if (active_tool_) mode_names = active_tool_->mode_names();
+        EditorMode::tool_name_range tool_names(nullptr, nullptr);
+        if (active_mode_) tool_names = active_mode_->tool_names();
 
-
-        auto mode = active_mode();
-        if (ImGui::BeginMenu("Modes", has_scene && !mode_names.empty()))
+        auto tool = active_tool();
+        if (ImGui::BeginMenu("Tools", has_scene && !tool_names.empty()))
         {
           std::uint32_t index = 0;
-          for (auto mode_name : mode_names)
+          for (auto tool_name : tool_names)
           {
-            if (ImGui::MenuItem(mode_name, std::to_string(index + 1).c_str(), mode == index))
+            if (ImGui::MenuItem(tool_name, std::to_string(index + 1).c_str(), tool == index))
             {
-              set_active_mode(index);
+              set_active_tool(index);
             }
 
             ++index;
@@ -446,9 +451,9 @@ namespace ts
       camera_snapshot_ = old_camera_state;
       canvas_scroll_state_ = scroll_state;
 
-      if (active_tool_)
+      if (active_mode_)
       {
-        active_tool_->update_canvas_interface(make_context());
+        active_mode_->update_canvas_interface(make_context());
       }
       
       ImGui::EndChild();
@@ -463,13 +468,13 @@ namespace ts
       ImGui::BeginChild("tool_pane", { 200.f, 0 }, true, ImGuiWindowFlags_NoTitleBar);
 
       auto tool_name = "Tool Info";
-      if (active_tool_) tool_name = active_tool_->tool_name();
+      if (active_mode_) tool_name = active_mode_->mode_name();
 
       if (ImGui::CollapsingHeader(tool_name, "tool_info", true, true))
       {
-        if (active_tool_ && editor_scene_)
+        if (active_mode_ && editor_scene_)
         {
-          active_tool_->update_tool_info(make_context());
+          active_mode_->update_tool_info(make_context());
         }        
       }
 
@@ -638,11 +643,11 @@ namespace ts
         switch (event.key.code)
         {
         case Key::BackSpace:
-          if (active_tool_) active_tool_->delete_last(make_context());
+          if (active_mode_) active_mode_->delete_last(make_context());
           break;
 
         case Key::Delete:
-          if (active_tool_) active_tool_->delete_selected(make_context());
+          if (active_mode_) active_mode_->delete_selected(make_context());
           break;
 
         case Key::F5:
@@ -653,13 +658,23 @@ namespace ts
           async_load_test_state();
           break;
 
+        case Key::S:
+          if (event.key.control && editor_scene_)
+          {
+            resources::save_track(editor_scene_->track());
+          }
+          break;
+
         case Key::P:
-          if (editor_scene_) set_active_tool(ToolType::Path);
+          if (editor_scene_) set_active_mode(ModeType::Path);
           break;
 
         case Key::T:
-          if (editor_scene_) set_active_tool(ToolType::Tiles);
+          if (editor_scene_) set_active_mode(ModeType::Tiles);
           break;
+
+        case Key::C:
+          if (editor_scene_) set_active_mode(ModeType::ControlPoints);
 
         case Key::Z:
           if (event.key.control) action_history_.undo();
@@ -670,11 +685,11 @@ namespace ts
           break;
 
         case Key::Left:
-          if (active_tool_) active_tool_->previous(make_context());
+          if (active_mode_) active_mode_->previous(make_context());
           break;
 
         case Key::Right:
-          if (active_tool_) active_tool_->next(make_context());
+          if (active_mode_) active_mode_->next(make_context());
           break;
 
         default:
@@ -692,40 +707,43 @@ namespace ts
       working_state_.select_layer(layer);
     }
 
-    void EditorState::active_tool_changed(ToolType previous, ToolType current)
+    void EditorState::active_mode_changed(ModeType previous, ModeType current)
     {
-      auto tool_pointer = [=]() -> EditorTool*
+      auto mode_pointer = [=]() -> EditorMode*
       {
         switch (current)
         {
-        case ToolType::Path:
-         return &path_tool_;
+        case ModeType::Path:
+         return &path_mode_;
 
-        case ToolType::Tiles:
-          return &tile_tool_;
+        case ModeType::Tiles:
+          return &tile_mode_;
+
+        case ModeType::ControlPoints:
+          return &control_points_mode_;
 
         default:
           return nullptr;
         }
       }();
 
-      if (active_tool_ && active_tool_ != tool_pointer)
+      if (active_mode_ && active_mode_ != mode_pointer)
       {
-        active_tool_->deactivate(make_context());
+        active_mode_->deactivate(make_context());
       }
 
-      if (active_tool_ != tool_pointer)
+      if (active_mode_ != mode_pointer)
       {
-        active_tool_ = tool_pointer;
-        if (tool_pointer) tool_pointer->activate(make_context());
+        active_mode_ = mode_pointer;
+        if (mode_pointer) mode_pointer->activate(make_context());
       }
     }
 
-    void EditorState::active_mode_changed(std::uint32_t previous, std::uint32_t current)
+    void EditorState::active_tool_changed(std::uint32_t previous, std::uint32_t current)
     {
-      if (active_tool_)
+      if (active_mode_)
       {
-        active_tool_->set_active_mode(current);
+        active_mode_->set_active_tool(current);
       }
     }
 

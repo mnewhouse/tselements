@@ -29,77 +29,80 @@ namespace ts
       particle_info_.resize(settings.max_particles * num_levels);
       level_info_.resize(num_levels);
 
-      std::size_t index = 0;
+      std::uint32_t index = 0;
       for (auto& level_info : level_info_)
       {
-        level_info.index = index;
+        level_info.index = 0;
+        level_info.count = 0;
         level_info.base_index = index;
         index += settings.max_particles;
       }
     }
 
-    std::size_t ParticleGenerator::level_count() const
+    std::uint32_t ParticleGenerator::level_count() const
     {
       return level_info_.size();
     }
 
-    std::size_t ParticleGenerator::particle_count(std::size_t level) const
+    std::uint32_t ParticleGenerator::particle_count(std::uint32_t level) const
     {
       return level_info_[level].count;
     }
 
-    const ParticleGenerator::ParticleInfo* ParticleGenerator::particle_info(std::size_t level) const
+    std::uint32_t ParticleGenerator::particle_start_index(std::uint32_t level) const
     {
-      return particle_info_.data() + level_info_[level].index;
+      return level_info_[level].index;
     }
 
-    std::size_t ParticleGenerator::max_particles_per_level() const
+    const ParticleGenerator::ParticleInfo* ParticleGenerator::particle_info(std::uint32_t level) const
+    {
+      return particle_info_.data() + level_info_[level].base_index;
+    }
+
+    std::uint32_t ParticleGenerator::max_particles_per_level() const
     {
       return settings_.max_particles;
     }
 
     void ParticleGenerator::add_particle(LevelInfo& level_info, const ParticleInfo& particle_info)
     {
-      if (level_info.index + level_info.count + 1 >= max_particles_per_level())
-      {        
-        std::copy_n(particle_info_.begin() + level_info.index, level_info.count,
-                    particle_info_.begin() + level_info.base_index);
-
-        level_info.index = level_info.base_index;
+      auto idx = level_info.index + level_info.count;
+      if (idx >= max_particles_per_level())
+      {
+        idx -= max_particles_per_level();
       }
 
-      particle_info_[level_info.index + level_info.count] = particle_info;
+      particle_info_[idx] = particle_info;
       ++level_info.count;
     }
 
     void ParticleGenerator::update(std::uint32_t frame_duration)
     {
       const auto fd = frame_duration * 0.001;
-      tick_counter_ += frame_duration;
+      tick_counter_ += frame_duration;      
 
       for (auto& level_info : level_info_)
       {
-        auto level_start = particle_info_.begin() + level_info.index;
-        auto level_end = level_start + level_info.count;
+        auto level_start = particle_info_.begin() + level_info.base_index;
 
-        // Remove the "expired" particles 
-        auto it = std::find_if(level_start, level_end,
-                               [ticks = tick_counter_](const ParticleInfo& particle_info)
+        // Remove the "expired" particles   
+        auto& idx = level_info.index;
+        auto& count = level_info.count;
+        while (count != 0 && tick_counter_ >= level_start[idx].end_ticks)
         {
-          return particle_info.end_ticks >= ticks;
-        });
+          ++idx;
+          --count;
 
-        // That is, we just shift the pointer up a bit.
-        auto removal_count = static_cast<std::size_t>(std::distance(level_start, it));
-        level_info.index += removal_count;
-        level_info.count -= removal_count;
+          if (idx == max_particles_per_level()) idx = 0;          
+        }       
       }
 
-      std::uniform_real_distribution<double> chance_dist(0.0, settings_.max_effect_speed);
+      std::uniform_real_distribution<double> chance_dist(0.0, 10.0);
       std::uniform_real_distribution<double> position_dist(-settings_.position_variance, settings_.position_variance);
       std::uniform_real_distribution<double> color_dist(-settings_.color_variance * 0.5, 
                                                         settings_.color_variance * 0.5);
       std::uniform_real_distribution<double> size_dist(settings_.min_size, settings_.max_size);
+      std::uniform_real_distribution<double> smoke_size_dist(settings_.min_smoke_size, settings_.max_smoke_size);
 
       const auto max_particles = max_particles_per_level();
       using utility::random_number;
@@ -113,6 +116,11 @@ namespace ts
       auto generate_radius = [=]()
       {
         return static_cast<float>(random_number(size_dist) * 0.5);
+      };
+
+      auto generate_smoke_radius = [=]()
+      {
+        return static_cast<float>(random_number(smoke_size_dist) * 0.5);
       };
 
       auto generate_color = [=](auto base_color)
@@ -132,51 +140,46 @@ namespace ts
       {
         auto level = car.z_level();
         auto& level_info = level_info_[level];
+        const auto& handling_state = car.handling_state();
 
-        auto traction = 1.0f;
+        for (const auto& ws : handling_state.wheel_states)
+        {          
+          if (ws.terrain_roughness < 0.001 && ws.slide_ratio < 0.1) continue;
 
-        const auto& terrain = world_->terrain_at(car.position(), level);
-        if (terrain.roughness >= 0.001 || (terrain.skid_mark && traction < 0.8))
-        {
-          auto rotation = static_cast<float>(car.rotation().radians());
-          auto sin = std::sin(rotation), cos = std::cos(rotation);
+          bool smoke = ws.terrain_roughness < 0.001;
+          auto speed = std::min(settings_.max_effect_speed, ws.speed);
 
-          auto speed = std::min(magnitude(car.velocity()), settings_.max_effect_speed);
-          /*
-          for (auto tyre_position : car.tyre_positions())
+          // If we roll a number below the "chance factor", add a new particle.
+          // The probability of success is positively affected by car speed, frame duration and terrain roughness.
+
+          
+
+          auto chance_factor = !smoke ?
+            settings_.chance_factor * speed * fd * std::min(ws.terrain_roughness, 1.0) :
+            settings_.smoke_chance_factor * speed * fd * ws.slide_ratio;
+
+          double roll = random_number(chance_dist);
+
+          Colorb base_color = { 150, 150, 150, 100 }; // Smoke color
+          if (!smoke)
           {
-            auto transformed_tyre_pos = transform_point(vector2_cast<float>(tyre_position), sin, cos);
-
-            // If we roll a number below the "chance factor", add a new particle.
-            // The probability of success is positively affected by car speed, frame duration and terrain roughness.
-
-            double roll = terrain.roughness >= 0.001 ?
-              random_number(chance_dist) / (speed * fd * terrain.roughness) :
-              random_number(chance_dist) * car.traction() / (speed * fd);
-
-            Colorb base_color = { 150, 150, 150, 100 }; // Smoke color
-            if (terrain.roughness >= 0.001)
-            {
-              base_color = terrain.color;
-              base_color.r = (base_color.r * 225) / 256;
-              base_color.g = (base_color.g * 225) / 256;
-              base_color.b = (base_color.b * 225) / 256;
-              base_color.a = 255;
-            }
-
-            for (; roll < settings_.chance_factor && level_info.count < max_particles; roll += settings_.chance_factor)
-            {
-              ParticleInfo info;
-              info.position = generate_position(car.position()) + transformed_tyre_pos;
-              info.radius = generate_radius();
-              info.color = generate_color(base_color);
-              info.end_ticks = tick_counter_ + settings_.display_time;
-
-
-              add_particle(level_info, info);
-            }
+            base_color = ws.terrain_color;
+            base_color.r = (base_color.r * 225) >> 8;
+            base_color.g = (base_color.g * 225) >> 8;
+            base_color.b = (base_color.b * 225) >> 8;
+            base_color.a = 255;
           }
-          */
+
+          for (; roll < chance_factor && level_info.count < max_particles; roll += chance_factor)
+          {
+            ParticleInfo info;
+            info.position = generate_position(ws.pos);
+            info.radius = smoke ? generate_smoke_radius() : generate_radius();
+            info.color = generate_color(base_color);
+            info.end_ticks = tick_counter_ + settings_.display_time;
+
+            add_particle(level_info, info);
+          }
         }
       }
     }

@@ -9,6 +9,7 @@
 #include "scene_shaders.hpp"
 #include "dynamic_scene.hpp"
 #include "view_matrix.hpp"
+#include "particle_generator.hpp"
 
 #include "graphics/gl_scissor_box.hpp"
 #include "graphics/gl_check.hpp"
@@ -39,9 +40,20 @@ namespace ts
 
       reload_track_components();
 
+      load_particle_texture();
+
       setup_entity_buffers();
 
       glCheck(glFinish());
+    }
+
+    void RenderScene::load_particle_texture()
+    {
+      sf::Image img;
+      if (img.loadFromFile("data/particle.png"))
+      {
+        particle_texture_ = graphics::create_texture(img, true);
+      }
     }
 
     void RenderScene::load_shader_programs()
@@ -122,6 +134,25 @@ namespace ts
 
         locations.view_matrix = glCheck(glGetUniformLocation(prog, "u_viewMatrix"));
         locations.world_size = glCheck(glGetUniformLocation(prog, "u_worldSize"));
+      }
+
+      {
+        particle_shader_program_ = graphics::create_shader_program(shaders::particle_vertex_shader,
+                                                                   shaders::particle_fragment_shader);
+
+        auto& locations = particle_locations_;
+        auto prog = particle_shader_program_.get();
+        glBindAttribLocation(prog, 0, "in_position");
+        glBindAttribLocation(prog, 1, "in_texCoords");
+        glBindAttribLocation(prog, 2, "in_color");
+        graphics::link_shader_program(particle_shader_program_);
+
+        locations.view_matrix = glCheck(glGetUniformLocation(prog, "u_viewMatrix"));
+        locations.texture_sampler = glCheck(glGetUniformLocation(prog, "u_textureSampler"));
+
+        glUseProgram(prog);
+        glUniform1i(locations.texture_sampler, 0);
+        glUseProgram(0);
       }
     }
 
@@ -323,6 +354,10 @@ namespace ts
       glCheck(glUniformMatrix4fv(track_path_component_locations_.view_matrix, 1, GL_FALSE,
                                  view_matrix.getMatrix()));
 
+      glCheck(glUseProgram(particle_shader_program_.get()));
+      glCheck(glUniformMatrix4fv(particle_locations_.view_matrix, 1, GL_FALSE,
+                                 view_matrix.getMatrix()));
+
       std::uint32_t max_level = 0;
       if (!track_components_.empty()) max_level = std::max(track_components_.back().level, max_level);
       if (!drawable_entities_.empty()) max_level = std::max(drawable_entities_.back().level, max_level);
@@ -354,9 +389,6 @@ namespace ts
           if (component.type == TrackComponent::Default)
           {
             glUseProgram(track_shader_program_.get());
-
-            glDisable(GL_DEPTH_TEST);
-            glDepthMask(GL_FALSE);
           }
 
           else if (component.type == TrackComponent::Path)
@@ -395,15 +427,15 @@ namespace ts
 
           auto offset = reinterpret_cast<const void*>(static_cast<std::uintptr_t>(component.element_buffer_offset));
           glCheck(glDrawElements(GL_TRIANGLES, component.element_count, GL_UNSIGNED_INT, offset));
+
+          glDisable(GL_DEPTH_TEST);
+          glDepthMask(GL_FALSE);
         }
 
         if (entity_it != drawable_entities_.end() && level == entity_it->level)
         {          
           glCheck(glUseProgram(car_shader_program_.get()));
           glCheck(glBindVertexArray(car_vertex_array_.get()));
-
-          glDisable(GL_DEPTH_TEST);
-          glDepthMask(GL_FALSE);
 
           while (entity_it != drawable_entities_.end() && level == entity_it->level)
           {
@@ -431,6 +463,40 @@ namespace ts
 
             glCheck(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 
                                    reinterpret_cast<const void*>(std::uintptr_t(0))));
+          }
+        }
+
+
+        if (level < particle_level_info_.size())
+        {
+          auto& particle_info = particle_level_info_[level];
+          if (particle_info.count != 0)
+          {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, particle_texture_.get());
+
+            glBindVertexArray(particle_vertex_array_.get());
+            glUseProgram(particle_shader_program_.get());
+
+            std::uintptr_t base_offset = level * max_particles_per_level_ * sizeof(std::uint32_t) * 6;
+            std::uintptr_t offset = base_offset + particle_info.start_index * sizeof(std::uint32_t) * 6;
+
+            auto end_index = particle_info.start_index + particle_info.count;
+            if (end_index > max_particles_per_level_)
+            {
+              auto count_1 = max_particles_per_level_ - particle_info.start_index;
+              auto count_2 = end_index - max_particles_per_level_;
+              glDrawElements(GL_TRIANGLES, count_1 * 6, GL_UNSIGNED_INT,
+                             reinterpret_cast<const void*>(offset));
+              glDrawElements(GL_TRIANGLES, count_2 * 6, GL_UNSIGNED_INT,
+                             reinterpret_cast<const void*>(base_offset));
+            }
+
+            else
+            {
+              glDrawElements(GL_TRIANGLES, particle_info.count * 6, GL_UNSIGNED_INT,
+                             reinterpret_cast<const void*>(offset));
+            }
           }
         }
       }
@@ -466,6 +532,133 @@ namespace ts
       {
         return a.level < b.level;
       });
+    }
+
+    void RenderScene::setup_particle_buffers(std::uint32_t num_levels, std::uint32_t max_particles)
+    {
+      particle_vertex_buffer_ = graphics::create_buffer();      
+      particle_index_buffer_ = graphics::create_buffer();
+      particle_vertex_array_ = graphics::create_vertex_array();
+
+      auto total_max_particles = num_levels * max_particles;
+
+      std::vector<std::uint32_t> indices;
+      for (std::uint32_t i = 0; i < total_max_particles; ++i)
+      {
+        auto base = i * 4;
+        indices.insert(indices.end(), { base, base + 1, base + 2, base, base + 2, base + 3 });
+      }
+
+      glBindVertexArray(particle_vertex_array_.get());
+
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, particle_index_buffer_.get());
+      glBindBuffer(GL_ARRAY_BUFFER, particle_vertex_buffer_.get());
+
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(indices.front()), indices.data(), GL_STATIC_DRAW);
+      glBufferData(GL_ARRAY_BUFFER, total_max_particles * 4 * sizeof(ParticleVertex), nullptr, GL_DYNAMIC_DRAW);      
+
+      glCheck(glEnableVertexAttribArray(0));
+      glCheck(glEnableVertexAttribArray(1));
+      glCheck(glEnableVertexAttribArray(2));
+
+      glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(ParticleVertex),
+                                    reinterpret_cast<const void*>(offsetof(ParticleVertex, position))));
+      glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(ParticleVertex),
+                                    reinterpret_cast<const void*>(offsetof(ParticleVertex, texture_coords))));
+      glCheck(glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ParticleVertex),
+                                    reinterpret_cast<const void*>(offsetof(ParticleVertex, color))));
+
+      glBindVertexArray(0);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);      
+    }
+
+    void RenderScene::update_particles(const ParticleGenerator& particle_generator)
+    {
+      // For each level
+      // Fetch "new" particles and replace the oldest ones in the buffer with those.
+
+      auto level_count = particle_generator.level_count();
+      particle_level_info_.resize(level_count);      
+
+      max_particles_per_level_ = particle_generator.max_particles_per_level();
+      particle_vertex_cache_.reserve(max_particles_per_level_ * 4);
+
+      if (particle_vertex_buffer_.get() == 0)
+      {
+        setup_particle_buffers(level_count, max_particles_per_level_);
+      }
+
+      glBindBuffer(GL_ARRAY_BUFFER, particle_vertex_buffer_.get());
+
+      std::uint32_t buffer_offset = 0;
+      for (std::uint32_t level = 0; level != level_count; ++level)
+      { 
+        auto particles = particle_generator.particle_info(level);
+        auto& info = particle_level_info_[level];
+
+        auto count = particle_generator.particle_count(level);
+        auto start_index = particle_generator.particle_start_index(level);
+
+        auto end_index = info.start_index + info.count;
+        auto new_end_index = start_index + count;
+
+        info.start_index = start_index;
+        info.count = count;
+
+        while (end_index >= max_particles_per_level_) end_index -= max_particles_per_level_;
+        while (new_end_index >= max_particles_per_level_) new_end_index -= max_particles_per_level_;
+
+        particle_vertex_cache_.clear();
+
+        // Update range between end_index and new_end_index.
+        for (auto idx = end_index; idx != new_end_index; )
+        {
+          auto particle = particles[idx];
+          auto r = particle.radius;
+
+          // Create particle vertices
+          ParticleVertex v;
+          v.color = particle.color;
+          v.position = particle.position + make_vector2(-r, -r);
+          v.texture_coords = { 0.0f, 0.0f };
+          particle_vertex_cache_.push_back(v);
+          
+          v.position = particle.position + make_vector2(-r, r);
+          v.texture_coords = { 0.0f, 1.0f };
+          particle_vertex_cache_.push_back(v);
+
+          v.position = particle.position + make_vector2(r, r);
+          v.texture_coords = { 1.0f, 1.0f };
+          particle_vertex_cache_.push_back(v);
+
+          v.position = particle.position + make_vector2(r, -r);
+          v.texture_coords = { 1.0f, 0.0f };
+          particle_vertex_cache_.push_back(v);
+
+          if (++idx == max_particles_per_level_)
+          {
+            glBufferSubData(GL_ARRAY_BUFFER, buffer_offset + end_index * sizeof(ParticleVertex) * 4,
+                            particle_vertex_cache_.size() * sizeof(ParticleVertex),
+                            particle_vertex_cache_.data());
+
+            particle_vertex_cache_.clear();
+
+            end_index = 0;
+            idx = 0;
+          }
+        }
+
+        if (!particle_vertex_cache_.empty())
+        {
+          glBufferSubData(GL_ARRAY_BUFFER, buffer_offset + end_index * sizeof(ParticleVertex) * 4,
+                          particle_vertex_cache_.size() * sizeof(ParticleVertex), particle_vertex_cache_.data());
+        }
+
+        buffer_offset += max_particles_per_level_ * sizeof(ParticleVertex) * 4;
+      }
+
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
     void RenderScene::clear_dynamic_state()

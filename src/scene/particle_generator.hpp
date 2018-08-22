@@ -21,11 +21,14 @@ namespace ts
   {
     struct ParticleSettings
     {
-      double min_size = 2.0;
-      double max_size = 4.0;
-      double chance_factor = 10.0;
-      double max_effect_speed = 50.0;
-      double position_variance = 2.0;
+      double min_size = 1.5;
+      double max_size = 3.0;
+      double min_smoke_size = 3.0;
+      double max_smoke_size = 9.0;
+      double chance_factor = 5.0;
+      double smoke_chance_factor = 1.0;
+      double max_effect_speed = 250.0;
+      double position_variance = 3.0;
       double color_variance = 0.4;
       std::size_t display_time = 400;      
       std::size_t max_particles = 1024;
@@ -34,7 +37,7 @@ namespace ts
     // The particle generator class generates particles for all cars in the game world,
     // if certain criteria are met. On rough terrains, particles will be shown, 
     // otherwise if the car is sliding, smoke will be shown. The particle's properties are
-    // affected by the settings as it was passed to the constructor.
+    // affected by the settings as they were passed to the constructor.
     class ParticleGenerator
     {
     public:
@@ -42,26 +45,27 @@ namespace ts
 
       void update(std::uint32_t frame_duration);
 
-      std::size_t level_count() const;
-      std::size_t max_particles_per_level() const;      
+      std::uint32_t level_count() const;
+      std::uint32_t max_particles_per_level() const;      
 
       struct ParticleInfo
       {
         Vector2f position;
         float radius;
         Colorb color;
-        std::uint64_t end_ticks;
+        std::uint32_t end_ticks;
       };
 
-      const ParticleInfo* particle_info(std::size_t level) const;
-      std::size_t particle_count(std::size_t level) const;
+      const ParticleInfo* particle_info(std::uint32_t level) const;
+      std::uint32_t particle_count(std::uint32_t level) const;
+      std::uint32_t particle_start_index(std::uint32_t level) const;
 
     private:
       struct LevelInfo
       {
-        std::size_t base_index;
-        std::size_t index;
-        std::size_t count;
+        std::uint32_t base_index;
+        std::uint32_t index;
+        std::uint32_t count;
       };
 
       void add_particle(LevelInfo& level_info, const ParticleInfo& particle_info);
@@ -69,11 +73,9 @@ namespace ts
       const world::World* world_;
       ParticleSettings settings_;
 
-
-      
       std::vector<ParticleInfo> particle_info_;
       std::vector<LevelInfo> level_info_;
-      std::uint64_t tick_counter_ = 0;   
+      std::uint32_t tick_counter_ = 0;   
     };
   }
 }

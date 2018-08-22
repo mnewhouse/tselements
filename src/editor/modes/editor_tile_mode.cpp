@@ -4,7 +4,7 @@
 * Released under the MIT license.
 */
 
-#include "editor_tile_tool.hpp"
+#include "editor_tile_mode.hpp"
 
 #include "editor/editor_scene.hpp"
 #include "editor/editor_working_state.hpp"
@@ -26,9 +26,9 @@ namespace ts
 {
   namespace editor
   {
-    namespace modes
+    namespace tools
     {
-      enum Mode
+      enum Tool
       {
         TilePlacement,
         TileSelection
@@ -50,17 +50,17 @@ namespace ts
       return graphics::create_texture(transparency_tiles);
     }
 
-    TileTool::TileTool()
+    TileMode::TileMode()
       : tiled_transparency_texture_(load_tiled_transparency_texture())
     {
     }
 
-    const char* TileTool::tool_name() const
+    const char* TileMode::mode_name() const
     {
-      return "Tile Tool";
+      return "Tiles";
     }
 
-    void TileTool::update_tool_info(const EditorContext& context)
+    void TileMode::update_tool_info(const EditorContext& context)
     {
       // Show tile library and update selected tile if needed
 
@@ -250,7 +250,7 @@ namespace ts
       ImGui::PopStyleVar(1);
     }
 
-    void TileTool::update_canvas_interface(const EditorContext& context)
+    void TileMode::update_canvas_interface(const EditorContext& context)
     {
       update_selected_layer(context);
 
@@ -263,8 +263,8 @@ namespace ts
       auto world_pos = transformer.world_position(canvas_mouse_pos);
       const auto& view_port = context.canvas_viewport;
 
-      auto mode = active_mode();
-      if (mode == modes::TilePlacement && selected_layer_)
+      auto mode = active_tool();
+      if (mode == tools::TilePlacement && selected_layer_)
       {
         auto& scene = context.scene;
 
@@ -278,7 +278,7 @@ namespace ts
       }
     }
 
-    void TileTool::on_canvas_render(const ImmutableEditorContext& context, const sf::Transform& view_matrix) const
+    void TileMode::on_canvas_render(const ImmutableEditorContext& context, const sf::Transform& view_matrix) const
     {
       if (context.working_state.selected_layer() != nullptr)
       {
@@ -286,7 +286,7 @@ namespace ts
       }      
     }
 
-    void TileTool::next(const EditorContext& context)
+    void TileMode::next(const EditorContext& context)
     {
       const auto& tile_lib = context.scene.track().tile_library();
 
@@ -338,19 +338,19 @@ namespace ts
       }
     }
     
-    void TileTool::previous(const EditorContext& context)
+    void TileMode::previous(const EditorContext& context)
     {
 
     }
 
-    boost::optional<std::uint32_t> TileTool::placement_tile_id() const
+    boost::optional<std::uint32_t> TileMode::placement_tile_id() const
     {
       if (!placement_tile_ && !placement_tile_group_) return boost::none;
       if (placement_tile_) return placement_tile_->id;
       return placement_tile_group_->id;
     }
 
-    void TileTool::set_placement_tile_id(std::uint32_t tile_id, const resources::TileLibrary& tile_lib)
+    void TileMode::set_placement_tile_id(std::uint32_t tile_id, const resources::TileLibrary& tile_lib)
     {
       const auto& tiles = tile_lib.tiles();
 
@@ -382,7 +382,7 @@ namespace ts
       }
     }
 
-    void TileTool::place_tile_at(const EditorContext& context, Vector2d world_pos)
+    void TileMode::place_tile_at(const EditorContext& context, Vector2d world_pos)
     {
       if (auto tile_id = placement_tile_id())
       {
@@ -414,7 +414,7 @@ namespace ts
       }      
     }
     
-    void TileTool::update_placement_tile_preview(EditorScene& editor_scene, Vector2d world_pos)
+    void TileMode::update_placement_tile_preview(EditorScene& editor_scene, Vector2d world_pos)
     {
       auto* render_scene = editor_scene.render_scene();
 
@@ -472,23 +472,23 @@ namespace ts
       tile_interaction_renderer_.set_transform(model_matrix);
     }
 
-    TileTool::mode_name_range TileTool::mode_names() const
+    TileMode::tool_name_range TileMode::tool_names() const
     {
       static const char* const names[] =
       {
         "Placement"
       };
 
-      return mode_name_range(std::begin(names), std::end(names));
+      return tool_name_range(std::begin(names), std::end(names));
     }
 
-    void TileTool::select_layer(resources::TrackLayer* layer, const EditorContext& context)
+    void TileMode::select_layer(resources::TrackLayer* layer, const EditorContext& context)
     {
       context.working_state.select_layer(layer);
       update_selected_layer(context);
     }
 
-    void TileTool::update_selected_layer(const EditorContext& context)
+    void TileMode::update_selected_layer(const EditorContext& context)
     {
       auto selected_layer = context.working_state.selected_layer();
       if (selected_layer != selected_layer_)
@@ -499,12 +499,12 @@ namespace ts
       }
     }
 
-    void TileTool::delete_selected(const EditorContext& context)
+    void TileMode::delete_selected(const EditorContext& context)
     {
       update_selected_layer(context);
     }
 
-    void TileTool::delete_last(const EditorContext& context)
+    void TileMode::delete_last(const EditorContext& context)
     {
       update_selected_layer(context);
 
@@ -534,7 +534,7 @@ namespace ts
       }
     }
 
-    void TileTool::activate(const EditorContext& context)
+    void TileMode::activate(const EditorContext& context)
     {
       if (!placement_tile_ && !placement_tile_group_)
       {
@@ -544,12 +544,12 @@ namespace ts
       }
     }
 
-    void TileTool::deactivate(const EditorContext& context)
+    void TileMode::deactivate(const EditorContext& context)
     {
 
     }
 
-    void TileTool::reload_tile_library_cache(const EditorScene& editor_scene)
+    void TileMode::reload_tile_library_cache(const EditorScene& editor_scene)
     {
       tile_library_quad_cache_.clear();
       if (auto render_scene = editor_scene.render_scene())

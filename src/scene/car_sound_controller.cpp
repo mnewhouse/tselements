@@ -105,7 +105,10 @@ namespace ts
         auto max_skid_magnitude = 0.0;
         for (auto& ws : handling_state.wheel_states)
         {
-          max_skid_magnitude = std::max(max_skid_magnitude, ws.speed * ws.slide_ratio);
+          if (ws.terrain_roughness < 0.001)
+          {
+            max_skid_magnitude = std::max(max_skid_magnitude, ws.speed * ws.slide_ratio);
+          }          
         }
 
         if (max_skid_magnitude >= 1.0)

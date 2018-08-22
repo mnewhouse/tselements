@@ -28,7 +28,7 @@ namespace ts
 
   namespace world
   {
-    class TerrainMap;
+    class World;
     using resources::CarDefinition;
 
     class Car
@@ -37,7 +37,7 @@ namespace ts
     public:
       explicit Car(const CarDefinition& car_definition, std::uint16_t entity_id);
       
-      void update(const TerrainMap& terrain_map, double frame_duration);
+      void update(const World& world, double frame_duration);
 
       const resources::HandlingProperties& handling_properties() const { return handling_properties_; }
       const HandlingState& handling_state() const { return handling_state_; }

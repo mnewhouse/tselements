@@ -8,7 +8,7 @@
 
 #include "tile_interaction_renderer.hpp"
 
-#include "editor/editor_tool.hpp"
+#include "editor/editor_mode.hpp"
 
 #include "resources/tiles.hpp"
 #include "resources/geometry.hpp"
@@ -31,11 +31,11 @@ namespace ts
 
   namespace editor
   {
-    class TileTool
-      : public EditorTool
+    class TileMode
+      : public EditorMode
     {
     public:
-      TileTool();
+      TileMode();
 
       virtual void update_tool_info(const EditorContext& context) override;
       virtual void update_canvas_interface(const EditorContext& context) override;
@@ -51,8 +51,8 @@ namespace ts
 
       virtual void on_canvas_render(const ImmutableEditorContext& context, const sf::Transform& matrix) const override;
 
-      virtual const char* tool_name() const override;
-      virtual mode_name_range mode_names() const override;
+      virtual const char* mode_name() const override;
+      virtual tool_name_range tool_names() const override;
 
     private:
       void set_placement_tile_id(std::uint32_t tile_id, const resources::TileLibrary& tile_libray);

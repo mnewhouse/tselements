@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "editor/editor_tool.hpp"
+#include "editor/editor_mode.hpp"
 
 #include "resources/track_path.hpp"
 
@@ -23,29 +23,30 @@ namespace ts
 
   namespace editor
   {
-    class PathTool
-      : public EditorTool
+    class PathMode
+      : public EditorMode
     {
     public:
       virtual void update_tool_info(const EditorContext& context) override;
       virtual void update_canvas_interface(const EditorContext& context) override;
 
-      virtual const char* tool_name() const override;
-      virtual mode_name_range mode_names() const override;
+      virtual const char* mode_name() const override;
+      virtual tool_name_range tool_names() const override;
 
       virtual void delete_last(const EditorContext& context) override;
       virtual void delete_selected(const EditorContext& context) override;
 
     private:
       using Path = resources::TrackPath;
+      using SubPath = resources::SubPath;
       using Node = resources::TrackPathNode;
 
-      resources::TrackPath* selected_path_ = nullptr;
+      resources::TrackPath* selected_path_ = nullptr;      
       resources::TrackLayer* selected_layer_ = nullptr;
+      std::size_t selected_sub_path_index_ = 0;
       std::size_t selected_stroke_style_ = 0; 
-      float default_path_width_ = 32.0f;
 
-      Path working_path_;
+      SubPath working_path_;
 
       struct NodeTransformation
       {

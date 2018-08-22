@@ -108,9 +108,14 @@ namespace ts
       const auto& lines = *context.lines;
       auto& line_index = context.line_index;
 
-      for (std::string directive; line_index < lines.size() && directive != "end"; ++line_index)
+      for (std::string directive; line_index < lines.size() && directive != "end"; )
       {
+        auto start_index = line_index;
         do_callback(lines[line_index], directive, callback);
+        if (line_index == start_index)
+        {
+          ++line_index;
+        }
       }
     }
 
@@ -157,6 +162,184 @@ namespace ts
 
       insufficient_parameters(directive, context);
       return false;
+    }
+
+    auto process_path_style_directive(PathStyle& style, const std::string& directive, boost::string_ref remainder)
+    {
+      if (directive == "basetexture")
+      {
+        ArrayStream(remainder) >> style.base_texture;
+      }
+
+      else if (directive == "bordertexture")
+      {
+        ArrayStream(remainder) >> style.border_texture;
+      }
+
+      else if (directive == "terrain")
+      {
+        ArrayStream(remainder) >> style.terrain_id;
+      }
+
+      else if (directive == "width")
+      {
+        ArrayStream(remainder) >> style.width;
+      }
+
+      else if (directive == "borderwidth")
+      {
+        ArrayStream(remainder) >> style.border_width;
+      }
+
+      else if (directive == "borderonly")
+      {
+        int b = 0;
+        ArrayStream(remainder) >> b;
+        style.border_only = (b != 0);
+      }
+
+      else if (directive == "texturemode")
+      {
+        int m = 0;
+        ArrayStream(remainder) >> m;
+        style.texture_mode = (m == 0 ? style.Tiled : style.Directional);
+      }
+
+      else if (directive == "preset")
+      {
+        ArrayStream(remainder) >> style.preset_id;
+      }
+
+      else if (directive == "segmented")
+      {
+        auto s = 0;
+        ArrayStream(remainder) >> s;
+        style.is_segmented = (s != 0);
+      }
+
+      else if (directive == "segment")
+      {
+        auto t1 = 0.0f;
+        auto t2 = 0.0f;
+        auto sides = 0;
+        if (ArrayStream(remainder) >> t1 >> t2 >> sides)
+        {
+          StrokeSegment segment;
+          segment.start_index = static_cast<std::uint32_t>(t1);
+          segment.end_index = static_cast<std::uint32_t>(t2);
+          segment.start_time_point = t1 - std::floor(t1);
+          segment.end_time_point = t2 - std::floor(t2);
+          segment.side = static_cast<StrokeSegment::Side>(sides);
+          style.segments.push_back(segment);
+        }
+      }
+
+      else
+      {
+        return false;
+      }
+
+      return true;
+    }
+
+    static bool process_layer_directive(Track& track, TrackLayer* layer, 
+                                        const std::string& directive, boost::string_ref remainder)
+    {
+      if (directive == "hidden")
+      {
+        layer->set_visible(false);
+      }
+
+      else if (directive == "level")
+      {
+        std::uint32_t level = 0;
+        if (ArrayStream(remainder) >> level)
+        {
+          track.set_layer_level(layer, level);
+        }
+      }
+
+      else
+      {
+        return false;
+      }
+
+      return true;
+    }
+
+    static void load_tile_layer(Track& track, TrackLayer* layer, LoadingContext& context)
+    {
+      loop_until_end(context, LOOP_LAMBDA
+      {
+        if (directive == "a" || directive == "leveltile")
+        {
+          auto level_tile = directive != "a";
+
+          Tile tile;
+          if (read_tile(context, directive_view, remainder, tile, level_tile))
+          {
+            layer->tiles()->push_back(tile);
+          }
+        }
+
+        else if (process_layer_directive(track, layer, directive, remainder)) {}
+      });
+    }
+
+    static void load_base_terrain_layer(Track& track, TrackLayer* layer, LoadingContext& context)
+    {
+      loop_until_end(context, LOOP_LAMBDA
+      {
+        std::uint32_t id;
+        if (process_layer_directive(track, layer, directive, remainder)) {}
+
+        else if (directive == "texture" && ArrayStream(remainder) >> id)
+        {
+          layer->base_terrain()->texture_id = id;
+        }
+
+        else if (directive == "terrain" && ArrayStream(remainder) >> id)
+        {
+          layer->base_terrain()->terrain_id = id;
+        }
+      });
+    }
+
+    static void load_path_layer(Track& track, TrackLayer* layer, LoadingContext& context)
+    {
+      auto style = layer->path_style();
+      loop_until_end(context, LOOP_LAMBDA
+      {
+        if (directive == "path")
+        {
+          std::uint32_t id;
+          if (ArrayStream(remainder) >> id)
+          {            
+            if (auto path = track.path_library().find_path(id))
+            {              
+              layer->path_style()->path = path;
+            }
+          }          
+        }
+
+        else if (process_path_style_directive(style->style, directive, remainder)) {}
+        
+        else if (process_layer_directive(track, layer, directive, remainder)) {}
+      });
+    }
+
+    static PathStyle load_path_style(LoadingContext& context)
+    {
+      PathStyle style;
+      loop_until_end(context, LOOP_LAMBDA
+      {
+        if (process_path_style_directive(style, directive, remainder))
+        {
+          // Do nothing
+        }
+      });
+
+      return style;
     }
 
     static void load_geometry(TrackLayer& layer, LoadingContext& context, std::uint32_t texture_id,
@@ -249,10 +432,11 @@ namespace ts
         }
       };
 
-      loop_until_end(context, LOOP_LAMBDA
+      loop_all(context, LOOP_LAMBDA
       {
         if (directive == "a" || directive == "leveltile")
         {
+          // This should be there for backwards compatibility
           bool level_tile = directive != "a";
 
           Tile tile;
@@ -270,33 +454,30 @@ namespace ts
         else if (directive == "tilelayer")
         {
           ArrayStream stream(remainder);
-
-          std::uint32_t level, visible;
           std::string layer_name;
 
-          if (stream >> level >> visible >> std::ws && std::getline(stream, layer_name))
+          if (stream >> std::ws && std::getline(stream, layer_name))
           {
-            current_layer = track.create_layer(resources::TrackLayerType::Tiles, std::move(layer_name), level);
-            current_layer->set_visible(visible != 0);
+            current_layer = track.create_layer(resources::TrackLayerType::Tiles, std::move(layer_name), 0);
+            load_tile_layer(track, current_layer, context);
           }
         }
 
         else if (directive == "baseterrain")
         {
           ArrayStream stream(remainder);
-          std::uint32_t texture_id, terrain_id;
-          
-          if (stream >> terrain_id >> texture_id)
+          current_layer = track.create_layer(resources::TrackLayerType::BaseTerrain, "Base Terrain", 0);
+          load_base_terrain_layer(track, current_layer, context);
+        }
+
+        else if (directive == "pathlayer")
+        {
+          ArrayStream stream(remainder);          
+          std::string layer_name;
+          if (stream >> std::ws && std::getline(stream, layer_name))
           {
-            char h{};
-            stream >> h;
-
-            current_layer = track.create_layer(resources::TrackLayerType::BaseTerrain, "Base Terrain", 0);
-            current_layer->set_visible(h == 'H' || h == 'h');
-
-            auto* base_terrain = current_layer->base_terrain();
-            base_terrain->texture_id = texture_id;
-            base_terrain->terrain_id = terrain_id;
+            current_layer = track.create_layer(resources::TrackLayerType::PathStyle, std::move(layer_name), 0);
+            load_path_layer(track, current_layer, context);
           }
         }
       });
@@ -412,62 +593,36 @@ namespace ts
 
       tile_library.define_collision_shape(tile_id, collision_shape);
     }
-    
-    bool process_path_style_directive(BaseStyle& style, const std::string& directive, boost::string_ref remainder)
+
+    static TrackPath load_path(LoadingContext& context)
     {
-      if (directive == "basetexture")
-      {
-        ArrayStream(remainder) >> style.base_texture;
-      }
-
-      else if (directive == "bordertexture")
-      {
-        ArrayStream(remainder) >> style.border_texture;
-      }
-
-      else if (directive == "terrain")
-      {
-        ArrayStream(remainder) >> style.terrain_id;
-      }
-
-      else if (directive == "width")
-      {
-        ArrayStream(remainder) >> style.width;
-      }
-
-      else return false;
-
-      return true;
-    }
-
-    static BorderStyle load_border_style(LoadingContext& context)
-    {
-      BorderStyle style;
+      TrackPath path;
       loop_until_end(context, LOOP_LAMBDA
       {
-        process_path_style_directive(style, directive, remainder);
+                     if (directive == "subpath")
+                     {
+                       path.sub_paths.emplace_back();
+                     }
+
+                     else if (directive == "closed" && !path.sub_paths.empty())
+                     {
+                       path.sub_paths.back().closed = true;
+                     }
+
+                     else if (directive == "node" && !path.sub_paths.empty())
+                     {
+                       TrackPathNode node;
+                       if (ArrayStream(remainder) >> node.first_control.x >> node.first_control.y >>
+                           node.position.x >> node.position.y >>
+                           node.second_control.x >> node.second_control.y >>
+                           node.width)
+                       {
+                         path.sub_paths.back().nodes.push_back(node);
+                       }
+                     }
       });
 
-      return style;
-    }
-
-    static PathStyle load_path_style(LoadingContext& context)
-    {
-      PathStyle style;
-      loop_until_end(context, LOOP_LAMBDA
-      {
-        if (process_path_style_directive(style, directive, remainder))
-        {
-          // do nothing
-        }
-
-        else if (directive == "border")
-        {
-          style.border_styles.push_back(load_border_style(context));          
-        }
-      });
-
-      return style;
+      return path;      
     }
 
     static void load_terrain_definition(TerrainLibrary& terrain_library, LoadingContext& context)
@@ -493,16 +648,15 @@ namespace ts
         if (read_property("id", temp_id)) { terrain_id = static_cast<TerrainId>(temp_id); }
 
         else if (read_property("acceleration", terrain_def.acceleration)) {}
-        else if (read_property("braking", terrain_def.braking)) {}
-        else if (read_property("steering", terrain_def.steering)) {}
+        else if (read_property("braking", terrain_def.braking)) {}        
         else if (read_property("cornering", terrain_def.cornering)) {}
+        else if (read_property("antislide", terrain_def.antislide)) {}
         else if (read_property("traction", terrain_def.traction)) {}
+        else if (read_property("sliding_traction", terrain_def.sliding_traction)) {}
         else if (read_property("roughness", terrain_def.roughness)) {}
-        else if (read_property("bounciness", terrain_def.bounciness)) {}
         else if (read_property("jump", terrain_def.jump)) {}
         else if (read_property("tyremark", terrain_def.tyre_mark)) {}
         else if (read_property("skidmark", terrain_def.skid_mark)) {}
-        else if (read_property("iswall", terrain_def.is_wall)) {}
         else if (read_property("red", color)) { terrain_def.color.r = static_cast<std::uint8_t>(color); }
         else if (read_property("green", color)) { terrain_def.color.g = static_cast<std::uint8_t>(color); }
         else if (read_property("blue", color)) { terrain_def.color.b = static_cast<std::uint8_t>(color); }
@@ -553,7 +707,7 @@ namespace ts
           else insufficient_parameters(directive_view, context);
         }
 
-        if (directive == "check")
+        if (directive == "apoint")
         {
           // Special kind of control point, which runs from one point to another.
           std::int32_t x1, y1, x2, y2;
@@ -567,7 +721,7 @@ namespace ts
             ControlPoint point;
             point.start = { x1, y1 };
             point.end = { x2, y2 };
-            point.type = ControlPoint::FinishLine;
+            point.type = ControlPoint::Arbitrary;
             point.flags = flags;
             track.add_control_point(point);
           }
@@ -669,6 +823,11 @@ namespace ts
           {
             auto path = resolve_asset_path(remainder, working_directory_);
             include(path.string(), inclusion_depth + 1);
+
+            if (inclusion_depth == 0)
+            {
+              track_.add_asset(std::string(remainder.begin(), remainder.end()));
+            }
           }
 
           else insufficient_parameters(directive_view, context);
@@ -755,6 +914,18 @@ namespace ts
             insufficient_parameters(directive_view, context);
             skip_until_end(context);
           }
+        }
+
+        else if (directive == "path")
+        {
+          std::uint32_t id;
+          if (ArrayStream(remainder) >> id)
+          {             
+            auto path = track_.path_library().create_path(id);
+            *path = load_path(context);
+            path->id = id;
+          }
+          
         }
 
         else if (directive == "pathstyle")

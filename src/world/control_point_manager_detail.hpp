@@ -18,8 +18,8 @@ namespace ts
     namespace detail
     {
       template <typename EventCallback>
-      void test_finish_line_intersection(Vector2<double> old_position, Vector2<double> new_position,
-                                         const ControlPoint& point, EventCallback&& event_callback)
+      void test_arbitrary_intersection(Vector2<double> old_position, Vector2<double> new_position,
+                                       const ControlPoint& point, EventCallback&& event_callback)
       {
         auto intersection = find_line_segment_intersection(old_position, new_position,
                                                            vector2_cast<double>(point.start),
@@ -93,8 +93,8 @@ namespace ts
       {
         switch (point.type)
         {
-        case ControlPoint::FinishLine:
-          detail::test_finish_line_intersection(old_position, new_position, point, event_callback);
+        case ControlPoint::Arbitrary:
+          detail::test_arbitrary_intersection(old_position, new_position, point, event_callback);
           break;
 
         case ControlPoint::HorizontalLine:

@@ -24,15 +24,17 @@ namespace ts
       float width = 0.0f;
     };
 
-    struct TrackPath
+    struct SubPath
     {
       using Node = TrackPathNode;
       bool closed = false;
-
-      float min_width = 56.0f;
-      float max_width = 56.0f;
-
       std::vector<Node> nodes;
+    };
+
+    struct TrackPath
+    {
+      std::uint32_t id = 0;
+      std::vector<SubPath> sub_paths;
     };
 
     struct StrokeSegment
@@ -51,15 +53,16 @@ namespace ts
       } side;
     };
 
-    struct BaseStyle
+    struct PathStyle
     {
+      std::uint32_t preset_id = 0;
       std::uint32_t base_texture;
       std::uint32_t border_texture;
       std::uint32_t terrain_id;
-      Colorb color = { 255, 255, 255, 255 };
       bool is_segmented = false;
-      bool relative_width = true;
-      float width = 1.0f;
+      bool border_only = false;
+      float width = 64.0f;
+      float border_width = 1.0f;
       Vector2f base_texture_tile_size = { 256.0f, 256.0f };
       Vector2f border_texture_tile_size = { 256.0f, 256.0f };
 
@@ -68,21 +71,6 @@ namespace ts
         Tiled,
         Directional
       } texture_mode = Tiled;
-      std::vector<StrokeSegment> segments;
-    };
-
-    struct BorderStyle
-      : BaseStyle
-    {
-      bool relative_offset = false;
-      float offset = 0.0f;
-      std::vector<StrokeSegment> segments;
-    };
-
-    struct PathStyle
-      : BaseStyle
-    {
-      std::vector<BorderStyle> border_styles;
       std::vector<StrokeSegment> segments;
     };
 

@@ -33,6 +33,13 @@ namespace ts
 
   namespace scene
   {
+    struct ParticleVertex
+    {
+      Vector2f position;
+      Vector2f texture_coords;
+      Colorb color;
+    };
+
     namespace render_scene
     {
       struct TrackLayerData
@@ -70,6 +77,8 @@ namespace ts
         FloatRect bounding_box;
       };
 
+
+
       struct TrackComponentLocations
       {
         std::uint32_t view_matrix;
@@ -96,7 +105,7 @@ namespace ts
       {
         std::uint32_t view_matrix;
         std::uint32_t world_size;
-      };
+      };      
 
       struct CarLocations
       {
@@ -110,6 +119,12 @@ namespace ts
         std::uint32_t car_colors;
         std::uint32_t texture_sampler;
         std::uint32_t colorizer_sampler;
+      };
+
+      struct ParticleLocations
+      {
+        std::uint32_t view_matrix;
+        std::uint32_t texture_sampler;
       };
     }
 
@@ -137,6 +152,8 @@ namespace ts
 
       void clear_dynamic_state();
       void update_entities(const DynamicScene& dynamic_scene);
+      void update_particles(const ParticleGenerator& particle_generator);
+
       void set_background_color(Colorf bg_color);
 
       const TrackScene& track_scene() const;
@@ -154,7 +171,9 @@ namespace ts
       void load_shader_programs();
       void setup_entity_buffers(); 
       void setup_vertex_arrays();
+      void setup_particle_buffers(std::uint32_t num_levels, std::uint32_t max_particles);
       void update_track_vertex_arrays();
+      void load_particle_texture();
 
       void update_layer_geometry(const resources::TrackLayer* layer);
 
@@ -166,6 +185,7 @@ namespace ts
       graphics::ShaderProgram track_path_shader_program_;
       graphics::ShaderProgram car_shader_program_;
       graphics::ShaderProgram boundary_shader_program_;
+      graphics::ShaderProgram particle_shader_program_;
       
       graphics::Buffer car_vertex_buffer_;
       graphics::Buffer car_index_buffer_;
@@ -174,11 +194,17 @@ namespace ts
       graphics::Buffer boundary_vertex_buffer_;
       graphics::Buffer boundary_index_buffer_;
       graphics::VertexArray boundary_vertex_array_;
+
+      graphics::Buffer particle_vertex_buffer_;
+      graphics::Buffer particle_index_buffer_;
+      graphics::VertexArray particle_vertex_array_;
+      graphics::Texture particle_texture_;
       
       render_scene::TrackComponentLocations track_component_locations_;
       render_scene::TrackPathComponentLocations track_path_component_locations_;
       render_scene::CarLocations car_locations_;
       render_scene::BoundaryLocations boundary_locations_;
+      render_scene::ParticleLocations particle_locations_;
 
       std::unordered_map<const TrackSceneLayer*, render_scene::TrackLayerData> layers_;
       std::vector<render_scene::TrackComponent> track_components_;
@@ -189,6 +215,16 @@ namespace ts
 
       float z_level_increment_ = 0.0f;
       float z_index_increment_ = 0.0f;
+
+      struct ParticleLevelInfo
+      {
+        std::uint32_t start_index = 0;
+        std::uint32_t count = 0;        
+      };
+
+      std::uint32_t max_particles_per_level_ = 0;
+      std::vector<ParticleLevelInfo> particle_level_info_;
+      std::vector<ParticleVertex> particle_vertex_cache_;
 
       Colorf background_color_ = Colorf(0.f, 0.f, 0.f, 1.0f);      
     };

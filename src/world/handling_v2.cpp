@@ -6,6 +6,9 @@
 
 #include "handling_v2.hpp"
 #include "car.hpp"
+#include "world.hpp"
+
+#include "resources/terrain_definition.hpp"
 
 #include "utility/transform.hpp"
 #include "utility/interpolate.hpp"
@@ -23,7 +26,7 @@ namespace ts
   {
     struct Handling
     {
-      double max_acceleration_force = 13000.0;
+      double max_acceleration_force = 12000.0;
       double max_engine_revs = 300.0;
 
       boost::container::small_vector<double, 8> gear_ratios = { 2.5, 2.0, 1.6, 1.3, 1.1 };
@@ -32,36 +35,35 @@ namespace ts
 
       double max_braking_force = 33000.0;
       double drag_coefficient = 0.13;
-      double downforce_coefficient = 0.22;
+      double downforce_coefficient = 0.21;
       double rolling_drag_coefficient = 0.03;
 
-      double traction_limit = 57000.0;
-      double load_transfer = 0.13;
+      double traction_limit = 53000.0;
+      double load_transfer = 0.14;
 
       double brake_balance = 0.47;
-      double downforce_balance = 0.58;
+      double downforce_balance = 0.59;
       double steering_balance = 0.0;
 
       double cornering = 1.0;
       double max_steering_angle = 30.0;
       double non_slide_angle = 4.5;
       double full_slide_angle = 8.5;
-      double sliding_grip = 0.7;
+      double sliding_grip = 0.87;
       double angular_damping = 1.3;
 
       double wheelbase_length = 18.0;
       double wheelbase_offset = 0.0;
       double num_front_wheels = 2;
       double num_rear_wheels = 2;
-      double front_axle_width = 8.0;
-      double rear_axle_width = 8.0;
+      double front_axle_width = 6.0;
+      double rear_axle_width = 6.0;
 
       bool front_driven = false;
-      bool rear_driven = true;
+      bool rear_driven = true; 
     };
 
-    HandlingState update_car_state(Car& car, const TerrainMap& terrain_map,
-                                   double frame_duration)
+    HandlingState update_car_state(Car& car, const World& world, double frame_duration)
     {
       Handling handling{};
 
@@ -93,7 +95,7 @@ namespace ts
         { {
           { -handling.rear_axle_width * 0.5, half_wheelbase + handling.wheelbase_offset },
           { handling.rear_axle_width * 0.5, half_wheelbase + handling.wheelbase_offset }
-          } };
+        } };
       }
 
       auto transform = make_transformation(car.rotation());
@@ -277,6 +279,7 @@ namespace ts
         Vector2d wheel_facing;
         double heading_angle;
         double traction_limit;
+        double vertical_load;
         double acceleration;
         double braking;
         double cornering;
@@ -285,9 +288,11 @@ namespace ts
         double braking_force;
         double cornering_force;
         double slide_ratio;
+
+        resources::TerrainDefinition terrain;
       };
 
-      auto throttle_bias = 1.04;
+      auto throttle_bias = 1.0;
       auto brake_bias = 1.0;
       auto cornering_bias = 1.0;
       auto antislide_bias = 1.0;
@@ -306,7 +311,7 @@ namespace ts
         ws.braking = 1.0 - handling.brake_balance;
         ws.cornering = handling.cornering;
         ws.max_steering_angle = front_steering * degrees(handling.max_steering_angle).radians();
-        ws.bias = cornering_bias_2d;
+        ws.bias = cornering_bias_2d;        
         wheel_states.push_back(ws);
       }
 
@@ -327,8 +332,13 @@ namespace ts
       auto is_turning = std::abs(turning_rate) >= 0.0001;
 
       auto adjusted_steering_rate = 0.0;
+
       for (auto& ws : wheel_states)
-      {
+      {        
+        auto global_pos = car.position() + transform_point(ws.pos, transform);
+
+        ws.vertical_load = ws.traction_limit;
+        ws.terrain = world.terrain_at(global_pos, car.z_level());
         ws.velocity = local_velocity + angular_velocity * make_vector2(-ws.pos.y, ws.pos.x);
         ws.heading_angle = std::atan2(ws.velocity.x, -ws.velocity.y);
 
@@ -392,7 +402,9 @@ namespace ts
           }
         }
 
-        ws.traction_limit *= interpolate_linearly(1.0, handling.sliding_grip, ws.slide_ratio);
+        ws.traction_limit *= interpolate_linearly(ws.terrain.traction, 
+                                                  handling.sliding_grip * ws.terrain.sliding_traction, 
+                                                  ws.slide_ratio);
 
         auto facing = ws.wheel_facing;
         if (ws.velocity.y > 0.0) facing = -facing;
@@ -400,8 +412,9 @@ namespace ts
         auto max_cornering = std::abs(slip_angle.radians()) * max_cornering_multiplier;
         ws.cornering_force = std::min(cornering_ratio * ws.cornering * ws.traction_limit, max_cornering);
 
+        auto braking_factor = facing.y * facing.y;
         ws.acceleration_force = ws.acceleration * acceleration_force_1d;
-        ws.braking_force = ws.braking * braking_force_1d;
+        ws.braking_force = ws.braking * braking_force_1d * braking_factor;
 
         auto longitudinal_force = (std::abs(ws.acceleration_force) + ws.braking_force) * pedal_adjustment;
         auto applied_force = make_vector2(ws.cornering_force, longitudinal_force);
@@ -428,6 +441,7 @@ namespace ts
         }
       }
 
+      handling_state.wheel_states.clear();
       auto net_force = make_vector2(0.0, 0.0);
       for (auto& ws : wheel_states)
       {
@@ -448,21 +462,33 @@ namespace ts
         if (ws.velocity.y > 0.0) target_heading = -target_heading;
         auto slide_direction = normalize(target_heading - wheel_heading);
 
-        force += ws.acceleration_force * pedal_adjustment * ws.wheel_facing;
-        force += ws.braking_force * pedal_adjustment * -wheel_heading;
-        force += ws.cornering_force * slide_direction;
+        auto terrain_cornering_multiplier = ws.terrain.cornering;
+        if (&ws - wheel_states.data() >= handling.num_front_wheels)
+        {
+          terrain_cornering_multiplier = ws.terrain.antislide;
+        }                
 
-        auto rolling_resistance = (1.0 - ws.slide_ratio) * handling.rolling_drag_coefficient * ws.traction_limit;
+        force += ws.acceleration_force * pedal_adjustment * ws.wheel_facing * ws.terrain.acceleration;
+        force += ws.braking_force * pedal_adjustment * -target_heading * ws.terrain.braking;
+        force += ws.cornering_force * slide_direction * terrain_cornering_multiplier;
+
+        auto rolling_resistance = (1.0 - ws.slide_ratio) * handling.rolling_drag_coefficient * 
+          ws.vertical_load * ws.terrain.rolling_resistance;
+
         force += rolling_resistance * -wheel_heading;
+
+        force += ws.terrain.roughness * mass * -ws.velocity * inv_num_wheels;
         
         car.apply_force(force, ws.pos);       
 
         net_force += force;
 
         HandlingState::WheelState stored_info;
-        stored_info.pos = ws.pos;
+        stored_info.pos = car.position() + transform_point(ws.pos, transform);
         stored_info.slide_ratio = ws.slide_ratio;
-        stored_info.speed = dot_product(wheel_heading, ws.velocity);
+        stored_info.terrain_color = ws.terrain.color;
+        stored_info.terrain_roughness = ws.terrain.roughness;
+        stored_info.speed = dot_product(wheel_heading, ws.velocity);        
         handling_state.wheel_states.push_back(stored_info);
       }
 

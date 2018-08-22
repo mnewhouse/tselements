@@ -22,6 +22,16 @@ namespace ts
       }
     };
 
+    void Track::add_asset(const std::string& asset)
+    {
+      assets_.push_back(asset);
+    }
+
+    const std::vector<std::string>& Track::assets() const
+    {
+      return assets_;
+    }
+
     void Track::set_path(const std::string& path)
     {
       path_ = path;
@@ -239,6 +249,30 @@ namespace ts
       control_points_.push_back(point);
     }
 
+    void Track::add_control_point(const ControlPoint& point, std::size_t idx)
+    {
+      if (control_points_.empty())
+      {
+        start_points_.clear();
+      }
+
+      idx = std::min(control_points_.size(), idx);
+      control_points_.insert(control_points_.begin() + idx, point);
+    }
+
+    void Track::remove_control_point(std::size_t idx)
+    {
+      if (idx < control_points_.size())
+      {
+        if (idx == 0)
+        {
+          start_points_.clear();
+        }
+
+        control_points_.erase(control_points_.begin() + idx);
+      }
+    }
+
     const std::vector<ControlPoint>& Track::control_points() const
     {
       return control_points_;
@@ -268,6 +302,11 @@ namespace ts
       }
 
       return start_points_;     
+    }
+
+    const std::vector<StartPoint>& Track::custom_start_points() const
+    {
+      return custom_start_points_;
     }
   }
 }

@@ -194,43 +194,6 @@ namespace ts
         }
       )";
 
-      static const char particle_vertex_shader[] = R"(
-        #version 130
-        uniform mat4 u_viewMatrix;
-        in vec2 in_position;
-        in vec2 in_center;
-        in vec4 in_color;
-        in float in_radius;
-        out vec2 frag_position;
-        out vec2 frag_center;
-        out vec4 frag_color;        
-        out float frag_radius;
-        void main()
-        {
-          gl_Position = u_viewMatrix * vec4(in_position.xy, 0.0, 1.0);
-          frag_position = in_position.xy;
-          frag_center = in_center.xy;
-          frag_color = in_color;
-          frag_radius = in_radius;          
-        }
-      )";
-
-      static const char particle_fragment_shader[] = R"(
-        #version 130
-        in vec2 frag_position;
-        in vec2 frag_center;
-        in vec4 frag_color;
-        in float frag_radius;
-        out vec4 out_fragColor;
-        void main()
-        {
-          float dist = distance(frag_position, frag_center);
-          float alpha = smoothstep(frag_radius - 0.05, frag_radius, dist);
-          out_fragColor = frag_color;
-          out_fragColor.a = 1.0 - alpha;
-        }
-      )";
-
       static const char boundary_vertex_shader[] = R"(
       #version 130
       uniform mat4 u_viewMatrix;
@@ -249,6 +212,34 @@ namespace ts
       {
         out_fragColor = vec4(0, 0, 0, 1);
       }
+      )";
+
+      static const char particle_vertex_shader[] = R"(
+        #version 130
+        uniform mat4 u_viewMatrix;
+        in vec2 in_position;
+        in vec2 in_texCoords;
+        in vec4 in_color;
+        out vec2 frag_texCoords;
+        out vec4 frag_color;
+        void main()
+        {
+          frag_texCoords = in_texCoords;
+          frag_color = in_color;
+          gl_Position = u_viewMatrix * vec4(in_position, 0, 1);          
+        }
+      )";
+
+      static const char particle_fragment_shader[] = R"(
+        #version 130
+        uniform sampler2D u_textureSampler;
+        in vec2 frag_texCoords;
+        in vec4 frag_color;
+        out vec4 out_fragColor;
+        void main()
+        {          
+          out_fragColor = frag_color * texture(u_textureSampler, frag_texCoords);
+        }
       )";
     }
   }

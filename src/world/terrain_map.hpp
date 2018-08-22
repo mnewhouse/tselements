@@ -14,7 +14,6 @@
 #include "utility/rect.hpp"
 
 #include <boost/variant.hpp>
-#include <boost/geometry/index/rtree.hpp>
 
 #include <utility>
 #include <vector>
@@ -33,16 +32,23 @@ namespace ts
     {
       struct Pattern
       {       
-        const resources::Pattern* pattern;
-        const resources::Pattern* mask = nullptr;
+        const resources::Pattern* pattern;        
         
-        IntRect pattern_rect; 
-        IntRect mask_rect;
-
         Vector2i position;
+        IntRect rect;
+        
+        std::array<std::int32_t, 2> transformation;   
+      };
+
+      struct Mask
+      {
+        const resources::Pattern* mask;
+        Vector2i position;
+        IntRect rect;
         std::array<std::int32_t, 2> transformation;
 
         std::uint8_t alpha;
+        resources::TerrainId terrain_id;
       };
 
       struct Face
@@ -72,43 +78,30 @@ namespace ts
 
     struct TerrainMapComponent
     {
-      boost::variant<map_components::Pattern, map_components::Face, map_components::Base> data;
+      boost::variant<map_components::Pattern, map_components::Face> data;
       std::uint32_t level;
-      std::uint32_t z_index;
     };
 
     class TerrainMap
     {
-    public:
-      template <typename MapComponentRange>
-      explicit TerrainMap(const MapComponentRange& components, resources::PatternStore pattern_store);
+    public:      
+      explicit TerrainMap(std::vector<TerrainMapComponent> components, resources::PatternStore pattern_store, 
+                          Vector2i track_size, resources::TerrainId base_terrain);
 
       resources::TerrainDefinition terrain_at(Vector2i position, std::int32_t level, 
                                               const resources::TerrainLibrary& terrain_lib) const;
 
     private:
-      using point_type = boost::geometry::model::point<std::int32_t, 2, boost::geometry::cs::cartesian>;
-      using box_type = boost::geometry::model::box<point_type>;
-      using value_type = std::pair<box_type, TerrainMapComponent>;
-      using tree_type = boost::geometry::index::rtree<value_type, boost::geometry::index::quadratic<32>>;
+      std::vector<TerrainMapComponent> terrain_components_;
+      std::vector<std::uint32_t> component_mapping_;
+      std::vector<std::pair<std::uint32_t, std::uint32_t>> terrain_cells_;
 
-      static box_type bounding_box(const TerrainMapComponent& component);
-      static box_type bounding_box(const map_components::Pattern& pattern);
-      static box_type bounding_box(const map_components::Face& face);
-      static box_type bounding_box(const map_components::Base& base);
-
-      std::vector<tree_type> component_maps_;      
-
-      struct InternalTerrainDescriptor
-        : TerrainDescriptor
-      {
-        std::uint32_t z_index;
-      };
-      mutable std::vector<InternalTerrainDescriptor> terrain_buffer_;
+      std::int32_t cell_bits_ = 6;
+      Vector2i track_size_;
+      Vector2i num_cells_;
+      resources::TerrainId base_terrain_ = 0;
 
       resources::PatternStore pattern_store_;
     };
   }
 }
-
-#include "terrain_map.inl"

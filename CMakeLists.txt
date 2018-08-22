@@ -78,9 +78,10 @@ set(LIB_SOURCES
 	src/editor/editor_test_state.cpp
 	src/editor/editor_working_state.cpp
 
-	src/editor/tools/editor_path_tool.cpp
-	src/editor/tools/editor_tile_tool.cpp
-	src/editor/tools/tile_interaction_renderer.cpp
+	src/editor/modes/editor_control_points_mode.cpp
+	src/editor/modes/editor_path_mode.cpp
+	src/editor/modes/editor_tile_mode.cpp	
+	src/editor/modes/tile_interaction_renderer.cpp
 
 	src/game/loading_thread.cpp
 	src/game/main_loop.cpp
@@ -115,6 +116,7 @@ set(LIB_SOURCES
 	src/resources/track.cpp
 	src/resources/track_layer.cpp
 	src/resources/track_loader.cpp
+	src/resources/track_saving.cpp
 
 	src/scene/camera.cpp
 	src/scene/dynamic_scene.cpp
@@ -160,7 +162,7 @@ set(LIB_SOURCES
 	src/world/car.cpp
 	src/world/control_point_manager.cpp
 	src/world/entity.cpp
-	src/world/handling_physics.cpp
+	src/world/handling_v2.cpp
 	src/world/terrain_map.cpp
 	src/world/terrain_map_builder.cpp
 	src/world/world.cpp

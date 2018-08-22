@@ -28,7 +28,6 @@ namespace ts
     void create_path_geometry(const resources::TrackPath& path, const resources::PathStyle& path_style,
                               float tolerance, sf::Image& path_texture,
                               std::vector<PathVertex>& vertices, std::vector<PathFace>& faces);
-
     /*
     void create_border_geometry(const std::vector<OutlinePoint>& outline, OutlineIndices outline_indices,
                                 const resources::BorderStyle& border_style, Vector2f texture_size,

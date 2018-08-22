@@ -91,12 +91,17 @@ namespace ts
         break;
 
       case T::Tiles:
-        type_ = Type::Tiles;
+        type_ = Type::Default;
         break;
 
       default:
         break;
       }
+    }
+
+    void TrackSceneLayer::set_type(Type type)
+    {
+      type_ = type;
     }
     
     TrackSceneLayer::Type TrackSceneLayer::type() const
@@ -391,20 +396,32 @@ namespace ts
       if (path_style)
       {        
         const auto& style = path_style->style;
-        auto primary = texture_mapping_.find(texture_mapping_.texture_id(style.base_texture));
-        auto secondary = texture_mapping_.find(texture_mapping_.texture_id(style.border_texture));
-        if (!primary.empty())
-        {          
-          scene_layer.set_primary_texture(primary.front().texture);
-        }
-
-        if (!secondary.empty())
+        auto border = texture_mapping_.find(texture_mapping_.texture_id(style.border_texture));
+        
+        if (style.border_only)
         {
-          scene_layer.set_secondary_texture(secondary.front().texture);          
+          if (!border.empty())
+          {
+            scene_layer.set_primary_texture(border.front().texture);
+            scene_layer.set_primary_texture_tile_size(style.border_texture_tile_size);
+          }
         }
 
-        scene_layer.set_primary_texture_tile_size(style.base_texture_tile_size);
-        scene_layer.set_secondary_texture_tile_size(style.border_texture_tile_size);
+        else
+        {
+          auto base = texture_mapping_.find(texture_mapping_.texture_id(style.base_texture));
+          if (!base.empty())
+          {
+            scene_layer.set_primary_texture(base.front().texture);
+            scene_layer.set_primary_texture_tile_size(style.base_texture_tile_size);
+          }
+
+          if (!border.empty())
+          {
+            scene_layer.set_secondary_texture(border.front().texture);
+            scene_layer.set_secondary_texture_tile_size(style.border_texture_tile_size);
+          }
+        }        
 
         vertex_cache_.clear();
         face_cache_.clear();
@@ -414,15 +431,30 @@ namespace ts
 
         if (!face_cache_.empty())
         {
-          auto tex = std::make_unique<graphics::Texture>(graphics::create_texture(path_texture));
-          glBindTexture(tex->target(), tex->get());
-          glTexParameteri(tex->target(), GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-          glTexParameteri(tex->target(), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-          glBindTexture(tex->target(), 0);
+          const texture_type* texture = nullptr;
+          if (style.texture_mode != style.Directional)
+          {
+            auto tex = std::make_unique<graphics::Texture>(graphics::create_texture(path_texture));
+            glBindTexture(tex->target(), tex->get());
+            glTexParameteri(tex->target(), GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+            glTexParameteri(tex->target(), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glBindTexture(tex->target(), 0);
 
-          scene_layer.append_geometry(tex.get(), vertex_cache_.data(), vertex_cache_.size(),
+            texture = tex.get();
+            scene_layer.store_texture(std::move(tex));
+            scene_layer.set_type(scene_layer.Path);
+          }
+
+          else
+          {
+            texture = scene_layer.primary_texture();
+            scene_layer.set_primary_texture(nullptr);
+            scene_layer.set_type(scene_layer.Default);
+          }
+
+          scene_layer.append_geometry(texture, vertex_cache_.data(), vertex_cache_.size(),
                                       face_cache_.data(), face_cache_.size());
-          scene_layer.store_texture(std::move(tex));
+          
         }
       }
     }

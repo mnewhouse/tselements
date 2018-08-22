@@ -42,7 +42,7 @@ namespace ts
       enum Type
       {
         BaseTerrain,
-        Tiles,
+        Default,
         Path,
         PathWithTransparency
       };
@@ -73,6 +73,7 @@ namespace ts
       void show();
       void clear();
       Type type() const;
+      void set_type(Type type);
 
       const resources::TrackLayer* associated_layer() const;
 
@@ -92,7 +93,7 @@ namespace ts
 
     private:
       ComponentContainer components_;
-      Type type_ = Type::Tiles;
+      Type type_ = Type::Default;
 
       const resources::TrackLayer* associated_layer_;
       std::vector<vertex_type> vertices_;

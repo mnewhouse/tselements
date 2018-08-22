@@ -10,11 +10,12 @@ namespace ts
 {
   namespace editor
   {
-    enum class ToolType
+    enum class ModeType
     {
       None,
       Tiles,
-      Path,      
+      Path,
+      ControlPoints
     };
   }
 }

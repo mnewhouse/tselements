@@ -21,8 +21,7 @@ namespace ts
   {
     struct OutlineIndices
     {
-      std::uint32_t first_start, second_start, center_start, end;
-      bool closed = false;
+      std::uint32_t first_start, second_start, center_start, end;      
     };
 
     struct OutlinePoint
@@ -34,8 +33,7 @@ namespace ts
     };
 
     struct OutlineProperties
-    {
-      bool use_relative_width = true;
+    {      
       bool invert_normal = false;
       bool center_line = false;
       float width = 1.0f;
@@ -59,9 +57,8 @@ namespace ts
       OutlinePoint outline_point_at(const resources::TrackPathNode& a, const resources::TrackPathNode& b, 
                                     float time_point, const OutlineProperties& props)
       {
-        auto width = props.use_relative_width ?
-          resources::path_width_at(a, b, time_point) * props.width :
-          resources::path_width_at(a, b, time_point) + props.width;
+        auto width = resources::path_width_at(a, b, time_point) + props.width;
+        width *= 0.5f;
 
         auto normal = resources::path_normal_at(a, b, time_point);
         if (props.invert_normal) normal = -normal;
@@ -156,7 +153,7 @@ namespace ts
       detail::split_outline_segment(a, b, mid, end, properties, base_time_point, outline_points);
     }    
 
-    void generate_path_outline(const resources::TrackPath& path, const OutlineProperties& outline_properties,
+    void generate_path_outline(const resources::SubPath& path, const OutlineProperties& outline_properties,
                                std::vector<OutlinePoint>& outline_points)
     {
       // Loop through the path segments, and for each node, compute the points for the outline at the given tolerance.
@@ -188,37 +185,50 @@ namespace ts
         outline_points.back().time_point = static_cast<double>(segment_id); 
       }
     }
+
+    auto construct_geometry_between_outlines(const std::vector<OutlinePoint>& points,
+                                             std::uint32_t idx_a, std::uint32_t end_a,
+                                             std::uint32_t idx_b, std::uint32_t end_b,
+                                             std::vector<PathFace>& faces)
+    {
+      while (true)
+      {
+        bool a_test = idx_a + 1 == end_a;
+        bool b_test = idx_b + 1 == end_b;
+        if (a_test && b_test) break;
+
+        if (!a_test && (b_test || points[idx_a + 1].time_point < points[idx_b + 1].time_point))
+        {
+          faces.push_back({ idx_a, idx_a + 1, idx_b });
+          ++idx_a;
+        }
+
+        else
+        {
+          faces.push_back({ idx_b, idx_b + 1, idx_a });
+          ++idx_b;
+        }
+      }
+    };
     
     void create_base_geometry(const std::vector<OutlinePoint>& points,
                               OutlineIndices outline,
                               std::vector<PathFace>& faces)
     {
-      auto make_geometry_between_outlines = [&](std::uint32_t idx_a, std::uint32_t end_a,
-                                                std::uint32_t idx_b, std::uint32_t end_b)
+      if (outline.center_start != outline.end)
       {
-        while (true)
-        {
-          bool a_test = idx_a + 1 == end_a;
-          bool b_test = idx_b + 1 == end_b;
-          if (a_test && b_test) break;
-          
-          if (!a_test && (b_test || points[idx_a + 1].time_point < points[idx_b + 1].time_point))
-          {
-            faces.push_back({ idx_a, idx_a + 1, idx_b });
-            ++idx_a;
-          }
+        construct_geometry_between_outlines(points, outline.first_start, outline.second_start,
+                                            outline.center_start, outline.end, faces);
+        construct_geometry_between_outlines(points, outline.second_start, outline.center_start,
+                                            outline.center_start, outline.end, faces);
+      }
 
-          else
-          {
-            faces.push_back({ idx_b, idx_b + 1, idx_a });
-            ++idx_b;
-          }
-        }
-      };
-
-      make_geometry_between_outlines(outline.first_start, outline.second_start, outline.center_start, outline.end);
-      make_geometry_between_outlines(outline.second_start, outline.center_start, outline.center_start, outline.end);
-    }   
+      else
+      {
+        construct_geometry_between_outlines(points, outline.first_start, outline.second_start,
+                                            outline.second_start, outline.end, faces);
+      }
+    }
 
     void create_base_geometry(const std::vector<OutlinePoint>& outline_points, OutlineIndices outline_indices,
                               const resources::PathStyle& path_style, float inv_max_width,
@@ -244,8 +254,77 @@ namespace ts
           v.z = 0.0f;
         }
 
-        v.color = path_style.color;
+        //v.color = path_style.color;
         vertices.push_back(v);
+      }
+    }
+
+    void create_base_geometry_directional(const std::vector<OutlinePoint>& outline_points, OutlineIndices outline_indices,
+                                          const resources::PathStyle& path_style, float inv_texture_tile_size,
+                                          std::vector<PathVertex>& vertices, std::vector<PathFace>& faces)
+    {      
+      if (outline_indices.second_start <= outline_indices.first_start) return;
+
+      create_base_geometry(outline_points, outline_indices, faces);
+      vertices.resize(vertices.size() + outline_indices.end - outline_indices.first_start);
+
+      auto center_it = outline_points.begin() + outline_indices.center_start;
+      auto center_end = outline_points.begin() + outline_indices.end;
+      
+      auto second_it = outline_points.begin() + outline_indices.second_start;
+      auto second_end = center_it;
+      
+      auto first_it = outline_points.begin() + outline_indices.first_start;
+      auto first_end = second_it;
+      auto last_it = first_it;     
+
+      auto x_offset = 0.0f;
+
+      auto first_idx = outline_indices.first_start;
+      auto second_idx = outline_indices.second_start;
+      auto center_idx = outline_indices.center_start;
+
+      {
+        PathVertex v{};
+        v.position = first_it->point;
+        v.texture_coords = { x_offset, 0.0f };
+        vertices[first_idx++] = v;
+      }
+
+      for (++first_it; first_it != first_end; ++first_it)
+      {        
+        auto dist = magnitude(last_it->point - first_it->point) * inv_texture_tile_size;
+        auto new_x_offset = x_offset + dist;       
+
+        const auto& p1 = *first_it;
+        PathVertex v{};        
+        v.position = p1.point;        
+        v.texture_coords = { new_x_offset, 0.0f };
+        vertices[first_idx++] = v;
+
+        auto last = std::next(first_it) == first_end;
+        for (; second_it != second_end && (second_it->time_point <= p1.time_point || last); ++second_it)
+        {
+          const auto& p2 = *second_it;
+          auto f = (p2.time_point - last_it->time_point) / (p1.time_point - last_it->time_point);
+          PathVertex v{};
+          v.position = p2.point;
+          v.texture_coords = { x_offset + f * dist, 1.0f };
+          vertices[second_idx++] = v;
+        }
+
+        for (; center_it != center_end && (center_it->time_point <= p1.time_point || last); ++center_it)
+        {
+          const auto& p = *second_it;
+          auto f = (p.time_point - last_it->time_point) / (p1.time_point - last_it->time_point);
+          PathVertex v{};
+          v.position = p.point;
+          v.texture_coords = { x_offset + f * dist, 0.5f };
+          vertices[center_idx++] = v;          
+        }
+
+        last_it = first_it;
+        x_offset = new_x_offset;
       }
     }
 
@@ -280,56 +359,120 @@ namespace ts
       }
     }
 
+    float max_path_width(const resources::TrackPath& path, float base_width)
+    {
+      auto max_width = 0.0f;
+      for (const auto& sub_path : path.sub_paths)
+      {
+        if (sub_path.nodes.size() < 2) continue;
+
+        for (const auto& node : sub_path.nodes)
+        {
+          auto width = node.width + base_width;
+
+          if (width > max_width) max_width = width;
+        }
+      }
+
+      return max_width;
+    }
+
     void create_path_geometry(const resources::TrackPath& path, const resources::PathStyle& path_style,
                               float tolerance, sf::Image& path_texture,
                               std::vector<PathVertex>& vertices, std::vector<PathFace>& faces)
     {
-      if (path.nodes.size() >= 2)
+      float inv_max_width = 0.0f;
+      if (path_style.texture_mode != path_style.Directional)
       {
-        std::vector<OutlinePoint> outline_points;
+        auto texture_scale = 2.0f;
+        auto max_width = max_path_width(path, path_style.width);
+        create_path_texture_image(path_texture, max_width, path_style.border_width, texture_scale);
+        inv_max_width = texture_scale / path_texture.getSize().y;
+      }
+      
 
-        OutlineProperties properties;
-        properties.center_line = false;
-        properties.tolerance = tolerance;
-        properties.use_relative_width = path_style.relative_width;
-        properties.width = path_style.width;
+      faces.clear();
+      vertices.clear();
 
-        OutlineIndices indices{};
-        indices.first_start = static_cast<std::uint32_t>(outline_points.size());
-        generate_path_outline(path, properties, outline_points);
+      std::vector<OutlinePoint> outline_points;
 
-        indices.second_start = static_cast<std::uint32_t>(outline_points.size());
-        generate_path_outline(path, invert(properties), outline_points);
+      if (path_style.border_only)
+      {
+        float inv_texture_tile_size = 1.0f / path_style.border_texture_tile_size.x;
 
-        properties.center_line = true;
-        properties.tolerance = 0.5; // lower tolerance because it will get surrounded by geometry anyway
-        indices.center_start = static_cast<std::uint32_t>(outline_points.size());
-        generate_path_outline(path, properties, outline_points);
-
-        indices.end = static_cast<std::uint32_t>(outline_points.size());
-        indices.closed = path.closed;
-
-        faces.clear();
-        vertices.clear();
-
-        auto max_width = 0.0f;
-        for (const auto& node : path.nodes)
+        for (auto& sub_path : path.sub_paths)
         {
-          auto width = properties.use_relative_width ?
-            node.width * properties.width :
-            node.width + properties.width;
+          if (sub_path.nodes.size() < 2) continue;
 
-          if (width > max_width)
+          for (int i = 0; i < 2; ++i)
           {
-            max_width = width;
+            OutlineProperties properties;
+            properties.tolerance = tolerance;
+            properties.width = path_style.width;
+            properties.invert_normal = (i == 1);
+
+            OutlineIndices indices{};
+            indices.first_start = static_cast<std::uint32_t>(outline_points.size());
+            generate_path_outline(sub_path, properties, outline_points);
+
+            properties.width += path_style.border_width * 2.0f;
+            indices.second_start = static_cast<std::uint32_t>(outline_points.size());
+            generate_path_outline(sub_path, properties, outline_points);
+            indices.center_start = static_cast<std::uint32_t>(outline_points.size());
+            indices.end = indices.center_start;
+
+            if (path_style.texture_mode != path_style.Directional)
+            {
+              create_base_geometry(outline_points, indices, path_style, inv_max_width, vertices, faces);
+            }
+
+            else
+            {
+              create_base_geometry_directional(outline_points, indices, path_style, inv_texture_tile_size, vertices, faces);
+            }
           }
         }
+      }
 
-        auto scale = 2.0f;
-        create_path_texture_image(path_texture, max_width, 1.5f, scale);
+      else
+      {
+        float inv_texture_tile_size = 1.0f / path_style.border_texture_tile_size.x;
 
-        auto inv_max_width = scale / path_texture.getSize().y;
-        create_base_geometry(outline_points, indices, path_style, inv_max_width, vertices, faces);
+        for (auto& sub_path : path.sub_paths)
+        {
+          if (sub_path.nodes.size() < 2) continue;
+
+          outline_points.clear();
+
+          OutlineProperties properties;
+          properties.center_line = false;
+          properties.tolerance = tolerance;
+          properties.width = path_style.width;         
+
+          OutlineIndices indices{};
+          indices.first_start = static_cast<std::uint32_t>(outline_points.size());
+          generate_path_outline(sub_path, properties, outline_points);
+
+          indices.second_start = static_cast<std::uint32_t>(outline_points.size());
+          generate_path_outline(sub_path, invert(properties), outline_points);
+
+          properties.center_line = true;
+          properties.tolerance = 0.5; // lower tolerance because it will get surrounded by geometry anyway
+          indices.center_start = static_cast<std::uint32_t>(outline_points.size());
+          generate_path_outline(sub_path, properties, outline_points);
+
+          indices.end = static_cast<std::uint32_t>(outline_points.size());
+
+          if (path_style.texture_mode != path_style.Directional)
+          {
+            create_base_geometry(outline_points, indices, path_style, inv_max_width, vertices, faces);
+          }
+          
+          else
+          {
+            create_base_geometry_directional(outline_points, indices, path_style, inv_texture_tile_size, vertices, faces);
+          }
+        }
       }
     }
   }

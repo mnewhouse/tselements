@@ -14,6 +14,11 @@
 
 namespace ts
 {
+  namespace resources
+  {
+    class TerrainLibrary;
+  }
+
   namespace world
   {
     Car::Car(const CarDefinition& car_definition, std::uint16_t entity_id)
@@ -25,9 +30,9 @@ namespace ts
     {
     }
 
-    void Car::update(const TerrainMap& terrain_map, double frame_duration)
+    void Car::update(const World& world, double frame_duration)
     {
-      handling_state_ = update_car_state(*this, terrain_map, frame_duration);              
+      handling_state_ = update_car_state(*this, world, frame_duration);              
     }
   }
 }
