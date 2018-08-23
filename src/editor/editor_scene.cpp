@@ -139,5 +139,12 @@ namespace ts
         }
       }
     }
+
+    void EditorScene::rebuild_path_layer(resources::TrackLayer* layer)
+    {
+      if (!render_scene_ || !layer->path_style()) return;
+
+      render_scene_->rebuild_path_layer_geometry(layer);
+    }
   }
 }

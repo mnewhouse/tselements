@@ -10,7 +10,7 @@
 #include "handling_v2.hpp"
 
 #include "resources/car_definition.hpp"
-#include "resources/handling_properties.hpp"
+#include "resources/handling.hpp"
 
 #include "controls/controllable.hpp"
 
@@ -39,11 +39,11 @@ namespace ts
       
       void update(const World& world, double frame_duration);
 
-      const resources::HandlingProperties& handling_properties() const { return handling_properties_; }
+      const resources::Handling& handling() const { return handling_; }
       const HandlingState& handling_state() const { return handling_state_; }
 
     private:
-      resources::HandlingProperties handling_properties_;
+      resources::Handling handling_;
       HandlingState handling_state_;
     };
   }

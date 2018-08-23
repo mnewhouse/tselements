@@ -7,7 +7,7 @@
 #pragma once
 
 #include "car_hash.hpp"
-#include "handling_properties.hpp"
+#include "handling.hpp"
 #include "collision_shape.hpp"
 
 #include "utility/rect.hpp"
@@ -46,7 +46,7 @@ namespace ts
       double moment_of_inertia = 70.0;
       Vector2d center_of_gravity = { 0.0, 0.0 };
 
-      HandlingProperties handling_properties;
+      Handling handling;
       CollisionShape collision_shape;
 
       std::string engine_sound_path;

@@ -45,9 +45,9 @@ namespace ts
       sf::ContextSettings settings;
       settings.majorVersion = gl_version::major;
       settings.minorVersion = gl_version::minor;
-      settings.antialiasingLevel = 0;
+      settings.antialiasingLevel = 4;
       settings.stencilBits = 8;
-      settings.depthBits = 24;
+      settings.depthBits = 24;      
 
       auto context = new sf::Context(settings, 0, 0);      
       return GLContextHandle(context);

@@ -44,6 +44,7 @@ namespace ts
       void remove_last_tile(resources::TrackLayer* track_layer);
 
       void rebuild_path_geometry(resources::TrackPath* path);
+      void rebuild_path_layer(resources::TrackLayer* path_layer);
 
     private:
       const std::vector<resources::PlacedTile>& expand_tile(const resources::Tile& tile) const;

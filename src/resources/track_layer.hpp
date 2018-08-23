@@ -29,7 +29,7 @@ namespace ts
 
     struct PathLayerData
     {
-      const resources::TrackPath* path;
+      resources::TrackPath* path;
       PathStyle style;
     };
 

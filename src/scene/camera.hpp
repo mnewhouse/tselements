@@ -47,7 +47,7 @@ namespace ts
       Vector2<double> position_;
       Rotation<double> rotation_; 
 
-      double zoom_level_ = 2.0;
+      double zoom_level_ = 1.9;
     };
 
     // This function computes the center position of the camera. If the view area stretches out into

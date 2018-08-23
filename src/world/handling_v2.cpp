@@ -24,48 +24,9 @@ namespace ts
 {
   namespace world
   {
-    struct Handling
-    {
-      double max_acceleration_force = 12000.0;
-      double max_engine_revs = 300.0;
-
-      boost::container::small_vector<double, 8> gear_ratios = { 2.5, 2.0, 1.6, 1.3, 1.1 };
-      double reverse_gear_ratio = 2.3;
-      int gear_shift_duration = 3;
-
-      double max_braking_force = 33000.0;
-      double drag_coefficient = 0.13;
-      double downforce_coefficient = 0.21;
-      double rolling_drag_coefficient = 0.03;
-
-      double traction_limit = 53000.0;
-      double load_transfer = 0.14;
-
-      double brake_balance = 0.47;
-      double downforce_balance = 0.59;
-      double steering_balance = 0.0;
-
-      double cornering = 1.0;
-      double max_steering_angle = 30.0;
-      double non_slide_angle = 4.5;
-      double full_slide_angle = 8.5;
-      double sliding_grip = 0.87;
-      double angular_damping = 1.3;
-
-      double wheelbase_length = 18.0;
-      double wheelbase_offset = 0.0;
-      double num_front_wheels = 2;
-      double num_rear_wheels = 2;
-      double front_axle_width = 6.0;
-      double rear_axle_width = 6.0;
-
-      bool front_driven = false;
-      bool rear_driven = true; 
-    };
-
     HandlingState update_car_state(Car& car, const World& world, double frame_duration)
     {
-      Handling handling{};
+      auto& handling = car.handling();
 
       using controls::Control;
       auto half_wheelbase = handling.wheelbase_length * 0.5;
@@ -215,7 +176,7 @@ namespace ts
         }
       }
 
-      else if (handling_state.engine_rev_speed >= 0.95)
+      else if (handling_state.engine_rev_speed >= 0.99)
       {
         if (handling_state.current_gear >= 1 && handling_state.current_gear < num_gears)
         {
@@ -260,7 +221,7 @@ namespace ts
       else
       {
         gear_ratio = 0.0;
-      }
+      }      
 
       auto throttle_factor = 1.0;
       if (handling_state.engine_rev_speed > 1.0)
@@ -523,9 +484,10 @@ namespace ts
 
       angular_velocity -= angular_velocity * handling.angular_damping * frame_duration;
       car.set_angular_velocity(angular_velocity);
-
       handling_state.net_force = net_force;     
       return handling_state;
+
+      
     }
   }
 }

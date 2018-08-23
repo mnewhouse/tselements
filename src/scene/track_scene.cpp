@@ -386,9 +386,11 @@ namespace ts
 
     void TrackScene::rebuild_path_layer_geometry(const resources::TrackLayer* path_layer)
     {
-      // Generate vertices and faces and add them to the list of components
-      auto& scene_layer = this->scene_layer(path_layer, 0);
       auto path_style = path_layer->path_style();
+      if (path_style->path == nullptr) return;
+
+      // Generate vertices and faces and add them to the list of components
+      auto& scene_layer = this->scene_layer(path_layer, 0);      
 
       scene_layer.clear();
       scene_layer.set_primary_texture(nullptr);
@@ -434,7 +436,7 @@ namespace ts
           const texture_type* texture = nullptr;
           if (style.texture_mode != style.Directional)
           {
-            auto tex = std::make_unique<graphics::Texture>(graphics::create_texture(path_texture));
+            auto tex = std::make_unique<graphics::Texture>(graphics::create_texture(path_texture, true));
             glBindTexture(tex->target(), tex->get());
             glTexParameteri(tex->target(), GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
             glTexParameteri(tex->target(), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

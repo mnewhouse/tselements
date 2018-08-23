@@ -99,6 +99,7 @@ namespace ts
         std::uint32_t max_corner;
         std::uint32_t z_base;
         std::uint32_t z_scale;
+        std::uint32_t lod_level;
       };
 
       struct BoundaryLocations

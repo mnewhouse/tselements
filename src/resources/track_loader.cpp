@@ -210,6 +210,11 @@ namespace ts
         ArrayStream(remainder) >> style.preset_id;
       }
 
+      else if (directive == "fadelength")
+      {
+        ArrayStream(remainder) >> style.fade_length;
+      }
+
       else if (directive == "segmented")
       {
         auto s = 0;
@@ -221,14 +226,14 @@ namespace ts
       {
         auto t1 = 0.0f;
         auto t2 = 0.0f;
+        std::uint32_t sub_path;
         auto sides = 0;
-        if (ArrayStream(remainder) >> t1 >> t2 >> sides)
+        if (ArrayStream(remainder) >> sub_path >> t1 >> t2 >> sides)
         {
           StrokeSegment segment;
-          segment.start_index = static_cast<std::uint32_t>(t1);
-          segment.end_index = static_cast<std::uint32_t>(t2);
-          segment.start_time_point = t1 - std::floor(t1);
-          segment.end_time_point = t2 - std::floor(t2);
+          segment.sub_path_id = sub_path;
+          segment.start_time_point = t1;
+          segment.end_time_point = t2;
           segment.side = static_cast<StrokeSegment::Side>(sides);
           style.segments.push_back(segment);
         }

@@ -77,6 +77,7 @@ namespace ts
         uniform vec2 u_secondaryScale;
         uniform vec2 u_minCorner;
         uniform vec2 u_maxCorner;
+        uniform float u_lodLevel;
         
         in vec2 frag_position;
         in vec2 frag_texCoords;        
@@ -91,7 +92,7 @@ namespace ts
 
           else
           {
-            vec4 weights = texture2D(u_weightSampler, frag_texCoords);
+            vec4 weights = textureLod(u_weightSampler, frag_texCoords, u_lodLevel);
             vec4 primary = texture2D(u_primarySampler, frag_position * u_primaryScale) * weights.r;
             vec4 secondary = texture2D(u_secondarySampler, frag_position * u_secondaryScale) * weights.g;                       
 

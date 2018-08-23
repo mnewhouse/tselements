@@ -26,7 +26,8 @@ namespace ts
                car_definition.collision_shape, 
                car_definition.mass, 
                car_definition.moment_of_inertia),
-        Controllable(entity_id)
+        Controllable(entity_id),
+        handling_(car_definition.handling)
     {
     }
 

@@ -45,9 +45,9 @@ int main(int argc, char* argv[])
   {
     game::elevate_process_priority();
 
-    int screen_width = 1280, screen_height = 800;
+    int screen_width = 1680, screen_height = 1050;
     graphics::RenderWindow window("Pocket Wheels - Editor",
-                                  screen_width, screen_height, graphics::WindowMode::Windowed);
+                                  screen_width, screen_height, graphics::WindowMode::FullScreen);
 
     window.set_vsync_enabled(true);
     window.set_framerate_limit(0);
@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
     player.name = "test";
     player_settings.selected_players.push_back(player);
 
-    auto car_it = resource_store.car_store().car_definitions().find("porge");
+    auto car_it = resource_store.car_store().car_definitions().find("f1");
     cup_settings.selected_cars.push_back(*car_it);
 
     if (argc >= 2)

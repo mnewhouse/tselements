@@ -97,6 +97,7 @@ namespace ts
         locations.max_corner = glCheck(glGetUniformLocation(prog, "u_maxCorner"));
         locations.z_base = glCheck(glGetUniformLocation(prog, "u_zBase"));
         locations.z_scale = glCheck(glGetUniformLocation(prog, "u_zScale"));
+        locations.lod_level = glCheck(glGetUniformLocation(prog, "u_lodLevel"));
       }
 
       {
@@ -244,7 +245,6 @@ namespace ts
       vertices[3] = make_car_vertex({ 0.5, -0.5 });      
 
       std::array<std::uint16_t, 6> indices = { 0, 1, 2, 0, 2, 3 };
-
       
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, car_vertex_buffer_.get()));
       glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, car_index_buffer_.get()));
@@ -353,6 +353,10 @@ namespace ts
       glCheck(glUseProgram(track_path_shader_program_.get()));
       glCheck(glUniformMatrix4fv(track_path_component_locations_.view_matrix, 1, GL_FALSE,
                                  view_matrix.getMatrix()));
+      {
+        auto lod = std::floor(std::max(std::log2(2.0 / view_port.camera().zoom_level()) + 1.0, 0.0));
+        glUniform1f(track_path_component_locations_.lod_level, lod);
+      }
 
       glCheck(glUseProgram(particle_shader_program_.get()));
       glCheck(glUniformMatrix4fv(particle_locations_.view_matrix, 1, GL_FALSE,
@@ -816,7 +820,7 @@ namespace ts
     }
 
     void RenderScene::rebuild_path_layer_geometry(const resources::TrackLayer* path_layer)
-    {
+    {      
       track_scene_.rebuild_path_layer_geometry(path_layer);
       update_layer_geometry(path_layer);
     }

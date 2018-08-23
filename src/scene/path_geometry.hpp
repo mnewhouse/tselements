@@ -22,19 +22,41 @@ namespace ts
 {
   namespace scene
   {
+    struct OutlinePoint
+    {
+      float time_point;
+      Vector2f point;
+      Vector2f normal;
+      float width;
+    };
+
+    struct OutlineProperties
+    {
+      bool invert_normal = false;
+      bool center_line = false;
+      float width = 1.0f;
+      float tolerance = 1.0f;
+    };
+
+    inline auto invert(OutlineProperties p)
+    {
+      p.invert_normal = !p.invert_normal;
+      return p;
+    }
+
+
     using PathVertex = resources::Vertex;
     using PathFace = resources::Face;
+
+    void generate_path_segment_outline(const resources::SubPath& path, const resources::StrokeSegment& segment,
+                                       const OutlineProperties& properties,
+                                       std::vector<OutlinePoint>& outline_points);
+
+    void generate_path_segment_outline(const resources::SubPath& path, const OutlineProperties& properties,
+                                       std::vector<OutlinePoint>& outline_points);
 
     void create_path_geometry(const resources::TrackPath& path, const resources::PathStyle& path_style,
                               float tolerance, sf::Image& path_texture,
                               std::vector<PathVertex>& vertices, std::vector<PathFace>& faces);
-    /*
-    void create_border_geometry(const std::vector<OutlinePoint>& outline, OutlineIndices outline_indices,
-                                const resources::BorderStyle& border_style, Vector2f texture_size,
-                                std::vector<PathVertex>& vertices, std::vector<PathFace>& faces);
-
-    RenderedPath render_path(const std::vector<OutlinePoint>& path_outline,
-                             Vector2i track_size, int cell_bits);
-                             */
   }
 }

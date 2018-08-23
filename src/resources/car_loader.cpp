@@ -36,11 +36,9 @@ namespace ts
     {
       car_def.car_name.assign(car_name.begin(), car_name.end());     
 
-      auto& handling = car_def.handling_properties;
-
       enum ReaderState
       {
-        Main, DownforceEffect, StressFactor, CollisionShape, CollisionPolygon, End
+        Main, Handling, CollisionShape, CollisionPolygon, End
       } reader_state = Main;
 
       for (std::string directive; reader_state != End && line_it != lines_end; ++line_it)
@@ -64,39 +62,6 @@ namespace ts
 
           return false;
         };
-
-        auto read_property_1000 = [&](const char* property, auto& value)
-        {
-          auto result = read_property(property, value);
-          if (result) value *= 1000;
-
-          return result;
-        };
-
-        if (reader_state == DownforceEffect)
-        {
-          if (directive == "end") reader_state = Main;
-
-          /*
-          else if (read_property("tractionlimit", handling.downforce_effect.traction_limit)) {}
-          else if (read_property("braking", handling.downforce_effect.braking)) {}
-          else if (read_property("cornering", handling.downforce_effect.cornering)) {}
-          else if (read_property("antislide", handling.downforce_effect.antislide)) {}
-          else if (read_property("rollingresistance", handling.downforce_effect.rolling_resistance)) {}
-          */
-        }
-
-        else if (reader_state == StressFactor)
-        {
-          if (directive == "end") reader_state = Main;
-
-          /*
-          else if (read_property("torque", handling.stress_factor.torque)) {}
-          else if (read_property("braking", handling.stress_factor.braking)) {}
-          else if (read_property("cornering", handling.stress_factor.cornering)) {}
-          else if (read_property("antislide", handling.stress_factor.antislide)) {}
-          */
-        }
 
         /*
         else if (reader_state == CollisionShape)
@@ -150,9 +115,16 @@ namespace ts
         }
         */
 
-        else if (directive == "end")
+        if (directive == "end")
         {
-          reader_state = End;        
+          if (reader_state == Handling)
+          {
+            reader_state = Main;
+          }
+          else
+          {
+            reader_state = End;
+          }
         }
 
         else if (directive == "image" || directive == "rotimage")
@@ -190,15 +162,15 @@ namespace ts
           }
 
           else insufficient_parameters(car_name, directive_view);
+        }        
+
+        else if (directive == "handling")
+        {
+          reader_state = Handling;
         }
 
-        else if (directive == "bounciness")
-        {
-          if (!(ArrayStream(remainder) >> car_def.bounciness))
-          {
-            insufficient_parameters(car_name, directive_view);
-          }
-        }
+        else if (read_property("mass", car_def.mass)) {}
+        else if (read_property("bounciness", car_def.bounciness)) {}
 
         else if (directive == "collisionshape")
         {
@@ -219,43 +191,106 @@ namespace ts
           }
         }
 
-        else if (directive == "downforceeffect")
+        else if (reader_state == Handling)
         {
-          reader_state = DownforceEffect;
-        }
+          auto& h = car_def.handling;
 
-        else if (directive == "stressfactor")
-        {
-          reader_state = StressFactor;
+          if (read_property("acceleration", h.max_acceleration_force)) {}
+          else if (read_property("braking", h.max_braking_force)) {}
+          else if (read_property("reversegearratio", h.reverse_gear_ratio)) {}
+          else if (read_property("gearshiftduration", h.gear_shift_duration)) {}
+          else if (read_property("drag", h.drag_coefficient)) {}
+          else if (read_property("downforce", h.downforce_coefficient)) {}
+          else if (read_property("rollingdrag", h.rolling_drag_coefficient)) {}
+          else if (read_property("tractionlimit", h.traction_limit)) {}
+          else if (read_property("loadtransfer", h.load_transfer)) {}
+          else if (read_property("brakebalance", h.brake_balance)) {}
+          else if (read_property("downforcebalance", h.downforce_balance)) {}
+          else if (read_property("steeringbalance", h.steering_balance)) {}
+          else if (read_property("cornering", h.cornering)) {}
+          else if (read_property("maxsteeringangle", h.max_steering_angle)) {}
+          else if (read_property("nonslideangle", h.non_slide_angle)) {}
+          else if (read_property("fullslideangle ", h.full_slide_angle)) {}
+          else if (read_property("slidinggrip", h.sliding_grip)) {}
+          else if (read_property("angulardamping", h.angular_damping)) {}
+
+          else if (read_property("wheelbaselength", h.wheelbase_length)) {}
+          else if (read_property("wheelbaseoffset", h.wheelbase_offset)) {}
+          else if (read_property("numfrontwheels", h.num_front_wheels)) {}
+          else if (read_property("numrearwheels", h.num_rear_wheels)) {}
+          else if (read_property("frontaxlewidth", h.front_axle_width)) {}
+          else if (read_property("rearaxlewidth", h.rear_axle_width)) {}
+
+          else if (directive == "frontdriven")
+          {
+            int d{};
+            ArrayStream(remainder) >> d;
+            h.front_driven = (d != 0);
+          }
+
+          else if (directive == "reardriven")
+          {
+            int d{};
+            ArrayStream(remainder) >> d;
+            h.rear_driven = (d != 0);
+          }
+
+          else if (directive == "gears")
+          {
+            h.gear_ratios.clear();
+
+            ArrayStream stream(remainder);
+            double r;
+            while (stream >> r)
+            {
+              h.gear_ratios.push_back(r);
+            }
+
+            if (h.gear_ratios.empty())
+            {
+              h.gear_ratios.push_back(1.0f);
+            }
+          }            
         }
 
         /*
-        else if (read_property_1000("torque", handling.torque)) {}
-        else if (read_property("extratorque", handling.extra_torque)) {}
-        else if (read_property("maxenginerevs", handling.max_engine_revs)) {}
 
-        else if (read_property_1000("braking", handling.braking)) {}       
+        double max_engine_revs = 300.0;
 
-        else if (read_property("steering", handling.steering)) {}
-        else if (read_property("minturningradius", handling.min_turning_radius)) {}
+        // Gear ratios
+        boost::container::small_vector<double, 8> gear_ratios = { 2.5, 2.0, 1.6, 1.3, 1.1 };
+        double reverse_gear_ratio = 2.3;
 
-        else if (read_property_1000("cornering", handling.cornering)) {}
-        else if (read_property_1000("antislide", handling.antislide)) {}     
+        // Cornering: how much of any wheel's traction limit is available for cornering.
+        double cornering = 1.0;
 
-        else if (read_property_1000("tractionlimit", handling.traction_limit)) {}
+        // Maximum steering angle. Increase this to increase the minimum turning radius,
+        // and also to make it less likely the car spins out of control.
+        double max_steering_angle = 30.0;
 
-        else if (read_property("downforcecoefficient", handling.downforce_coefficient)) {}  
+        // Slip angles in degrees at which the car is not/fully sliding.
+        double non_slide_angle = 4.5;
+        double full_slide_angle = 8.5;
 
-        else if (read_property("dragcoefficient", handling.drag_coefficient)) {}
-        else if (read_property_1000("rollingresistance", handling.rolling_resistance)) {}
+        // For a fully sliding wheel, traction limit is multiplied by sliding_grip.
+        double sliding_grip = 0.87;
 
-        else if (read_property("inputmoderation", handling.input_moderation)) {}
+        // The amount the angular velocity is decreased by every second.
+        // 1.0 means the angular velocity is reduced by 2% every 20ms.
+        double angular_damping = 1.3;
 
-        else if (read_property("mass", handling.mass)) {}
+        // Wheel positions have an effect on the car's willingness to rotate.
+        // Longer wheelbase means more torque is applied to the car, making it spin more easily.
+        double wheelbase_length = 18.0;
+        double wheelbase_offset = 0.0;
+        double num_front_wheels = 2;
+        double num_rear_wheels = 2;
+        double front_axle_width = 6.0;
+        double rear_axle_width = 6.0;
 
-        else if (read_property("loadtransfer", handling.load_transfer)) {}
-
-        else if (read_property("reversegear", handling.reverse_gear_ratio)) {}
+        // Whether the car is driven at the front, rear or both.
+        bool front_driven = false;
+        bool rear_driven = true;
         */
       }
 

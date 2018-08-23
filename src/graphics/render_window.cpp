@@ -29,7 +29,7 @@ namespace ts
         sf::ContextSettings context_settings;
         context_settings.majorVersion = gl_version::major;
         context_settings.minorVersion = gl_version::minor;        
-        context_settings.antialiasingLevel = 8;
+        context_settings.antialiasingLevel = 4;
         context_settings.depthBits = 24;
         context_settings.stencilBits = 8;
 

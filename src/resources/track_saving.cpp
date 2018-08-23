@@ -34,6 +34,8 @@ namespace ts
         out << "Include " << asset << "\n";
       }
 
+      out << "\n";
+
       if (!control_points.empty())
       {
         out << "ControlPoints " << control_points.size() << "\n";
@@ -58,7 +60,7 @@ namespace ts
           }
         }
 
-        out << "End\n";
+        out << "End\n\n";
       }
 
       if (!start_points.empty())
@@ -69,7 +71,7 @@ namespace ts
           out << "Point " << sp.position.x << " " << sp.position.y << " " << sp.rotation << " " << sp.level << "\n";
         }
 
-        out << "End\n";
+        out << "End\n\n";
       }
 
       const auto& path_library = track.path_library();
@@ -90,7 +92,7 @@ namespace ts
           }          
         }
 
-        out << "End\n";
+        out << "End\n\n";
       }
 
       for (const auto& layer : track.layers())
@@ -142,6 +144,7 @@ namespace ts
             out << "BorderOnly " << +style.border_only << "\n";
             out << "Terrain " << style.terrain_id << "\n";
             out << "TextureMode " << style.texture_mode << "\n";
+            out << "FadeLength" << style.fade_length << "\n";
             out << "Width " << style.width << "\n";            
           }
 
@@ -150,16 +153,15 @@ namespace ts
           {
             for (auto& seg : style.segments)
             {
-              out << "Segment " << seg.start_index + seg.start_time_point << " " <<
-                seg.end_index + seg.end_time_point << " " <<
-                static_cast<int>(seg.side) << "\n";
+              out << "Segment " << seg.sub_path_id << " "  << seg.start_time_point << " " << 
+                seg.end_time_point << " " << static_cast<int>(seg.side) << "\n";
             }
           }
         }
 
         if (!layer.visible()) out << "Hidden\n";
         out << "Level " << layer.level() << "\n";
-        out << "End\n";
+        out << "End\n\n";
       }
 
       return true;

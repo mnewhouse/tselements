@@ -6,12 +6,7 @@
 
 #pragma once
 
-#include "utility/vector3.hpp"
-
-#include "resources/terrain_definition.hpp"
-
 #include <boost/container/small_vector.hpp>
-#include <boost/optional.hpp>
 
 #include <cstdint>
 #include <array>
@@ -31,91 +26,74 @@ namespace ts
       // A = 1 u/s² -- acceleration
       // rad = radians
 
-      // Base torque, in kF.
-      double torque = 24000.0;
+      // Maximum acceleration force, in F
+      double max_acceleration_force = 0.0;
 
-      // Maximum speed, with gear ratio 1.0.
-      double max_engine_revs = 300.0f;
+      // Maximum braking force, in F. Note that this is per wheel.
+      double max_braking_force = 0.0;
 
-      // Maximum braking force in kF.
-      double braking = 12000.0f;
+      // Speed that corresponds to max revolutions at gear ratio 1.0
+      double max_engine_revs = 300.0;
 
-      double peak_slip_angle = 10.0;
-      double max_steering_angle = 10.0;      
-      
-      // Traction limit = (tyre_load ^ traction_limit_exponent) * traction_limit_factor.
-      double traction_limit_factor = 2.0f;     
-      double traction_limit_exponent = 0.9f;
+      // Gear ratios
+      boost::container::small_vector<double, 8> gear_ratios = {};
+      double reverse_gear_ratio = 2.3;
 
-      // Mass affects how much impact the various forces have on the velocity of the car.
-      double mass = 500.0f;
+      // Number of frames that it takes to shift gears
+      int gear_shift_duration = 3;
 
-      // Center of mass. Impacts the base load on all tyres, and affects how easily various parts of the car
-      // will rotate.      
-      Vector2d center_of_mass = {};
+      // drag (F) = drag_coefficient * speed² (u/s)
+      double drag_coefficient = 0.13;
 
-      // Drag coefficient, in F/V².
-      double drag_coefficient = 0.05f;
+      // downforce (F) = downforce_coefficient * speed² (u/s)
+      double downforce_coefficient = 0.21;
 
-      // How much of the air resistance is translated into downforce.
-      double downforce_coefficient = 0.3f;
+      // rolling_drag = vertical_load * rolling_drag_coefficient
+      double rolling_drag_coefficient = 0.03;
 
-      // How much of the vertical tyre load is turned into rolling resistance
-      double rolling_resistance_factor = 0.0f;
+      // Traction limit (F) defines the maximum force that all wheels put together can handle.
+      // This is divided between all wheels.
+      double traction_limit = 53000.0;
 
-      // How much the accelerative forces affect the car's load on the tyres.
-      Vector2d load_transfer_coefficient = {};
+      // Load transfer defines how much of the acceleration/retardation force is being transferred to the 
+      // rear/front of the car.
+      double load_transfer = 0.14;
 
-      // Limit the input controls based on the traction limit.
-      double input_moderation = 1.0f;
-      double steering_bias = 0.666f;
+      // Balance variables: balance of X means X at the front, and (1.0 - X) at the rear.
+      double brake_balance = 0.47;
+      double downforce_balance = 0.59;
+      double steering_balance = 0.0;
 
-      double slide_friction = 0.7;
+      // Cornering: how much of any wheel's traction limit is available for cornering.
+      double cornering = 1.0;
 
-      struct Axle
-      {
-        bool driven = false; // Whether this axle is driven by the engine
-        double braking = 1.0f; // Braking force factor * base braking is multiplied by this number
-       
-        double cornering = 0.0f; // Cornering, as a fraction of the traction limit for each tyre. 
-                                 // If zero, no active cornering on this axle.
-        double antislide = 0.0f; // Antislide, or passive cornering. As a fraction of the traction limit.
-        double downforce = 1.0f;
+      // Maximum steering angle in degrees. Increase this to increase the minimum turning radius,
+      // and also to make it less likely the car spins out of control.
+      double max_steering_angle = 30.0;
 
-        boost::container::small_vector<Vector2d, 2> wheels;
-      };
+      // Slip angles in degrees at which the car is not/fully sliding.
+      double non_slide_angle = 4.5;
+      double full_slide_angle = 8.5;
 
-      std::array<Axle, 2> axles;
-      boost::container::small_vector<double, 8> gear_ratios;
+      // For a fully sliding wheel, traction limit is multiplied by sliding_grip.
+      double sliding_grip = 0.87;
 
-      double reverse_gear_ratio = 3.0f;
-    };
+      // The amount the angular velocity is decreased by every second.
+      // 1.0 means the angular velocity is reduced by 2% every 20ms.
+      double angular_damping = 1.3;
 
-    struct RawHandlingState
-    {     
-      std::uint16_t engine_rev_speed;
-      std::uint16_t lateral_acceleration;
-      std::uint16_t longitudinal_acceleration;
-      std::uint16_t rotational_acceleration;
-      
-      std::uint8_t current_gear;
-    };
+      // Wheel positions have an effect on the car's willingness to rotate.
+      // Longer wheelbase means more torque is applied to the car, making it spin more easily.
+      double wheelbase_length = 18.0;
+      double wheelbase_offset = 0.0;
+      double num_front_wheels = 2;
+      double num_rear_wheels = 2;
+      double front_axle_width = 6.0;
+      double rear_axle_width = 6.0;
 
-    struct HandlingState
-    { 
-      double engine_rev_speed;
-      Vector2d acceleration;
-      double rotational_acceleration;
-      std::int32_t current_gear;
-
-      // For local usage only.
-      struct WheelState
-      {
-        resources::TerrainDefinition current_terrain;
-        double traction;
-      };
-
-      boost::container::small_vector<WheelState, 4> current_terrains;
+      // Whether the car is driven at the front, rear or both.
+      bool front_driven = false;
+      bool rear_driven = true;
     };
   }
 }
