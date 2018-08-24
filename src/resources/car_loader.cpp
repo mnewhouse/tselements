@@ -174,7 +174,7 @@ namespace ts
         else if (read_property("momentofinertia", car_def.moment_of_inertia)) {}
         else if (directive == "centerofmass")
         {
-          Vector2f com;
+          Vector2d com;
           if (ArrayStream(remainder) >> com.x >> com.y)
           {
             car_def.center_of_mass = com;
