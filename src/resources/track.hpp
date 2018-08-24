@@ -109,6 +109,7 @@ namespace ts
       void add_control_point(const ControlPoint& point, std::size_t idx);
       const std::vector<ControlPoint>& control_points() const;
       void remove_control_point(std::size_t idx);
+      void update_control_point(std::size_t idx, const ControlPoint& cp);
 
       void add_start_point(const StartPoint& point);
       const std::vector<StartPoint>& custom_start_points() const;

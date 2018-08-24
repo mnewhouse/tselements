@@ -67,6 +67,7 @@ namespace ts
         const TrackLayerData* layer_data;
         std::array<const graphics::Texture*, 3> textures;
         std::array<Vector2f, 3> texture_scales;
+        float path_border_width = 0.0f;
 
         Type type = Default;
         std::uint32_t level;
@@ -99,7 +100,7 @@ namespace ts
         std::uint32_t max_corner;
         std::uint32_t z_base;
         std::uint32_t z_scale;
-        std::uint32_t lod_level;
+        std::uint32_t border_width;
       };
 
       struct BoundaryLocations

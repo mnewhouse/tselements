@@ -82,11 +82,13 @@ namespace ts
       // Destroy a state given its concrete type.
       template <typename ConcreteType>
       void destroy_state();
+      void destroy_state(std::type_index t);
 
       // Switch to a state given its concrete type.
       // Will do nothing if there is no instance of said type.
       template <typename ConcreteType>
       void activate_state();
+      void activate_state(std::type_index index);
 
       template <typename ConcreteType>
       ConcreteType* find_state() const;
@@ -119,8 +121,7 @@ namespace ts
 
       template <typename ConcreteType>
       void deactivate_state();
-
-      void activate_state(std::type_index index);
+      
       void deactivate_state(std::type_index index);
       StateType* find_state(std::type_index index) const;
 
@@ -129,7 +130,8 @@ namespace ts
 
       void commit_state_transitions();
 
-      std::unordered_map<std::type_index, std::unique_ptr<StateType>> state_map_;
+      using state_map_type = std::unordered_map<std::type_index, std::unique_ptr<StateType>>;
+      state_map_type state_map_;
       std::vector<StateInfo> state_stack_;
 
       // Helper struct to find a stack entry with the given type index
@@ -154,10 +156,10 @@ namespace ts
       {
         StateInfo state_info;
         TransitionType type;
-      };
+      };     
 
       friend transition_guard_type;
-      std::vector<std::unique_ptr<StateType>> destruction_queue_;
+      std::vector<typename state_map_type::iterator> destruction_queue_;
       std::vector<Transition> state_transitions_;
       std::size_t transition_guard_count_ = 0;
     };

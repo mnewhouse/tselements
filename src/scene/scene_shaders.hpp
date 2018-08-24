@@ -59,9 +59,11 @@ namespace ts
         in vec2 in_texCoords;   
         out vec2 frag_position;     
         out vec2 frag_texCoords;
+        out float frag_distanceFromEdge;
         void main()
         {
           float z = u_zBase + in_position.z * u_zScale;
+          frag_distanceFromEdge = in_position.z;
           frag_position = in_position.xy;
           frag_texCoords = in_texCoords;
           gl_Position = u_viewMatrix * vec4(frag_position.xy, z, 1.0);
@@ -70,17 +72,17 @@ namespace ts
 
       static const char track_path_fragment_shader[] = R"(
         #version 130
-        uniform sampler2D u_weightSampler;
         uniform sampler2D u_primarySampler;
         uniform sampler2D u_secondarySampler;
         uniform vec2 u_primaryScale;
         uniform vec2 u_secondaryScale;
         uniform vec2 u_minCorner;
         uniform vec2 u_maxCorner;
-        uniform float u_lodLevel;
+        uniform float u_borderWidth;
         
         in vec2 frag_position;
-        in vec2 frag_texCoords;        
+        in vec2 frag_texCoords;
+        in float frag_distanceFromEdge;  
         out vec4 frag_color;
         void main()
         {
@@ -92,11 +94,12 @@ namespace ts
 
           else
           {
-            vec4 weights = textureLod(u_weightSampler, frag_texCoords, u_lodLevel);
-            vec4 primary = texture2D(u_primarySampler, frag_position * u_primaryScale) * weights.r;
-            vec4 secondary = texture2D(u_secondarySampler, frag_position * u_secondaryScale) * weights.g;                       
-
-            frag_color = (primary + secondary) / max(weights.r + weights.g, 1.0);
+            vec4 primary = texture2D(u_primarySampler, frag_position * u_primaryScale);
+            vec4 secondary = texture2D(u_secondarySampler, frag_position * u_secondaryScale);
+              
+            float a = fwidth(frag_distanceFromEdge);
+            float f = smoothstep(u_borderWidth - a, u_borderWidth + a, frag_distanceFromEdge);
+            frag_color = mix(secondary, primary, f);
           }
         };
       )";

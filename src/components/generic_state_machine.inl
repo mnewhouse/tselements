@@ -8,6 +8,8 @@
 
 #include <algorithm>
 
+#include "utility/scope_guard.hpp"
+
 namespace ts
 {
   namespace components
@@ -79,10 +81,8 @@ namespace ts
     }
 
     template <typename StateType>
-    template <typename ConcreteType>
-    void StateMachine<StateType>::destroy_state()
+    void StateMachine<StateType>::destroy_state(std::type_index index)
     {
-      std::type_index index = typeid(ConcreteType);
       auto instance_it = state_map_.find(index);
       if (instance_it != state_map_.end())
       {
@@ -96,6 +96,13 @@ namespace ts
 
         state_transitions_.push_back(transition);
       }
+    }
+
+    template <typename StateType>
+    template <typename ConcreteType>
+    void StateMachine<StateType>::destroy_state()
+    {
+      destroy_state(typeid(ConcreteType));
     }
 
     template <typename StateType>
@@ -169,6 +176,16 @@ namespace ts
     {
       destruction_queue_.clear();
 
+      auto g = make_scope_guard([=]()
+      {
+        for (auto it : destruction_queue_)
+        {
+          state_map_.erase(it);
+        }
+
+        destruction_queue_.clear();
+      });
+
       // Store the active state for later use
       StateType* previous_state = !state_stack_.empty() ? state_stack_.back().state : nullptr;
 
@@ -196,11 +213,7 @@ namespace ts
               previous_state = nullptr;              
             }
 
-            {
-              destruction_queue_.push_back(std::move(it->second));
-            }
-
-            state_map_.erase(it);
+            destruction_queue_.push_back(it);
           }            
         }
 
@@ -229,8 +242,6 @@ namespace ts
           call_activation_function(active_state);
         }
       }
-
-      destruction_queue_.clear();
     }
 
     template <typename StateType>

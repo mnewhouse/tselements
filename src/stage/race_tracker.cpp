@@ -74,6 +74,7 @@ namespace ts
             car_info.last_lap_start += lap_time;
             car_info.last_lap_time = lap_time;
             car_info.current_lap_sector_times.clear();
+            car_info.current_sector = 0;
 
             messages::LapComplete event;
             event.entity = car;
@@ -83,10 +84,7 @@ namespace ts
             // Lap completed
             event_interface.on_lap_complete(event);
 
-            if (car_info.current_sector == 0)
-            {
-              printf("L%d: %s\n", car_info.laps_done, format_lap_time(lap_time).c_str());
-            }            
+            printf("L%d: %s\n", car_info.laps_done, format_lap_time(lap_time).c_str());        
           }
 
           if (point_flags & resources::ControlPoint::Sector)
@@ -106,8 +104,6 @@ namespace ts
             car_info.last_sector_time = lap_time;
             car_info.current_lap_sector_times.push_back(lap_time);
 
-            auto sector_id = car_info.current_sector;
-
             ++car_info.current_sector;
           }
 
@@ -121,7 +117,6 @@ namespace ts
           if (car_info.current_control_point >= control_point_count_)
           {
             car_info.current_control_point = 0;
-            car_info.current_sector = 0;
           }
         }
       }

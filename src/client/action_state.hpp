@@ -38,9 +38,6 @@ namespace ts
 
       void request_update(std::uint32_t frame_duration);
 
-      void launch_action();
-      void end_action();
-
       scene::Scene& scene_object();
       const scene::Scene& scene_object() const;
 
@@ -51,8 +48,10 @@ namespace ts
 
       //void handle_message(const world::messages::SceneryCollision& collision);
       //void handle_message(const world::messages::EntityCollision& collision);
-
     private:
+      virtual void launch_action();
+      virtual void end_action();
+
       game::GameContext game_context_;
 
       KeySettings key_settings_;

@@ -171,6 +171,17 @@ namespace ts
 
         else if (read_property("mass", car_def.mass)) {}
         else if (read_property("bounciness", car_def.bounciness)) {}
+        else if (read_property("momentofinertia", car_def.moment_of_inertia)) {}
+        else if (directive == "centerofmass")
+        {
+          Vector2f com;
+          if (ArrayStream(remainder) >> com.x >> com.y)
+          {
+            car_def.center_of_mass = com;
+          }
+          
+          else insufficient_parameters(car_name, directive);
+        }
 
         else if (directive == "collisionshape")
         {

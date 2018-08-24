@@ -463,7 +463,7 @@ namespace ts
                 if (!segment_transformation_)
                 {
                   SegmentTransformation st;
-                  st.sub_path_id = best_sub_path_id;
+                  st.sub_path_id = static_cast<std::uint32_t>(best_sub_path_id);
                   st.time_point = real_time_point;
                   st.action = st.Create;
                   st.side = best_side;

@@ -97,7 +97,7 @@ namespace ts
         locations.max_corner = glCheck(glGetUniformLocation(prog, "u_maxCorner"));
         locations.z_base = glCheck(glGetUniformLocation(prog, "u_zBase"));
         locations.z_scale = glCheck(glGetUniformLocation(prog, "u_zScale"));
-        locations.lod_level = glCheck(glGetUniformLocation(prog, "u_lodLevel"));
+        locations.border_width = glCheck(glGetUniformLocation(prog, "u_borderWidth"));
       }
 
       {
@@ -353,10 +353,6 @@ namespace ts
       glCheck(glUseProgram(track_path_shader_program_.get()));
       glCheck(glUniformMatrix4fv(track_path_component_locations_.view_matrix, 1, GL_FALSE,
                                  view_matrix.getMatrix()));
-      {
-        auto lod = std::floor(std::max(std::log2(2.0 / view_port.camera().zoom_level()) + 1.0, 0.0));
-        glUniform1f(track_path_component_locations_.lod_level, lod);
-      }
 
       glCheck(glUseProgram(particle_shader_program_.get()));
       glCheck(glUniformMatrix4fv(particle_locations_.view_matrix, 1, GL_FALSE,
@@ -417,17 +413,27 @@ namespace ts
             auto base_z = component.level * z_level_increment_ + component.z_index * z_index_increment_;
             glUniform1f(track_path_component_locations_.z_base, base_z);
             glUniform1f(track_path_component_locations_.z_scale, z_index_increment_);
+            glUniform1f(track_path_component_locations_.border_width, component.path_border_width);
 
             glEnable(GL_DEPTH_TEST);
             glDepthMask(GL_TRUE);
             glDepthFunc(GL_LESS);
           }
 
-          glUniform2f(min_corner_loc, bb.left - 0.2, bb.top - 0.2);
-          glUniform2f(max_corner_loc, bb.left + bb.width + 0.2, bb.top + bb.height + 0.2);
+          glUniform2f(min_corner_loc, bb.left - 0.2f, bb.top - 0.2f);
+          glUniform2f(max_corner_loc, bb.left + bb.width + 0.2f, bb.top + bb.height + 0.2f);
 
           glCheck(glActiveTexture(GL_TEXTURE0));
-          glCheck(glBindTexture(GL_TEXTURE_2D, component.textures[0]->get()));
+          if (component.textures[0])
+          {
+            glCheck(glBindTexture(GL_TEXTURE_2D, component.textures[0]->get()));
+          }
+
+          else
+          {
+            glCheck(glBindTexture(GL_TEXTURE_2D, 0));
+          }
+          
 
           auto offset = reinterpret_cast<const void*>(static_cast<std::uintptr_t>(component.element_buffer_offset));
           glCheck(glDrawElements(GL_TRIANGLES, component.element_count, GL_UNSIGNED_INT, offset));
@@ -706,7 +712,7 @@ namespace ts
           glCheck(glBufferData(GL_ARRAY_BUFFER, layer_data.vertex_buffer_size, nullptr, GL_STATIC_DRAW));
           glCheck(glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_data_size, vertices.data()));
 
-          std::uint32_t index_buffer_size = 0;
+          std::size_t index_buffer_size = 0;
           for (auto& region : scene_layer.component_regions())
           {
             for (auto& component : region)
@@ -723,13 +729,13 @@ namespace ts
           {
             for (auto& component : region)
             {
-              auto size = component.faces.size() * sizeof(component.faces.front());
+              auto size = static_cast<std::uint32_t>(component.faces.size() * sizeof(component.faces.front()));
               glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, buffer_offset, size, component.faces.data()));
 
               TrackComponent track_component;
               track_component.layer_data = &layer_data;
               track_component.element_buffer_offset = buffer_offset;
-              track_component.element_count = component.faces.size() * 3;
+              track_component.element_count = static_cast<std::uint32_t>(component.faces.size() * 3);
               track_component.level = scene_layer.level();
               track_component.z_index = scene_layer.z_index();
               track_component.bounding_box = rect_cast<float>(component.bounding_box);
@@ -737,6 +743,7 @@ namespace ts
               track_component.textures[0] = component.texture;
               track_component.textures[1] = scene_layer.primary_texture();
               track_component.textures[2] = scene_layer.secondary_texture();
+              track_component.path_border_width = scene_layer.path_relative_border_width();
 
               using T = TrackSceneLayer::Type;
               if (scene_layer.type() == T::Path || scene_layer.type() == T::PathWithTransparency)
@@ -750,10 +757,7 @@ namespace ts
               track_component.texture_scales[0] = 1.0f / scene_layer.primary_texture_tile_size();
               track_component.texture_scales[1] = 1.0f / scene_layer.secondary_texture_tile_size();              
 
-              if (track_component.textures[0] != nullptr)
-              {
-                track_components_.push_back(track_component);
-              }             
+              track_components_.push_back(track_component);         
 
               buffer_offset += size;
             }

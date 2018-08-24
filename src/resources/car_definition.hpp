@@ -44,7 +44,7 @@ namespace ts
       double bounciness = 1.0;
       double mass = 500.0;
       double moment_of_inertia = 70.0;
-      Vector2d center_of_gravity = { 0.0, 0.0 };
+      Vector2d center_of_mass = { 0.0, 0.0 };
 
       Handling handling;
       CollisionShape collision_shape;

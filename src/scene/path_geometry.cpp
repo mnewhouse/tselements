@@ -15,6 +15,7 @@
 
 #include <utility>
 #include <algorithm>
+#include <cstddef>
 
 namespace ts
 {
@@ -30,8 +31,7 @@ namespace ts
       OutlinePoint outline_point_at(const resources::TrackPathNode& a, const resources::TrackPathNode& b, 
                                     float time_point, const OutlineProperties& props)
       {
-        auto width = resources::path_width_at(a, b, time_point) + props.width;
-        width *= 0.5f;
+        auto width = resources::path_width_at(a, b, time_point) + props.width;        
 
         auto normal = resources::path_normal_at(a, b, time_point);
         if (props.invert_normal) normal = -normal;
@@ -39,8 +39,8 @@ namespace ts
         auto point = resources::path_point_at(a, b, time_point);
         if (!props.center_line)
         {
-          point += normal * std::max(width, 0.0f);
-        }
+          point += normal * width * 0.5f;
+        }        
 
         return
         {
@@ -66,7 +66,7 @@ namespace ts
 
       void split_outline_segment(const resources::TrackPathNode& a, const resources::TrackPathNode& b,
                                  const OutlinePoint& start, const OutlinePoint& end,
-                                 const OutlineProperties& properties, double base_time_point,
+                                 const OutlineProperties& properties, float base_time_point,
                                  std::vector<OutlinePoint>& outline_points)
       {
         auto time_span = end.time_point - start.time_point;
@@ -117,7 +117,7 @@ namespace ts
     {
       resources::StrokeSegment seg;
       seg.start_time_point = 0.0f;
-      seg.end_time_point = path.nodes.size();
+      seg.end_time_point = static_cast<float>(path.nodes.size());
       generate_path_segment_outline(path, seg, properties, outline_points);
     }
 
@@ -125,7 +125,7 @@ namespace ts
                                        const OutlineProperties& properties,
                                        std::vector<OutlinePoint>& outline_points)
     {      
-      auto node_count = static_cast<std::uint32_t>(path.nodes.size());
+      auto node_count = path.nodes.size();
       if (node_count >= 2)
       {
         auto start_time = segment.start_time_point;
@@ -141,8 +141,8 @@ namespace ts
           end_time = std::min(static_cast<float>(node_count - 1), end_time);
         }        
 
-        auto start_idx = static_cast<std::uint32_t>(start_time);
-        auto end_idx = static_cast<std::uint32_t>(end_time);       
+        auto start_idx = static_cast<std::size_t>(start_time);
+        auto end_idx = static_cast<std::size_t>(end_time);       
 
         for (auto idx = start_idx; idx <= end_idx; ++idx)
         {
@@ -232,49 +232,36 @@ namespace ts
       }
     }
 
-    void create_base_geometry(const std::vector<OutlinePoint>& outline_points, OutlineIndices outline_indices,
-                              const resources::PathStyle& path_style, float inv_max_width,
-                              std::vector<PathVertex>& vertices, std::vector<PathFace>& faces)
+    void create_tiled_vertices(const std::vector<OutlinePoint>& outline_points, OutlineIndices indices,
+                              float inv_max_width, std::vector<PathVertex>& vertices)
     {
-      create_base_geometry(outline_points, outline_indices, faces);
-
-      for (auto idx = outline_indices.first_start; idx != outline_indices.end; ++idx)
+      for (auto idx = indices.first_start; idx < indices.end; ++idx)
       {
-        PathVertex v;
-        v.position = outline_points[idx].point;
+        auto& p = outline_points[idx];
+        auto m = p.width * inv_max_width;
 
-        auto m = outline_points[idx].width * inv_max_width;
-        if (idx >= outline_indices.center_start)
-        {
-          v.texture_coords = { 0.0f, 1.0f - m };
-          v.z = m;
-        }
+        PathVertex v;        
+        v.position = p.point;
+        v.texture_coords = p.point;
+        v.color = { 255, 255, 255, 255 };
 
-        else
-        {
-          v.texture_coords = { m, 1.0f - m };
-          v.z = 0.0f;
-        }
+        if (idx >= indices.center_start) v.z = m;
+        else v.z = 0.0f;
 
         //v.color = path_style.color;
         vertices.push_back(v);
       }
     }
 
-    void create_base_geometry_directional(const std::vector<OutlinePoint>& outline_points, OutlineIndices outline_indices,
-                                          const resources::PathStyle& path_style, float inv_texture_tile_size,
-                                          std::vector<PathVertex>& vertices, std::vector<PathFace>& faces)
+    void create_directional_vertices(const std::vector<OutlinePoint>& outline_points, OutlineIndices outline_indices,
+                                     float inv_texture_tile_size, std::vector<PathVertex>& vertices)
     {      
       if (outline_indices.second_start <= outline_indices.first_start) return;
-
-      create_base_geometry(outline_points, outline_indices, faces);
+      
       vertices.resize(vertices.size() + outline_indices.end - outline_indices.first_start);
 
-      auto center_it = outline_points.begin() + outline_indices.center_start;
-      auto center_end = outline_points.begin() + outline_indices.end;
-      
       auto second_it = outline_points.begin() + outline_indices.second_start;
-      auto second_end = center_it;
+      auto second_end = outline_points.begin() + outline_indices.end;
       
       auto first_it = outline_points.begin() + outline_indices.first_start;
       auto first_end = second_it;
@@ -315,16 +302,6 @@ namespace ts
           vertices[second_idx++] = v;
         }
 
-        for (; center_it != center_end && (center_it->time_point <= p1.time_point || last); ++center_it)
-        {
-          const auto& p = *second_it;
-          auto f = (p.time_point - last_it->time_point) / (p1.time_point - last_it->time_point);
-          PathVertex v{};
-          v.position = p.point;
-          v.texture_coords = { x_offset + f * dist, 0.5f };
-          vertices[center_idx++] = v;          
-        }
-
         last_it = first_it;
         x_offset = new_x_offset;
       }
@@ -361,7 +338,7 @@ namespace ts
       }
     }
 
-    float max_path_width(const resources::TrackPath& path, float base_width)
+    float max_path_width(const resources::TrackPath& path)
     {
       auto max_width = 0.0f;
       for (const auto& sub_path : path.sub_paths)
@@ -370,7 +347,7 @@ namespace ts
 
         for (const auto& node : sub_path.nodes)
         {
-          auto width = node.width + base_width;
+          auto width = node.width;
 
           if (width > max_width) max_width = width;
         }
@@ -379,7 +356,7 @@ namespace ts
       return max_width;
     }
 
-    void fade_outline(std::vector<OutlinePoint>& points, std::size_t start_idx, std::size_t end_idx, float fade_length)
+    void fade_outline(std::vector<OutlinePoint>& points, std::uint32_t start_idx, std::uint32_t end_idx, float fade_length)
     {
       if (end_idx - start_idx < 2) return;
 
@@ -451,44 +428,42 @@ namespace ts
     }
 
     void create_path_geometry(const resources::TrackPath& path, const resources::PathStyle& path_style,
-                              float tolerance, sf::Image& path_texture,
+                              float tolerance, float& max_width,
                               std::vector<PathVertex>& vertices, std::vector<PathFace>& faces)
+                              
     {
+      max_width = max_path_width(path) + path_style.width;
+
       auto inv_max_width = 0.0f;
-      if (path_style.texture_mode != path_style.Directional)
-      {
-        auto texture_scale = 8.0f;
-        auto max_width = max_path_width(path, path_style.width);
-        while (texture_scale * max_width >= 1024.0f)
-        {
-          texture_scale *= 0.5f;
-        }
-        create_path_texture_image(path_texture, max_width, path_style.border_width, texture_scale);
-        inv_max_width = texture_scale / path_texture.getSize().y;
+      if (max_width >= 0.0001f)
+      {        
+        inv_max_width = 1.0f / max_width;
       }      
 
       faces.clear();
       vertices.clear();
       std::vector<OutlinePoint> outline_points;
 
+      auto current_idx = [&]() { return static_cast<std::uint32_t>(outline_points.size()); };
+
       OutlineProperties props;
       props.tolerance = tolerance;
       props.width = path_style.width;
 
       auto inv_texture_tile_size = path_style.border_only ? 
-        1.0f / path_style.border_texture_tile_size.x :
-        1.0f / path_style.base_texture_tile_size.x;
+        1.0f / path_style.border_texture_tile_size :
+        1.0f / path_style.base_texture_tile_size;
 
-      auto build_geometry = [&](OutlineIndices indices)
+      auto build_vertices = [&](OutlineIndices indices)
       {
         if (path_style.texture_mode != path_style.Directional)
         {
-          create_base_geometry(outline_points, indices, path_style, inv_max_width, vertices, faces);
+          create_tiled_vertices(outline_points, indices, inv_max_width, vertices);
         }
 
         else
         {
-          create_base_geometry_directional(outline_points, indices, path_style, inv_texture_tile_size, vertices, faces);
+          create_directional_vertices(outline_points, indices, inv_texture_tile_size.x, vertices);
         }
       };
 
@@ -504,21 +479,22 @@ namespace ts
 
           auto& sub_path = path.sub_paths[seg.sub_path_id];          
           OutlineIndices indices{};
-          indices.first_start = static_cast<std::uint32_t>(outline_points.size());
+          indices.first_start = current_idx();
 
           generate_path_segment_outline(sub_path, seg, seg.side == seg.First ? inner : invert(inner), outline_points);
-          indices.second_start = static_cast<std::uint32_t>(outline_points.size());
+          indices.second_start = current_idx();
 
           generate_path_segment_outline(sub_path, seg, seg.side == seg.First ? outer : invert(outer), outline_points);
           if (path_style.fade_length >= 0.5f)
           {
-            fade_outline(outline_points, indices.second_start, outline_points.size(), path_style.fade_length);
+            fade_outline(outline_points, indices.second_start, current_idx(), path_style.fade_length);
           }
 
-          indices.center_start = static_cast<std::uint32_t>(outline_points.size());
+          indices.center_start = current_idx();
           indices.end = indices.center_start;
 
-          build_geometry(indices);
+          build_vertices(indices);
+          create_base_geometry(outline_points, indices, faces);
         };
 
         if (path_style.is_segmented)
@@ -554,11 +530,9 @@ namespace ts
         auto& first = props;
         auto second = invert(first);
 
-        auto center = first;
+        auto center = props;
         center.center_line = true;
-        // lower tolerance because it will get surrounded by geometry anyway
         center.tolerance = 0.5f;
-        
 
         auto generate_segment = [&](const resources::StrokeSegment& seg)
         {
@@ -566,17 +540,19 @@ namespace ts
           auto& sub_path = path.sub_paths[seg.sub_path_id];
 
           OutlineIndices indices{};
-          indices.first_start = static_cast<std::uint32_t>(outline_points.size());
+          indices.first_start = current_idx();
           generate_path_segment_outline(sub_path, seg, first, outline_points);
 
-          indices.second_start = static_cast<std::uint32_t>(outline_points.size());
+          indices.second_start = current_idx();
           generate_path_segment_outline(sub_path, seg, second, outline_points);
 
-          indices.center_start = static_cast<std::uint32_t>(outline_points.size());
+          indices.center_start = current_idx();
           generate_path_segment_outline(sub_path, seg, center, outline_points);
 
-          indices.end = static_cast<std::uint32_t>(outline_points.size());
-          build_geometry(indices);
+          indices.end = current_idx();
+          build_vertices(indices);
+
+          create_base_geometry(outline_points, indices, faces);
         };
 
         if (path_style.is_segmented)

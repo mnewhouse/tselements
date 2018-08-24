@@ -137,12 +137,12 @@ namespace ts
     void ActionState::launch_action()
     {
       // Activate the action state by its type.
-      game_context_.state_machine->activate_state<ActionState>();
+      game_context_.state_machine->activate_state(typeid(*this));
     }
 
     void ActionState::end_action()
     {
-      game_context_.state_machine->destroy_state<ActionState>();
+      game_context_.state_machine->destroy_state(typeid(*this));
     }
 
     scene::Scene& ActionState::scene_object()

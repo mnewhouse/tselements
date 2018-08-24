@@ -41,7 +41,7 @@ namespace ts
 
     std::uint32_t ParticleGenerator::level_count() const
     {
-      return level_info_.size();
+      return static_cast<std::uint32_t>(level_info_.size());
     }
 
     std::uint32_t ParticleGenerator::particle_count(std::uint32_t level) const

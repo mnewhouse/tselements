@@ -56,7 +56,7 @@ namespace ts
                                        std::vector<OutlinePoint>& outline_points);
 
     void create_path_geometry(const resources::TrackPath& path, const resources::PathStyle& path_style,
-                              float tolerance, sf::Image& path_texture,
+                              float tolerance, float& max_width,
                               std::vector<PathVertex>& vertices, std::vector<PathFace>& faces);
   }
 }

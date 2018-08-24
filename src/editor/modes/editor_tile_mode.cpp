@@ -468,7 +468,8 @@ namespace ts
 
       auto rad = degrees(static_cast<float>(placement_tile_rotation_)).radians();
 
-      auto model_matrix = sf::Transform().translate(world_pos.x, world_pos.y).rotate(rad);
+      auto model_matrix = sf::Transform().translate(static_cast<float>(world_pos.x), 
+                                                    static_cast<float>(world_pos.y)).rotate(rad);
       tile_interaction_renderer_.set_transform(model_matrix);
     }
 

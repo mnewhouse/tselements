@@ -144,7 +144,7 @@ namespace ts
             out << "BorderOnly " << +style.border_only << "\n";
             out << "Terrain " << style.terrain_id << "\n";
             out << "TextureMode " << style.texture_mode << "\n";
-            out << "FadeLength" << style.fade_length << "\n";
+            out << "FadeLength " << style.fade_length << "\n";
             out << "Width " << style.width << "\n";            
           }
 

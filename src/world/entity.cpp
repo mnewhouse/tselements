@@ -48,8 +48,6 @@ namespace ts
       auto body = cpBodyNew(mass, mass * moment);
       std::unique_ptr<void, PhysicsBodyDeleter> owned_body(body);
 
-      cpBodySetCenterOfGravity(body, { 0.0, 0.0 });
-
       if (!shape.sub_shapes.empty())
       {
         double moment = 0.0;

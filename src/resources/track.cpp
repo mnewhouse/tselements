@@ -273,6 +273,14 @@ namespace ts
       }
     }
 
+    void Track::update_control_point(std::size_t idx, const ControlPoint& cp)
+    {
+      if (idx < control_points_.size())
+      {
+        control_points_[idx] = cp;
+      }
+    }
+
     const std::vector<ControlPoint>& Track::control_points() const
     {
       return control_points_;

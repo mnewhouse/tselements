@@ -47,7 +47,6 @@ namespace ts
       if (selected_point_id_ > 0) --selected_point_id_;
     }
 
-    
     void ControlPointsMode::update_canvas_interface(const EditorContext& context)
     {
       auto& io = ImGui::GetIO();
@@ -64,7 +63,8 @@ namespace ts
       auto screen_pos = [&](auto world_pos)
       {
         auto p = transform.viewport_position(vector2_cast<double>(world_pos));
-        return ImVec2(p.x + canvas_pos.x, p.y + canvas_pos.y);
+        return ImVec2(static_cast<float>(p.x + canvas_pos.x),
+                      static_cast<float>(p.y + canvas_pos.y));
       };
 
       using resources::ControlPoint;
@@ -89,9 +89,7 @@ namespace ts
         char buffer[32] = "Finish Line";        
         if ((cp.flags & ControlPoint::Sector) != 0)
         {
-          std::sprintf(buffer, "S%u", sector_id);          
-
-          ++sector_id;
+          std::sprintf(buffer, "S%u", ++sector_id);          
         }
 
         else if (point_id != 1)
@@ -149,7 +147,7 @@ namespace ts
           auto action = [=]()
           {
             context.scene.track().add_control_point(cp, idx);
-            selected_point_id_ = idx + 1;
+            selected_point_id_ = static_cast<std::uint32_t>(idx + 1);
           };
 
           auto undo_action = [=]()
@@ -161,6 +159,23 @@ namespace ts
 
           added_point_position_ = boost::none;
         }
+      }
+
+      if (selected_point_id_ > 1 && selected_point_id_ <= cps.size() && 
+          ImGui::IsKeyReleased(sf::Keyboard::S))
+      {
+        
+        auto idx = selected_point_id_ - 1;
+        auto action = [=]()
+        {
+          auto& track = context.scene.track();
+          const auto& cps = track.control_points();
+          auto cp = cps[idx];
+          cp.flags ^= ControlPoint::Sector;
+          track.update_control_point(idx, cp);
+        };
+
+        context.action_history.push_action("Toggle sector CP", action, action);
       }
     }
 
@@ -177,7 +192,7 @@ namespace ts
         auto action = [=]()
         {
           context.scene.track().remove_control_point(idx);
-          selected_point_id_ = idx;
+          selected_point_id_ = static_cast<std::uint32_t>(idx);
         };
 
         auto undo_action = [=]()
@@ -201,7 +216,7 @@ namespace ts
         auto action = [=]()
         {
           context.scene.track().remove_control_point(idx - 1);
-          selected_point_id_ = std::min(idx, context.scene.track().control_points().size());
+          selected_point_id_ = static_cast<std::uint32_t>(std::min(idx, context.scene.track().control_points().size()));
         };
 
         auto undo_action = [=]()

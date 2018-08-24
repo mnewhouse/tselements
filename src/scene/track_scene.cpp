@@ -99,6 +99,16 @@ namespace ts
       }
     }
 
+    void TrackSceneLayer::set_path_relative_border_width(float w)
+    {
+      relative_border_width_ = w;
+    }
+
+    float TrackSceneLayer::path_relative_border_width() const
+    {
+      return relative_border_width_;
+    }
+
     void TrackSceneLayer::set_type(Type type)
     {
       type_ = type;
@@ -222,7 +232,7 @@ namespace ts
       auto vertices_end = vertices + vertex_count;
       auto faces_end = faces + face_count;
 
-      auto vertex_offset = vertices_.size();
+      auto vertex_offset = static_cast<std::uint32_t>(vertices_.size());
       vertices_.insert(vertices_.end(), vertices, vertices_end);
 
       const auto inv_region_size = 1.0f / region_size;
@@ -428,23 +438,16 @@ namespace ts
         vertex_cache_.clear();
         face_cache_.clear();
 
-        sf::Image path_texture;
-        create_path_geometry(*path_style->path, path_style->style, 0.1f, path_texture, vertex_cache_, face_cache_);        
+        float max_width = 0.0f;
+        create_path_geometry(*path_style->path, path_style->style, 0.1f, max_width, vertex_cache_, face_cache_);        
 
         if (!face_cache_.empty())
         {
           const texture_type* texture = nullptr;
           if (style.texture_mode != style.Directional)
           {
-            auto tex = std::make_unique<graphics::Texture>(graphics::create_texture(path_texture, true));
-            glBindTexture(tex->target(), tex->get());
-            glTexParameteri(tex->target(), GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-            glTexParameteri(tex->target(), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glBindTexture(tex->target(), 0);
-
-            texture = tex.get();
-            scene_layer.store_texture(std::move(tex));
             scene_layer.set_type(scene_layer.Path);
+            scene_layer.set_path_relative_border_width(path_style->style.border_width / max_width);
           }
 
           else
@@ -454,8 +457,8 @@ namespace ts
             scene_layer.set_type(scene_layer.Default);
           }
 
-          scene_layer.append_geometry(texture, vertex_cache_.data(), vertex_cache_.size(),
-                                      face_cache_.data(), face_cache_.size());
+          scene_layer.append_geometry(texture, vertex_cache_.data(), static_cast<std::uint32_t>(vertex_cache_.size()),
+                                      face_cache_.data(), static_cast<std::uint32_t>(face_cache_.size()));
           
         }
       }

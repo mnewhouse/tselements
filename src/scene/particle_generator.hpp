@@ -30,8 +30,8 @@ namespace ts
       double max_effect_speed = 250.0;
       double position_variance = 3.0;
       double color_variance = 0.4;
-      std::size_t display_time = 400;      
-      std::size_t max_particles = 1024;
+      std::uint32_t display_time = 400;      
+      std::uint32_t max_particles = 1024;
     };
 
     // The particle generator class generates particles for all cars in the game world,

@@ -27,7 +27,7 @@ namespace ts
       auto end = vector2_cast<double>(finish_line.end);
       auto center = start + (end - start) * 0.5;
       
-      auto grid_direction = flip_orientation(normalize(end - start));
+      auto grid_direction = normalize(make_vector2(end.y - start.y, start.x - end.x));
 
       // The dominant direction should be either to the left or to the bottom.
       if (std::abs(grid_direction.x) < std::abs(grid_direction.y))

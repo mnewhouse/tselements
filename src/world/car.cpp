@@ -29,6 +29,7 @@ namespace ts
         Controllable(entity_id),
         handling_(car_definition.handling)
     {
+      set_center_of_mass(car_definition.center_of_mass);
     }
 
     void Car::update(const World& world, double frame_duration)

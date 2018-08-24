@@ -96,9 +96,8 @@ namespace ts
           path_vertices.clear();
           path_faces.clear();
 
-          sf::Image dummy;
-          scene::create_path_geometry(*path_style->path, path_style->style, 0.75f, dummy, path_vertices, path_faces);
-            
+          float max_width;
+          scene::create_path_geometry(*path_style->path, path_style->style, 0.75f, max_width, path_vertices, path_faces);            
           add_path_component(path_style->style.terrain_id);     
         }
 

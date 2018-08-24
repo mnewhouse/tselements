@@ -91,13 +91,16 @@ namespace ts
       Vector2f primary_texture_tile_size() const;
       Vector2f secondary_texture_tile_size() const;
 
+      void set_path_relative_border_width(float width);
+      float path_relative_border_width() const;
+
     private:
       ComponentContainer components_;
       Type type_ = Type::Default;
 
       const resources::TrackLayer* associated_layer_;
       std::vector<vertex_type> vertices_;
-
+      
       std::unique_ptr<graphics::Texture> stored_texture_;
       const texture_type* primary_texture_ = nullptr;
       const texture_type* secondary_texture_ = nullptr;
@@ -105,6 +108,7 @@ namespace ts
       Vector2f primary_texture_tile_size_ = { 256.0f, 256.0f };
       Vector2f secondary_texture_tile_size_ = { 256.0f, 256.0f };
 
+      float relative_border_width_ = 0.0f;
       std::uint32_t level_offset_ = 0;
       bool is_visible_ = true;
     };

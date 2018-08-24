@@ -358,12 +358,9 @@ namespace ts
       if (content_size.x - canvas_size.x > 0.5) canvas_size.y -= style_vars.ScrollbarSize;
       if (content_size.y - canvas_size.y > 0.5) canvas_size.x -= style_vars.ScrollbarSize;
 
-      IntRect canvas_rect(static_cast<int>(window_pos.x),
-                          static_cast<int>(window_pos.y),
-                          static_cast<int>(canvas_size.x),
-                          static_cast<int>(canvas_size.y));
+      FloatRect canvas_rect(window_pos.x, window_pos.y, canvas_size.x, canvas_size.y);
 
-      view_port_.set_screen_rect(canvas_rect);
+      view_port_.set_screen_rect(rect_cast<std::int32_t>(canvas_rect));
 
       auto scroll_state = make_vector2(ImGui::GetScrollX(), ImGui::GetScrollY());
       auto mouse_pos = ImGui::GetMousePos();
@@ -381,7 +378,7 @@ namespace ts
         old_camera_state = camera;
       }
 
-      canvas_hover_state_ = contains(canvas_rect, Vector2i(mouse_pos.x, mouse_pos.y));
+      canvas_hover_state_ = contains(canvas_rect, { mouse_pos.x, mouse_pos.y });
       canvas_focus_state_ = !ImGui::IsAnyItemActive() && !ImGui::IsAnyItemHovered() && canvas_hover_state_;
       if (canvas_focus_state_)
       {
@@ -416,7 +413,6 @@ namespace ts
           auto min_zoom = std::min(canvas_size.x / world_size.x,
                                    canvas_size.y / world_size.y);
 
-          auto mouse_pos = ImGui::GetMousePos();
           auto window_pos = ImGui::GetWindowPos();
 
           auto window_center = make_vector2(window_pos.x, window_pos.y) + make_vector2(canvas_size.x, canvas_size.y) * 0.5;
