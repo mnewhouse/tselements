@@ -67,6 +67,9 @@ namespace ts
       void stop_sound_playback(PlaybackHandle playback_handle);
       void set_sound_priority(PlaybackHandle playback_handle, std::size_t priority);
 
+      void pause_all();
+      void resume_all();
+
     private:
       PlaybackHandle play_sound_effect_internal(const SoundSample& sample, const PlaybackProperties& properties,
                                                 std::size_t priority, bool looped);
@@ -75,6 +78,7 @@ namespace ts
       {
         sf::Sound* sound;
         std::size_t priority;
+        bool paused = false;
 
         struct PriorityCmp;
       };

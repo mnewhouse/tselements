@@ -38,9 +38,13 @@ namespace ts
       void handle_message(const ClientMessage<client::messages::Update>& update_request);
       void handle_message(const ClientMessage<stage::messages::ControlUpdate>& update_message);
       void handle_message(const ClientMessage<client::messages::LocalConnection>& connect_message);
+      void handle_message(const ClientMessage<world::messages::CarPropertiesUpdate>& car_update);
 
       // Internal message (server <-> server)
       void handle_message(const world::messages::ControlPointHit& cp_hit);
+
+      // Car editor message
+      
 
     private:
       stage::StageRegulator stage_regulator_;

@@ -69,6 +69,18 @@ namespace ts
       }
     }
 
+    void CarSoundController::pause()
+    {
+      engine_playback_controller_.pause_all();
+      skid_playback_controller_.pause_all();
+    }
+
+    void CarSoundController::resume()
+    {
+      engine_playback_controller_.resume_all();
+      skid_playback_controller_.resume_all();
+    }
+
     void CarSoundController::update(std::uint32_t frame_duration)
     {
       for (auto& car_info : cars_)

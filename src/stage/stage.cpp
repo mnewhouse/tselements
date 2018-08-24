@@ -11,6 +11,7 @@
 #include "controls/control.hpp"
 
 #include "world/car.hpp"
+#include "world/world_messages.hpp"
 
 namespace ts
 {
@@ -74,6 +75,20 @@ namespace ts
       if (auto car = world_.find_car(static_cast<std::uint8_t>(controllable_id)))
       {
         car->update_controls_mask(mask);
+      }
+    }
+
+    void Stage::update_car_properties(const world::messages::CarPropertiesUpdate& msg)
+    {
+      if (auto car = world_.find_car(static_cast<std::uint8_t>(msg.car->controllable_id())))
+      {
+        if (car == msg.car)
+        {
+          car->set_handling(msg.handling);
+          car->set_mass(msg.mass);
+          car->set_center_of_mass(msg.center_of_mass);
+          car->set_moment_of_inertia(msg.moment);          
+        }
       }
     }
   }

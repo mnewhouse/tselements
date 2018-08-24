@@ -21,6 +21,8 @@
 
 #include "world/terrain_map_builder.hpp"
 #include "world/terrain_map.hpp"
+#include "world/car.hpp"
+#include "world/world_messages.hpp"
 
 namespace ts
 {
@@ -109,6 +111,59 @@ namespace ts
                                       std::move(stage_components.local_players),
                                       std::move(stage_components.stage))
     {
+    }
+
+    void TestState::process_event(const event_type& e)
+    {
+      StandaloneActionState::process_event(e);
+
+      if (e.type == e.KeyPressed && e.key.code == sf::Keyboard::F3)
+      {
+        if (car_editor_.active())
+        {
+          car_editor_.deactivate();
+        }
+
+        else
+        {
+          const auto& cc = control_center();
+
+          auto controllable_range = cc.control_slot(0);
+          if (!controllable_range.empty())
+          {
+            auto& world_obj = scene_obj().stage().world();
+            for (auto& car : world_obj.cars())
+            {
+              if (car.controllable_id() == controllable_range.front().controllable_id())
+              {
+                car_editor_.activate(&car);
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    void TestState::update(const update_context& u)
+    {
+      StandaloneActionState::update(u);
+
+      if (car_editor_.active())
+      {
+        hide_race_hud();
+      }
+
+      else
+      {
+        show_race_hud();
+      }
+
+      world::messages::CarPropertiesUpdate msg;
+      if (car_editor_.update(msg))
+      {
+        dispatch_message(msg);
+      }
     }
 
     void TestState::release_scene(EditorScene& editor_scene)

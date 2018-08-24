@@ -49,6 +49,9 @@ namespace ts
 
       SceneComponents release();
 
+      void pause();
+      void resume();
+
     private:
       struct Impl;
       std::unique_ptr<Impl> impl_;

@@ -42,6 +42,9 @@ namespace ts
       const resources::Handling& handling() const { return handling_; }
       const HandlingState& handling_state() const { return handling_state_; }
 
+      void set_handling(const resources::Handling& h) { handling_ = h; };
+      
+
     private:
       resources::Handling handling_;
       HandlingState handling_state_;

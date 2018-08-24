@@ -82,5 +82,17 @@ namespace ts
     {
       return std::move(*impl_);
     }
+
+    void Scene::pause()
+    {
+      impl_->car_sound_controller_.pause();
+      impl_->sound_effect_controller_.pause_all();
+    }
+
+    void Scene::resume()
+    {
+      impl_->car_sound_controller_.resume();
+      impl_->sound_effect_controller_.resume_all();
+    }
   }
 }

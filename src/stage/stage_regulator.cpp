@@ -23,6 +23,11 @@ namespace ts
       stage_->set_controllable_state(message.controllable_id, message.controls_mask);
     }
 
+    void StageRegulator::handle_message(const world::messages::CarPropertiesUpdate& car_update)
+    {
+      stage_->update_car_properties(car_update);
+    }
+
     void StageRegulator::control_point_hit(const world::messages::ControlPointHit& cp_hit,
                                            RaceEventInterface& event_interface)
     {

@@ -8,10 +8,15 @@
 
 #include <cstdint>
 
+#include "resources/handling.hpp"
+
+#include "utility/vector2.hpp"
+
 namespace ts
 {
   namespace world
   {
+    class Car;
     class Entity;
 
     namespace messages
@@ -33,6 +38,15 @@ namespace ts
       {
         const Entity* subject;
         const Entity* object;
+      };
+
+      struct CarPropertiesUpdate
+      {
+        const Car* car;
+        double mass;
+        Vector2d center_of_mass;
+        double moment;
+        resources::Handling handling;
       };
     }
   }

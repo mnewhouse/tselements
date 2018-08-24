@@ -51,6 +51,11 @@ namespace ts
       stage_regulator_.control_point_hit(cp_hit, event_interface);
     }
 
+    void Stage::handle_message(const ClientMessage<world::messages::CarPropertiesUpdate>& car_update)
+    {
+      stage_regulator_.handle_message(car_update.message);
+    }
+
     const stage::StageDescription& Stage::stage_description() const
     {
       return stage_regulator_.stage()->stage_description();

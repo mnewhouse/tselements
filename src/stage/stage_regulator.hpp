@@ -32,6 +32,7 @@ namespace ts
       void update(std::uint32_t frame_duration, world::EventInterface& event_interface);
 
       void handle_message(const messages::ControlUpdate& control_message);
+      void handle_message(const world::messages::CarPropertiesUpdate& car_update);
 
       void control_point_hit(const world::messages::ControlPointHit& cp_hit,
                              RaceEventInterface& event_interface);

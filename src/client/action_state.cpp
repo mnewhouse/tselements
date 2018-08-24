@@ -95,31 +95,77 @@ namespace ts
     
     void ActionState::render(const render_context& ctx) const
     {
+      auto fp = ctx.frame_progress;
+      if (is_paused_) fp = 0.0;
+
       // Render all active viewports through the scene renderer.
-      scene_.render(viewport_arrangement_, ctx.screen_size, ctx.frame_progress);
+      scene_.render(viewport_arrangement_, ctx.screen_size, fp);
     }
 
     void ActionState::update(const update_context& ctx)
     {
-      auto frame_duration = ctx.frame_duration;
-
-      // Make sure we update these before the stage update, because these things
-      // have to know the previous game state to allow for interpolation.
-      viewport_arrangement_.update_viewports();
-      scene_.update_stored_state();
-
-      // Request a stage update. This is done through the message system,
-      // which delivers the request to the part of the game that's responsible
-      // for the stage updates.
-      request_update(frame_duration);
-
-      // Now, update the scene with the new game state.
-      scene_.update(frame_duration);
-
-      if (auto race_tracker = scene_.stage().race_tracker())
+      if (!is_paused_)
       {
-        race_hud_.update(viewport_arrangement_, *race_tracker);
+        auto frame_duration = ctx.frame_duration;
+
+        // Make sure we update these before the stage update, because these things
+        // have to know the previous game state to allow for interpolation.
+        viewport_arrangement_.update_viewports();
+        scene_.update_stored_state();
+
+        // Request a stage update. This is done through the message system,
+        // which delivers the request to the part of the game that's responsible
+        // for the stage updates.
+        request_update(frame_duration);
+
+        // Now, update the scene with the new game state.
+        scene_.update(frame_duration);
+
+        if (auto race_tracker = scene_.stage().race_tracker())
+        {
+          if (hud_visible_)
+          {
+            race_hud_.update(viewport_arrangement_, *race_tracker);
+          }          
+        }
       }
+    }
+
+    void ActionState::pause()
+    {
+      is_paused_ = true;
+
+      scene_.pause();
+    }
+
+    void ActionState::resume()
+    {
+      is_paused_ = false;
+
+      scene_.resume();
+    }
+
+    void ActionState::toggle_paused()
+    {
+      if (is_paused_)
+      {
+        resume();
+      }
+
+      else
+      {
+        pause();
+      }
+    }
+
+    void ActionState::hide_race_hud()
+    {
+      hud_visible_ = false;
+    }
+
+    void ActionState::show_race_hud()
+    {
+      hud_visible_ = true;
     }
 
     void ActionState::connect(server::MessageConveyor local_connection)

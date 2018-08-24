@@ -194,6 +194,11 @@ namespace ts
       cpBodySetCenterOfGravity(BODY_PTR, { t.x, t.y });
     }
 
+    void Entity::set_moment_of_inertia(double m)
+    {
+      cpBodySetMoment(BODY_PTR, m);
+    }
+
     double Entity::moment_of_inertia() const
     {
       return cpBodyGetMoment(BODY_PTR);

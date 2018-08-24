@@ -53,7 +53,7 @@ namespace ts
       });
 
       if (idle_sound != sounds_.end())
-      {
+      {        
         auto& sound = *idle_sound;
         detail::play_sound(sound, sample, properties, looped);
         return PlaybackHandle(&sound);
@@ -88,6 +88,22 @@ namespace ts
     void PlaybackController::stop_sound_playback(PlaybackHandle handle)
     {
       handle.sound_->stop();
+    }
+
+    void PlaybackController::pause_all()
+    {
+      for (auto& sound : sounds_)
+      {        
+        sound.pause();
+      }
+    }
+
+    void PlaybackController::resume_all()
+    {
+      for (auto& sound : sounds_)
+      {
+        sound.play();
+      }
     }
 
     PlaybackHandle::PlaybackHandle(sf::Sound* sound)

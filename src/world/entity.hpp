@@ -73,6 +73,7 @@ namespace ts
       Vector2d center_of_mass() const;
       void set_center_of_mass(Vector2d center);
 
+      void set_moment_of_inertia(double m);
       double moment_of_inertia() const;
 
       bool is_flying() const;

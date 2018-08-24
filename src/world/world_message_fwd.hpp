@@ -15,6 +15,7 @@ namespace ts
       struct ControlPointHit;
       struct SceneryCollision;
       struct EntityCollision;
+      struct CarPropertiesUpdate;
     }
   }
 }

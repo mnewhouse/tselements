@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "car_editor.hpp"
+
 #include "client/local_player_roster.hpp"
 #include "client/standalone_action_state.hpp"
 
@@ -52,7 +54,14 @@ namespace ts
     public:
       TestState(const game_context& ctx, StageComponents stage_components);
 
+      // Logic for car editing #TODO
+      virtual void process_event(const event_type& e) override;
+      virtual void update(const update_context&) override;
+
       void release_scene(EditorScene& editor_scene);    
+
+    private:
+      CarEditor car_editor_;
     };
   }
 }

@@ -51,6 +51,7 @@ namespace ts
         c.process(cm(stage::messages::ControlUpdate{}));
         c.process(cm(client::messages::Update{}));
         c.process(cm(client::messages::LocalConnection{}));
+        c.process(cm(world::messages::CarPropertiesUpdate{}));
 
         c.process(stage::messages::RaceTimeUpdate{});        
         c.process(stage::messages::LapComplete{});           
@@ -58,7 +59,8 @@ namespace ts
 
         c.process(world::messages::SceneryCollision{});
         c.process(world::messages::EntityCollision{});
-        c.process(world::messages::ControlPointHit{});        
+        c.process(world::messages::ControlPointHit{});
+        
       }
     }
   }

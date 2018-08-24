@@ -52,5 +52,15 @@ namespace ts
       }
       */
     }
+
+    void SoundEffectController::pause_all()
+    {
+      playback_controller_.pause_all();
+    }
+
+    void SoundEffectController::resume_all()
+    {
+      playback_controller_.resume_all();
+    }
   }
 }

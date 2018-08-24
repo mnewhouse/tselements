@@ -42,6 +42,9 @@ namespace ts
 
       void update(std::uint32_t frame_duration);
 
+      void pause();
+      void resume();
+
     private:
       struct CarModel
       {

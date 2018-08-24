@@ -43,11 +43,29 @@ namespace ts
 
       void connect(server::MessageConveyor message_conveyor);
 
+      void pause();
+      void resume();
+      void toggle_paused();
+      bool is_paused() const { return is_paused_; }
+    
+      const controls::ControlCenter& control_center() const { return control_center_; }
+      const scene::Scene& scene_obj() const { return scene_; }
+
+      void hide_race_hud();
+      void show_race_hud();
+
       //template <typename MessageType>
       //void handle_message(const MessageType&) {}
 
       //void handle_message(const world::messages::SceneryCollision& collision);
       //void handle_message(const world::messages::EntityCollision& collision);
+    protected:
+      template <typename MessageType>
+      void dispatch_message(const MessageType& m)
+      {
+        message_dispatcher_.send(m);
+      }
+
     private:
       virtual void launch_action();
       virtual void end_action();
@@ -63,6 +81,8 @@ namespace ts
       LocalPlayerRoster local_players_;
 
       RaceHUD race_hud_;
+      bool is_paused_ = false;
+      bool hud_visible_ = true;
 
       MessageDispatcher message_dispatcher_;
     };
