@@ -188,6 +188,12 @@ namespace ts
       return{ cog.x, cog.y };
     }
 
+    void Entity::set_center_of_mass(Vector2d cog)
+    {
+      auto t = vector2_cast<cpFloat>(cog);
+      cpBodySetCenterOfGravity(BODY_PTR, { t.x, t.y });
+    }
+
     double Entity::moment_of_inertia() const
     {
       return cpBodyGetMoment(BODY_PTR);
