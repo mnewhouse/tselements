@@ -23,19 +23,24 @@ namespace ts
 
     static graphics::ShaderProgram create_default_geometry_shader()
     {
-      return graphics::create_shader_program(scene::shaders::track_vertex_shader, 
-                                             scene::shaders::track_fragment_shader);
     }
 
     TileInteractionRenderer::TileInteractionRenderer()
-      : selected_geometry_shader_(create_selected_geometry_shader()),
-        default_geometry_shader_(create_default_geometry_shader()),
-        
-        vertex_buffer_(graphics::create_buffer()),
+      : vertex_buffer_(graphics::create_buffer()),
         index_buffer_(graphics::create_buffer()),
 
         vertex_array_(graphics::create_vertex_array())
     {
+      auto prog = graphics::create_shader_program(scene::shaders::track_vertex_shader,
+                                                  scene::shaders::basic_track_fragment_shader);
+
+
+      glBindAttribLocation(prog.get(), 0, "in_position");
+      glBindAttribLocation(prog.get(), 1, "in_texCoords");
+
+      graphics::link_shader_program(prog);
+      default_geometry_shader_ = std::move(prog);
+
       default_view_matrix_location_ = glGetUniformLocation(default_geometry_shader_.get(), "u_viewMatrix");
       default_sampler_location_ = glGetUniformLocation(default_geometry_shader_.get(), "u_textureSampler");
 
@@ -50,24 +55,20 @@ namespace ts
 
       glCheck(glEnableVertexAttribArray(0));
       glCheck(glEnableVertexAttribArray(1));
-      glCheck(glEnableVertexAttribArray(2));
 
       using V = resources::Vertex;
-      glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(V),
+      glCheck(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V),
                                     reinterpret_cast<const void*>(static_cast<std::uintptr_t>(offsetof(V, position)))));
 
       glCheck(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(V),
                                     reinterpret_cast<const void*>(static_cast<std::uintptr_t>(offsetof(V, texture_coords)))));
 
-      glCheck(glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(V),
-                                    reinterpret_cast<const void*>(static_cast<std::uintptr_t>(offsetof(V, color)))));
-
+      glCheck(glBindVertexArray(0));
       glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
       glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
-      glCheck(glBindVertexArray(0));
     }
 
-    void TileInteractionRenderer::render(const sf::Transform& view_matrix) const
+    void TileInteractionRenderer::render(const sf::Transform& view_matrix, Vector2f track_size) const
     {
       glCheck(glUseProgram(default_geometry_shader_.get()));
 
@@ -75,18 +76,15 @@ namespace ts
       glCheck(glUniformMatrix4fv(default_view_matrix_location_, 1, GL_FALSE, matrix.getMatrix()));
       glCheck(glUniform1i(default_sampler_location_, 0));
 
-      glCheck(glBindVertexArray(vertex_array_.get()));
-      glCheck(glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_.get()));
-      glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_.get()));      
+      glCheck(glBindVertexArray(vertex_array_.get()));  
 
       for (auto component : render_components_)
       {
+        glCheck(glActiveTexture(GL_TEXTURE0));
         glCheck(glBindTexture(GL_TEXTURE_2D, component.texture->get()));
         glCheck(glDrawElements(GL_TRIANGLES, component.element_count, GL_UNSIGNED_INT, component.buffer_offset));
       }
 
-      glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
-      glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
       glCheck(glBindVertexArray(0));
       glCheck(glUseProgram(0));
     }

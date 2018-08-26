@@ -48,6 +48,7 @@ namespace ts
         std::uint32_t last_lap_start = 0;
         std::uint32_t last_lap_time = 0;
         std::uint32_t best_lap_time = 0;
+        std::uint32_t last_best_lap_time = 0;
         std::uint32_t last_sector_time = 0;
 
         boost::container::small_vector<std::uint32_t, 8> best_lap_sector_times;

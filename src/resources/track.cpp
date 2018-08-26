@@ -158,8 +158,7 @@ namespace ts
 
         layer->set_level(level);
 
-        std::uint32_t z_index = 0;
-        for (auto layer : layer_order_) layer->set_z_index(z_index++);
+        update_z_index();
       }      
     }
 
@@ -179,8 +178,7 @@ namespace ts
         ++i;
       }
 
-      std::uint32_t z_index = 0;
-      for (auto layer : layer_order_) layer->set_z_index(z_index++);
+      update_z_index();
 
       return i;
     }
@@ -206,10 +204,35 @@ namespace ts
         --prev;        
       }
 
-      std::uint32_t z_index = 0;
-      for (auto layer : layer_order_) layer->set_z_index(z_index++);
+      update_z_index();
 
       return i;
+    }
+
+    void Track::deactivate_layer(TrackLayer* layer)
+    {
+      layer_order_.erase(std::remove(layer_order_.begin(), layer_order_.end(), layer), layer_order_.end());
+      update_z_index();
+    }
+
+    void Track::update_z_index()
+    {
+      std::uint32_t z_index = 0;
+      for (auto layer : layer_order_) layer->set_z_index(z_index++);
+    }
+
+    void Track::insert_layer(TrackLayer* layer)
+    {
+      auto& order = layer_order_;
+      auto insert_position = std::upper_bound(order.begin(), order.end(), layer, LayerOrderComparator());
+      order.insert(insert_position, layer);
+
+      update_z_index();
+    }
+
+    void Track::activate_layer(TrackLayer* layer)
+    {
+      insert_layer(layer);
     }
 
     TrackLayer* Track::create_layer(TrackLayerType type, std::string layer_name, std::uint32_t level)                                    
@@ -223,12 +246,7 @@ namespace ts
       auto layer_ptr = &result.first->second;
       
       // Make sure to keep the layers sorted by level
-      auto& order = layer_order_;
-      auto insert_position = std::upper_bound(order.begin(), order.end(), layer_ptr, LayerOrderComparator());
-      order.insert(insert_position, layer_ptr);
-
-      std::uint32_t z_index = 0;
-      for (auto layer : layer_order_) layer->set_z_index(z_index++);
+      insert_layer(layer_ptr);
 
       return layer_ptr;
     }

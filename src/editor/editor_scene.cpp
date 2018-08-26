@@ -70,6 +70,30 @@ namespace ts
       return render_scene_.get_ptr();
     }
 
+    void EditorScene::deactivate_layer(resources::TrackLayer* layer)
+    {
+      track_.deactivate_layer(layer);
+      render_scene_->remove_layer(layer);
+    }
+
+    void EditorScene::activate_layer(resources::TrackLayer* layer)
+    {
+      track_.activate_layer(layer);
+      render_scene_->add_layer(layer);
+    }      
+
+    void EditorScene::show_layer(resources::TrackLayer* layer)
+    {
+      layer->set_visible(true);
+      render_scene_->update_layer_visibility(layer);
+    }
+
+    void EditorScene::hide_layer(resources::TrackLayer* layer)
+    {
+      layer->set_visible(false);
+      render_scene_->update_layer_visibility(layer);
+    }
+
     const std::vector<resources::PlacedTile>& EditorScene::expand_tile(const resources::Tile& tile) const
     {
       tile_expansion_cache_.clear();

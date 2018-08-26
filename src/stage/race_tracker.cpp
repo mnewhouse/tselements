@@ -62,6 +62,7 @@ namespace ts
           {
             if (car_info.laps_done == 0 || lap_time < car_info.best_lap_time)
             {
+              car_info.last_best_lap_time = car_info.best_lap_time;
               car_info.best_lap_id = car_info.laps_done;
               car_info.best_lap_time = lap_time;
               car_info.best_lap_sector_times = car_info.current_lap_sector_times;

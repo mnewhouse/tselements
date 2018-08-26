@@ -36,7 +36,7 @@ namespace ts
     void ControlPointsMode::next(const EditorContext& context)
     {
       auto& cps = context.scene.track().control_points();
-      if (selected_point_id_ + 1 < cps.size())
+      if (selected_point_id_ < cps.size())
       {
         ++selected_point_id_;
       }     

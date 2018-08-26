@@ -45,9 +45,9 @@ int main(int argc, char* argv[])
   {
     game::elevate_process_priority();
 
-    int screen_width = 1280, screen_height = 850;
+    int screen_width = 1680, screen_height = 1050;
     graphics::RenderWindow window("Pocket Wheels - Editor",
-                                  screen_width, screen_height, graphics::WindowMode::Windowed);
+                                  screen_width, screen_height, graphics::WindowMode::FullScreen);
 
     window.set_vsync_enabled(true);
     window.set_framerate_limit(0);

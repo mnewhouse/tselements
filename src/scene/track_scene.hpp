@@ -131,15 +131,17 @@ namespace ts
       
       TrackSceneLayer& scene_layer(LayerHandle layer_handle, std::uint32_t level = 0);
       void deactivate_layer(LayerHandle layer_handle);
+      void activate_layer(LayerHandle layer_handle);
 
       const TextureMapping& texture_mapping() const;
 
       void add_tile_geometry(const resources::TrackLayer* layer,
                              const resources::PlacedTile* expanded_tile, std::size_t count);
+      
       void rebuild_tile_layer_geometry(const resources::TrackLayer* layer,
                                        const resources::PlacedTile* expanded_tile, std::size_t count);
 
-      void add_base_terrain_geometry(const resources::TrackLayer* layer);
+      void rebuild_base_terrain_geometry(const resources::TrackLayer* layer);
       void rebuild_path_layer_geometry(const resources::TrackLayer* layer);
       
       using layer_range = boost::iterator_range<boost::indirect_iterator<const TrackSceneLayer* const*>>;

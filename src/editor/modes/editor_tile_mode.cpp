@@ -252,7 +252,7 @@ namespace ts
 
     void TileMode::update_canvas_interface(const EditorContext& context)
     {
-      update_selected_layer(context);
+      update_selected_layer(context);      
 
       auto canvas_pos = ImGui::GetWindowPos();
       auto mouse_pos = ImGui::GetMousePos();
@@ -264,7 +264,7 @@ namespace ts
       const auto& view_port = context.canvas_viewport;
 
       auto mode = active_tool();
-      if (mode == tools::TilePlacement && selected_layer_)
+      if (mode == tools::TilePlacement && selected_layer_ && selected_layer_->visible())
       {
         auto& scene = context.scene;
 
@@ -282,7 +282,8 @@ namespace ts
     {
       if (context.working_state.selected_layer() != nullptr)
       {
-        tile_interaction_renderer_.render(view_matrix);
+        auto size = context.scene.track().size();
+        tile_interaction_renderer_.render(view_matrix, vector2_cast<float>(size));
       }      
     }
 

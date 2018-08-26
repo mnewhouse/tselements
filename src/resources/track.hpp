@@ -93,6 +93,9 @@ namespace ts
       using LayerId = std::uint32_t;
       TrackLayer* create_layer(TrackLayerType type, std::string layer_name, std::uint32_t level);
 
+      void deactivate_layer(TrackLayer* layer);
+      void activate_layer(TrackLayer* layer);        
+
       std::size_t layer_count() const noexcept;
 
       void set_layer_level(TrackLayer* layer, std::uint32_t level);
@@ -120,6 +123,9 @@ namespace ts
       const std::vector<std::string>& assets() const;
 
     private:
+      void insert_layer(TrackLayer* layer);
+      void update_z_index();
+
       std::string path_;
       std::string author_;
 

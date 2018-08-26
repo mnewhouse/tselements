@@ -55,6 +55,11 @@ namespace ts
       void history_window();
       void layers_window();
 
+      void deactivate_layer(resources::TrackLayer* layer);
+      void toggle_layer_visibility(resources::TrackLayer* layer);
+      void open_create_layer_dialog();
+      void show_layer_properties(resources::TrackLayer* layer);
+
       template <typename ContextType, typename Self>
       static ContextType make_context(Self&& self);
 
@@ -73,6 +78,10 @@ namespace ts
       bool canvas_hover_state_ = false;
       bool canvas_focus_state_ = false;
       bool canvas_drag_state_ = false;
+      bool layer_rename_window_open_ = false;
+
+      resources::TrackLayer* modified_layer_ = nullptr;
+      
 
       EditorMode* active_mode_ = nullptr;
       PathMode path_mode_;

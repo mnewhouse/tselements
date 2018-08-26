@@ -34,7 +34,7 @@ namespace ts
       TileInteractionRenderer();
 
       void set_transform(const sf::Transform& model_matrix);
-      void render(const sf::Transform& view_matrix) const;
+      void render(const sf::Transform& view_matrix, Vector2f track_size) const;
 
       void update_tile_geometry(const resources::PlacedTile*, std::size_t tile_count,
                                 const scene::TextureMapping& texture_mapping);
@@ -53,6 +53,8 @@ namespace ts
 
       std::uint32_t default_view_matrix_location_;
       std::uint32_t default_sampler_location_;
+      std::uint32_t default_min_corner_location_;
+      std::uint32_t default_max_corner_location_;
       std::uint32_t selected_view_matrix_location_;
       std::uint32_t selected_sampler_location_;
 
@@ -63,7 +65,7 @@ namespace ts
         std::uint32_t element_count = 0;        
       };
 
-      std::vector<Component> render_components_;
+      std::vector<Component> render_components_;      
       std::vector<resources::Vertex> vertex_cache_;
       std::vector<resources::Face> face_cache_;
 

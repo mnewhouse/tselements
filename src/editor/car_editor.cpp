@@ -23,7 +23,50 @@ namespace ts
       
       auto column_width = 150.0f;
       ImGui::PushStyleColor(ImGuiCol_WindowBg, ImColor(1.0f, 1.0f, 1.0f, 0.3f));
-      ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor(0.0f, 0.0f, 0.0f, 0.2f));      
+      ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor(0.0f, 0.0f, 0.0f, 0.2f));
+
+      auto& io = ImGui::GetIO();
+      ImGui::Begin("car_stats", &active_, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize |
+                   ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+
+      auto& handling_state = car_->handling_state();
+
+      ImGui::Text("Speed");
+      ImGui::SameLine(column_width);
+      ImGui::Text("%.1f", magnitude(car_->velocity()));
+
+      ImGui::Text("Gear");
+      ImGui::SameLine(column_width);
+      if (handling_state.current_gear == 0) ImGui::Text("N");
+      else if (handling_state.current_gear < 1) ImGui::Text("R");
+      else ImGui::Text("%d", handling_state.current_gear);
+
+      ImGui::Text("Revs");
+      ImGui::SameLine(column_width);
+      ImGui::Text("%.0f%%", handling_state.engine_rev_speed * 100.0f);
+
+      ImGui::Text("Longitudinal G");
+      ImGui::SameLine(column_width);
+      ImGui::Text("%.2f", -handling_state.net_force.y / (car_->mass() * 9.8f * 3.6f));
+
+      ImGui::Text("Lateral G");
+      ImGui::SameLine(column_width);
+      ImGui::Text("%.2f", handling_state.net_force.x / (car_->mass() * 9.8f * 3.6f));
+
+      ImGui::Dummy(ImVec2(column_width + 60.0f, 0.0f));
+
+      {
+        auto size = ImGui::GetWindowSize();
+        ImGui::SetWindowPos(ImVec2(io.DisplaySize.x - size.x - 60.0f, 60.0f), ImGuiSetCond_Always);                                   
+      }
+
+      ImGui::End();
+
+
+      ImGui::SetNextWindowPos(ImVec2(60.0f, 60.0f), ImGuiSetCond_Always);
+      ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f),
+                                          ImVec2(io.DisplaySize.x - 120.0f, io.DisplaySize.y - 120.0f));      
+
       ImGui::Begin("car_editor", &active_, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize |
                    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 
@@ -63,9 +106,9 @@ namespace ts
       auto moment = f(car_->moment_of_inertia());
 
       int r = 0;
-      r += ImGui::InputFloat("Mass", &mass, 1.0f, 10.0f);      
-      r += ImGui::InputFloat2("Center of Mass", cog_array);
-      r += ImGui::InputFloat("Moment of Inertia", &moment, 1.0f, 10.0f);
+      r += ImGui::InputFloat("Mass", &mass, 1.0f, 10.0f, 0); 
+      r += ImGui::InputFloat("Center of Mass", &cog.y, 0.01f, 0.1f, 2);
+      r += ImGui::InputFloat("Moment of Inertia", &moment, 1.0f, 10.0f, 0);
       ImGui::NewLine();
       r += ImGui::InputFloat("Acceleration Force", &acceleration, 100.0, 1000.0, 0);
       r += ImGui::InputFloat("Braking Force", &braking, 100.0, 1000.0, 0);
@@ -115,7 +158,7 @@ namespace ts
       r += ImGui::InputFloat("Non-slide Angle", &non_slide_angle, 0.1f, 1.0f, 1);
       r += ImGui::InputFloat("Full Slide Angle", &full_slide_angle, 0.1f, 1.0f, 1);
       r += ImGui::InputFloat("Sliding Grip", &sliding_grip, 0.01f, 0.1f, 2);
-      r += ImGui::InputFloat("Anuglar Damping", &angular_damping, 0.01f, 0.1f, 2);
+      r += ImGui::InputFloat("Angular Damping", &angular_damping, 0.01f, 0.1f, 2);
       ImGui::NewLine();
       r += ImGui::InputFloat("Wheelbase Length", &wheelbase_length, 0.1f, 1.0f, 1);
       r += ImGui::InputFloat("Front Axle Width", &front_axle_width, 0.1f, 1.0f, 1);
@@ -127,32 +170,32 @@ namespace ts
 
       auto& h = msg.handling;
       msg.center_of_mass = vector2_cast<double>(cog);
-      msg.mass = mass;
-      msg.moment = moment;      
-      h.max_acceleration_force = acceleration;
-      h.max_braking_force = braking;
+      msg.mass = std::max(mass, 1.0f);
+      msg.moment = std::max(moment, 1.0f);
+      h.max_acceleration_force = std::max(acceleration, 0.0f);
+      h.max_braking_force = std::max(braking, 0.0f);
       h.front_driven = front_driven;
       h.rear_driven = rear_driven;
       h.gear_ratios.assign(gear_ratios.begin(), gear_ratios.end());
-      h.max_engine_revs = max_revs;
-      h.reverse_gear_ratio = reverse_ratio;
-      h.drag_coefficient = drag;
-      h.downforce_coefficient = downforce;
-      h.rolling_drag_coefficient = rolling_drag;
-      h.traction_limit = traction_limit;
-      h.load_transfer = load_transfer;
-      h.brake_balance = brake_balance;
-      h.downforce_balance = downforce_balance;
-      h.steering_balance = steering_balance;
-      h.cornering = cornering;
-      h.max_steering_angle = max_steering_angle;
-      h.non_slide_angle = non_slide_angle;
-      h.full_slide_angle = full_slide_angle;
-      h.sliding_grip = sliding_grip;
-      h.angular_damping = angular_damping;
-      h.wheelbase_length = wheelbase_length;
-      h.front_axle_width = front_axle_width;
-      h.rear_axle_width = rear_axle_width;      
+      h.max_engine_revs = std::max(max_revs, 0.0f);
+      h.reverse_gear_ratio = std::max(reverse_ratio, 0.0f);
+      h.drag_coefficient = std::max(drag, 0.0f);
+      h.downforce_coefficient = std::max(downforce, 0.0f);
+      h.rolling_drag_coefficient = std::max(rolling_drag, 0.0f);
+      h.traction_limit = std::max(traction_limit, 0.0f);
+      h.load_transfer = std::max(load_transfer, 0.0f);
+      h.brake_balance = clamp(brake_balance, -0.5f, 0.5f);
+      h.downforce_balance = clamp(downforce_balance, -0.5f, 0.5f);
+      h.steering_balance = clamp(steering_balance, -0.5f, 0.5f);
+      h.cornering = std::max(cornering, 0.0f);
+      h.max_steering_angle = std::max(max_steering_angle, 0.0f);
+      h.non_slide_angle = std::max(non_slide_angle, 0.0f);
+      h.full_slide_angle = std::max(full_slide_angle, 0.0f);
+      h.sliding_grip = std::max(sliding_grip, 0.0f);
+      h.angular_damping = std::max(angular_damping, 0.0f);
+      h.wheelbase_length = std::max(wheelbase_length, 1.0f);
+      h.front_axle_width = std::max(front_axle_width, 1.0f);
+      h.rear_axle_width = std::max(rear_axle_width, 1.0f);
 
       return r > 0;
     }

@@ -72,6 +72,30 @@ namespace ts
       return layer_range(layer_list_.data(), layer_list_.data() + layer_list_.size());
     }
 
+    void TrackScene::deactivate_layer(LayerHandle layer)
+    {
+      layer_list_.erase(std::remove_if(layer_list_.begin(), layer_list_.end(), 
+                                       [=](const TrackSceneLayer* sl)
+      {
+        return sl->associated_layer() == layer;
+      }), layer_list_.end());
+    }
+
+    void TrackScene::activate_layer(LayerHandle layer)
+    {
+      // Just to be sure we get no duplicate entries
+      deactivate_layer(layer);
+
+      for (auto& p : layer_map_)
+      {
+        // And add the layers to the list again.
+        if (p.second.associated_layer() == layer)
+        {
+          layer_list_.push_back(&p.second);
+        }
+      }
+    }
+
     TrackSceneLayer::TrackSceneLayer(const resources::TrackLayer* layer, std::uint32_t level_offset)
       : associated_layer_(layer),
         level_offset_(level_offset)        
@@ -308,7 +332,7 @@ namespace ts
       }
     }
 
-    void TrackScene::add_base_terrain_geometry(const resources::TrackLayer* layer)
+    void TrackScene::rebuild_base_terrain_geometry(const resources::TrackLayer* layer)
     {
       if (auto base_terrain = layer->base_terrain())
       {        

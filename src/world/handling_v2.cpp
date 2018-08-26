@@ -83,8 +83,8 @@ namespace ts
 
       auto weight_distribution = clamp(center_of_mass.y / (handling.wheelbase_length * 0.5) + 0.5, 0.25, 0.75);
 
-      auto rear_downforce = total_downforce * handling.downforce_balance;
-      auto front_downforce = total_downforce - rear_downforce;
+      auto rear_downforce = total_downforce * (0.5 + handling.downforce_balance);
+      auto front_downforce = total_downforce * (0.5 - handling.downforce_balance);
 
       auto inv_num_front_wheels = 1.0 / handling.num_front_wheels;
       auto inv_num_rear_wheels = 1.0 / handling.num_rear_wheels;
@@ -107,11 +107,17 @@ namespace ts
 
       auto inv_frame_duration = 1.0 / frame_duration;
 
-      auto front_steering = 1.0 - handling.steering_balance;
-      auto rear_steering = handling.steering_balance;
+      auto front_steering = 0.5 - handling.steering_balance;
+      auto rear_steering = 0.5 + handling.steering_balance;
       auto steering_multiplier = 1.0 / std::max(front_steering, rear_steering);
       front_steering *= steering_multiplier;
       rear_steering *= steering_multiplier;
+
+      auto front_braking = 0.5 - handling.brake_balance;
+      auto rear_braking = 0.5 + handling.brake_balance;
+      auto braking_multiplier = 1.0 / std::max(front_steering, rear_steering);
+      front_braking *= braking_multiplier;
+      rear_braking *= braking_multiplier;
 
       auto front_acceleration = 0.0;
       auto rear_acceleration = 0.0;
@@ -269,7 +275,7 @@ namespace ts
         ws.pos = p;
         ws.traction_limit = front_traction_limit;
         ws.acceleration = front_acceleration;
-        ws.braking = 1.0 - handling.brake_balance;
+        ws.braking = front_braking;
         ws.cornering = handling.cornering;
         ws.max_steering_angle = front_steering * degrees(handling.max_steering_angle).radians();
         ws.bias = cornering_bias_2d;        
@@ -282,7 +288,7 @@ namespace ts
         ws.pos = p;
         ws.traction_limit = rear_traction_limit;
         ws.acceleration = rear_acceleration;
-        ws.braking = handling.brake_balance;
+        ws.braking = rear_braking;
         ws.cornering = handling.cornering;
         ws.max_steering_angle = -rear_steering * degrees(handling.max_steering_angle).radians();
         ws.bias = antislide_bias_2d;
@@ -485,9 +491,7 @@ namespace ts
       angular_velocity -= angular_velocity * handling.angular_damping * frame_duration;
       car.set_angular_velocity(angular_velocity);
       handling_state.net_force = net_force;     
-      return handling_state;
-
-      
+      return handling_state;      
     }
   }
 }

@@ -117,6 +117,7 @@ namespace ts
     void PathMode::update_canvas_interface(const EditorContext& context)
     {
       update_selection(context.working_state);
+      if (!selected_layer_ || selected_layer_->visible()) return;
 
       auto canvas_pos = ImGui::GetWindowPos();
       auto mouse_pos = ImGui::GetMousePos();

@@ -221,10 +221,26 @@ namespace ts
           auto selected_layer = working_state_.selected_layer();
           auto active = selected_layer != nullptr;
 
-          ImGui::MenuItem("Create Layer", "Ctrl+N");
-          ImGui::MenuItem("Delete Layer", "Ctrl+Delete", false, active);
-          ImGui::MenuItem("Hide Layer", "H", false, active);
-          ImGui::MenuItem("Layer Properties", "Ctrl+P", false, active);
+          if (ImGui::MenuItem("Create Layer", "Ctrl+L"))
+          {
+            open_create_layer_dialog();
+          }
+
+          if (ImGui::MenuItem("Delete Layer", "Ctrl+Delete", false, active))
+          {
+            deactivate_layer(selected_layer);
+          }
+
+          if (ImGui::MenuItem("Hide Layer", "H", selected_layer->visible(), active))
+          {
+            toggle_layer_visibility(selected_layer);
+          }
+
+          if (ImGui::MenuItem("Layer Properties", "Ctrl+P", false, active))
+          {
+            show_layer_properties(selected_layer);
+          }
+
           ImGui::EndMenu();
         }
 
@@ -347,7 +363,7 @@ namespace ts
       ImGui::SetNextWindowContentSize(ImVec2(static_cast<float>(content_size.x), static_cast<float>(content_size.y)));
       ImGui::BeginChild("canvas_window", ImVec2(0, 0), false,
                         ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
-                        ImGuiWindowFlags_NoCollapse |
+                        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoInputs |
                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 
       // Calculate the client area.
@@ -379,7 +395,8 @@ namespace ts
       }
 
       canvas_hover_state_ = contains(canvas_rect, { mouse_pos.x, mouse_pos.y });
-      canvas_focus_state_ = !ImGui::IsAnyItemActive() && !ImGui::IsAnyItemHovered() && canvas_hover_state_;
+      canvas_focus_state_ = !ImGui::IsAnyItemActive() && !ImGui::IsAnyItemHovered() && 
+        !ImGui::IsMouseHoveringAnyWindow() && canvas_hover_state_;
       if (canvas_focus_state_)
       {
         if (ImGui::IsMouseClicked(1))
@@ -583,9 +600,15 @@ namespace ts
         return +buffer;
       };
 
-      auto layer_name_input_label = [&](auto* layer)
+      auto layer_name_popup = [&](auto* layer)
       {
-        std::sprintf(buffer, "##layer_visible_%p", layer);
+        std::sprintf(buffer, "##layer_name_%p", layer);
+        return +buffer;
+      };
+
+      auto layer_context_menu_label = [&](auto* layer)
+      {
+        std::sprintf(buffer, "##layer_actions_%p", layer);
         return +buffer;
       };
 
@@ -603,38 +626,129 @@ namespace ts
         {
           auto item_pos = ImGui::GetItemRectMin();
           auto mouse_pos = ImGui::GetMousePos();
-          
+
           auto move_amount = static_cast<std::int32_t>(std::floor((mouse_pos.y - item_pos.y) / 24.0f));
           if (move_amount != 0)
           {
             if (move_amount < 0) track.shift_towards_front(&layer, -move_amount);
             else track.shift_towards_back(&layer, move_amount);
-          }         
+          }
         }
 
-        if (ImGui::IsItemClicked(0) && ImGui::IsMouseDoubleClicked(0))
+        if (ImGui::BeginPopupContextItem(layer_context_menu_label(&layer), 1))
         {
+          bool visible = layer.visible();
+          if (ImGui::MenuItem("Visible", nullptr, &visible))
+          {
+            toggle_layer_visibility(&layer);
+          }
+
+          if (ImGui::MenuItem("Rename..."))
+          {
+            modified_layer_ = &layer;
+            layer_rename_window_open_ = true;
+          }
+
+          ImGui::EndPopup();
         }
-        
-        ImGui::SameLine();
+
+        ImGui::SameLine(10.0f);
+
+        auto color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+        if (!layer.visible()) color.w = 0.6f;
+
+        ImGui::PushStyleColor(ImGuiCol_Text, color);
 
         const auto& layer_name = layer.name();
         ImGui::TextUnformatted(layer_name.data(), layer_name.data() + layer_name.size());
 
-        ImGui::Separator();        
+        ImGui::PopStyleColor(1);
+
+        ImGui::Separator();
       }
 
       ImGui::ListBoxFooter();
 
       color.pop(2);
       ImGui::EndChild();
+
+      
+      if (modified_layer_)
+      {
+        ImGui::SetNextWindowPosCenter(ImGuiSetCond_Once);
+        if (ImGui::Begin("Rename Layer", &layer_rename_window_open_, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove |
+                         ImGuiWindowFlags_NoCollapse))
+        {
+          ImGui::SetWindowFocus();
+          char buffer[64];
+          std::snprintf(buffer, sizeof(buffer), "%s", modified_layer_->name().c_str());
+          if (ImGui::InputText("##rename_layer_input", buffer, sizeof(buffer), ImGuiInputTextFlags_EnterReturnsTrue))
+          {
+            modified_layer_->rename(buffer);
+            modified_layer_ = nullptr;
+            layer_rename_window_open_ = false;
+          }
+
+          ImGui::SetKeyboardFocusHere();
+          ImGui::End();
+        }
+      }
+    }
+
+    void EditorState::deactivate_layer(resources::TrackLayer* layer)
+    {
+      auto ctx = make_context();
+      auto action = [=]()
+      {
+        // We need to let the user think we delete the layer, but we still need to keep it around.
+        ctx.scene.deactivate_layer(layer);
+      };
+
+      auto undo_action = [=]()
+      {
+        ctx.scene.activate_layer(layer);
+      };
+
+      ctx.action_history.push_action("Delete Layer", action, undo_action);
+    }
+
+    void EditorState::toggle_layer_visibility(resources::TrackLayer* layer)
+    {   
+      auto ctx = make_context();
+      auto action = [=]()
+      {
+        if (!layer->visible())
+        {
+          ctx.scene.show_layer(layer);
+        }        
+
+        else
+        {
+          ctx.scene.hide_layer(layer);
+        }
+      };
+
+      ctx.action_history.push_action(layer->visible() ? "Hide Layer" : "Show Layer", action, action);
+    }
+
+    void EditorState::show_layer_properties(resources::TrackLayer* layer)
+    {
+
+    }
+
+    void EditorState::open_create_layer_dialog()
+    {
+
     }
 
     void EditorState::process_event(const event_type& event)
     {
-      using Key = sf::Keyboard::Key;
+      using Key = sf::Keyboard::Key;     
 
-      if (event.type == sf::Event::KeyPressed)
+      auto in_focus = !layer_rename_window_open_;
+      auto selected_layer = editor_scene_ ? make_context().working_state.selected_layer() : nullptr;
+
+      if (in_focus && event.type == sf::Event::KeyPressed)
       {
         switch (event.key.code)
         {
@@ -644,6 +758,7 @@ namespace ts
 
         case Key::Delete:
           if (active_mode_) active_mode_->delete_selected(make_context());
+          if (event.key.control && selected_layer) deactivate_layer(selected_layer);
           break;
 
         case Key::F5:
@@ -660,6 +775,11 @@ namespace ts
             resources::save_track(editor_scene_->track());
           }
           break;
+
+        case Key::H:
+          if (selected_layer) toggle_layer_visibility(selected_layer);
+          break;
+
 
         case Key::P:
           if (editor_scene_) set_active_mode(ModeType::Path);
@@ -678,6 +798,10 @@ namespace ts
 
         case Key::Y:
           if (event.key.control) action_history_.redo();
+          break;
+
+        case Key::L:
+          if (event.key.control) open_create_layer_dialog();
           break;
 
         case Key::Left:

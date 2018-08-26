@@ -83,18 +83,20 @@ namespace ts
             ImGui::TextUnformatted(buffer.c_str());
 
             auto sector_id = car_info->current_sector;
-            if (sector_id != 0 && (lap_time_elapsed - car_info->last_sector_time) < 5000)
+            if ((sector_id > 0 && lap_time_elapsed - car_info->last_sector_time < 5000) ||
+                (sector_id == 0 && car_info->laps_done > 1 && lap_time_elapsed < 5000))
             {
-              auto last = car_info->last_sector_time;
+              auto last = sector_id != 0 ? car_info->last_sector_time : car_info->last_lap_time;
+
               auto formatted_time = stage::format_lap_time(last);
               ImGui::AlignFirstTextHeightToWidgets();
-              ImGui::Text("S%d:", sector_id);
+              ImGui::Text("S%d:", sector_id != 0 ? sector_id : car_info->best_lap_sector_times.size() + 1);
               ImGui::SameLine(area_size.x * 0.5f - ImGui::CalcTextSize(formatted_time.c_str()).x - 10);
               ImGui::TextUnformatted(formatted_time.c_str());
 
-              if (sector_id <= car_info->best_lap_sector_times.size())
+              if (sector_id <= car_info->best_lap_sector_times.size())                  
               {
-                auto best = car_info->best_lap_sector_times[sector_id - 1];
+                auto best = (sector_id == 0 ? car_info->last_best_lap_time : car_info->best_lap_sector_times[sector_id - 1]);
 
                 ImGui::SameLine(area_size.x * 0.5f);
                 if (last < best)

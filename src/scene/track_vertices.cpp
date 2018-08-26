@@ -125,7 +125,7 @@ namespace ts
 
         else if (auto base_terrain = layer.base_terrain())
         {
-          track_scene.add_base_terrain_geometry(&layer);
+          track_scene.rebuild_base_terrain_geometry(&layer);
         }
       }
     }

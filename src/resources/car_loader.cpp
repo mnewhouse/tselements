@@ -208,6 +208,7 @@ namespace ts
 
           if (read_property("acceleration", h.max_acceleration_force)) {}
           else if (read_property("braking", h.max_braking_force)) {}
+          else if (read_property("maxenginerevs", h.max_engine_revs)) {}
           else if (read_property("reversegearratio", h.reverse_gear_ratio)) {}
           else if (read_property("gearshiftduration", h.gear_shift_duration)) {}
           else if (read_property("drag", h.drag_coefficient)) {}

@@ -11,6 +11,8 @@
 #include "view_matrix.hpp"
 #include "particle_generator.hpp"
 
+#include "resources/track_layer.hpp"
+
 #include "graphics/gl_scissor_box.hpp"
 #include "graphics/gl_check.hpp"
 
@@ -374,6 +376,7 @@ namespace ts
         while (component_it != track_components_.end() && level == component_it->level)
         {
           const auto& component = *component_it++;
+          if (!component.visible) continue;
 
           auto bb = component.bounding_box;
           auto screen_rect = view_matrix.transformRect(sf::FloatRect(bb.left, bb.top, bb.width, bb.height));
@@ -442,6 +445,40 @@ namespace ts
           glDepthMask(GL_FALSE);
         }
 
+
+        if (level < particle_level_info_.size())
+        {
+          auto& particle_info = particle_level_info_[level];
+          if (particle_info.count != 0)
+          {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, particle_texture_.get());
+
+            glBindVertexArray(particle_vertex_array_.get());
+            glUseProgram(particle_shader_program_.get());
+
+            std::uintptr_t base_offset = level * max_particles_per_level_ * sizeof(std::uint32_t) * 6;
+            std::uintptr_t offset = base_offset + particle_info.start_index * sizeof(std::uint32_t) * 6;
+
+            auto end_index = particle_info.start_index + particle_info.count;
+            if (end_index > max_particles_per_level_)
+            {
+              auto count_1 = max_particles_per_level_ - particle_info.start_index;
+              auto count_2 = end_index - max_particles_per_level_;
+              glDrawElements(GL_TRIANGLES, count_1 * 6, GL_UNSIGNED_INT,
+                             reinterpret_cast<const void*>(offset));
+              glDrawElements(GL_TRIANGLES, count_2 * 6, GL_UNSIGNED_INT,
+                             reinterpret_cast<const void*>(base_offset));
+            }
+
+            else
+            {
+              glDrawElements(GL_TRIANGLES, particle_info.count * 6, GL_UNSIGNED_INT,
+                             reinterpret_cast<const void*>(offset));
+            }
+          }
+        }
+
         if (entity_it != drawable_entities_.end() && level == entity_it->level)
         {          
           glCheck(glUseProgram(car_shader_program_.get()));
@@ -477,38 +514,6 @@ namespace ts
         }
 
 
-        if (level < particle_level_info_.size())
-        {
-          auto& particle_info = particle_level_info_[level];
-          if (particle_info.count != 0)
-          {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, particle_texture_.get());
-
-            glBindVertexArray(particle_vertex_array_.get());
-            glUseProgram(particle_shader_program_.get());
-
-            std::uintptr_t base_offset = level * max_particles_per_level_ * sizeof(std::uint32_t) * 6;
-            std::uintptr_t offset = base_offset + particle_info.start_index * sizeof(std::uint32_t) * 6;
-
-            auto end_index = particle_info.start_index + particle_info.count;
-            if (end_index > max_particles_per_level_)
-            {
-              auto count_1 = max_particles_per_level_ - particle_info.start_index;
-              auto count_2 = end_index - max_particles_per_level_;
-              glDrawElements(GL_TRIANGLES, count_1 * 6, GL_UNSIGNED_INT,
-                             reinterpret_cast<const void*>(offset));
-              glDrawElements(GL_TRIANGLES, count_2 * 6, GL_UNSIGNED_INT,
-                             reinterpret_cast<const void*>(base_offset));
-            }
-
-            else
-            {
-              glDrawElements(GL_TRIANGLES, particle_info.count * 6, GL_UNSIGNED_INT,
-                             reinterpret_cast<const void*>(offset));
-            }
-          }
-        }
       }
 
       glCheck(glBindVertexArray(0));
@@ -744,6 +749,7 @@ namespace ts
               track_component.textures[1] = scene_layer.primary_texture();
               track_component.textures[2] = scene_layer.secondary_texture();
               track_component.path_border_width = scene_layer.path_relative_border_width();
+              track_component.visible = scene_layer.associated_layer()->visible();
 
               using T = TrackSceneLayer::Type;
               if (scene_layer.type() == T::Path || scene_layer.type() == T::PathWithTransparency)
@@ -786,6 +792,35 @@ namespace ts
       glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 
       update_track_vaos_ = true;
+    }
+
+    void RenderScene::remove_layer(resources::TrackLayer* layer)
+    {
+      track_components_.erase(std::remove_if(track_components_.begin(), track_components_.end(),
+                                             [=](const TrackComponent& c)
+      {
+        return c.layer_data->scene_layer->associated_layer() == layer;
+      }), track_components_.end());
+
+      track_scene_.deactivate_layer(layer);
+    }
+
+    void RenderScene::add_layer(resources::TrackLayer* layer)
+    {
+      track_scene_.activate_layer(layer);
+
+      update_layer_geometry(layer);
+    }
+
+    void RenderScene::update_layer_visibility(resources::TrackLayer* layer)
+    {
+      for (auto& component : track_components_)
+      {
+        if (component.layer_data->scene_layer->associated_layer() == layer)
+        {
+          component.visible = layer->visible();
+        }
+      }
     }
 
     void RenderScene::reorder_track_components()

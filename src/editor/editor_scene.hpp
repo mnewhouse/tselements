@@ -46,6 +46,11 @@ namespace ts
       void rebuild_path_geometry(resources::TrackPath* path);
       void rebuild_path_layer(resources::TrackLayer* path_layer);
 
+      void show_layer(resources::TrackLayer* layer);
+      void hide_layer(resources::TrackLayer* layer);
+      void activate_layer(resources::TrackLayer* layer);
+      void deactivate_layer(resources::TrackLayer* layer);
+
     private:
       const std::vector<resources::PlacedTile>& expand_tile(const resources::Tile& tile) const;
       template <typename TileIt>

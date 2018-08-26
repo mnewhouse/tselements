@@ -58,7 +58,7 @@ namespace ts
 
       struct TrackComponent
       {
-        enum Type
+        enum Type : std::uint8_t
         {
           Default,
           Path
@@ -70,6 +70,8 @@ namespace ts
         float path_border_width = 0.0f;
 
         Type type = Default;
+        bool visible = true;
+
         std::uint32_t level;
         std::uint32_t z_index;
         std::uint32_t element_buffer_offset;
@@ -166,6 +168,10 @@ namespace ts
       void rebuild_path_layer_geometry(const resources::TrackLayer* path_layer);
       void rebuild_tile_layer_geometry(const resources::TrackLayer* tile_layer,
                                        const resources::PlacedTile* tile_expansion, std::size_t tile_count);
+
+      void update_layer_visibility(resources::TrackLayer* layer);
+      void remove_layer(resources::TrackLayer* layer);
+      void add_layer(resources::TrackLayer* layer);
 
       void reorder_track_components();      
 

@@ -17,7 +17,7 @@ namespace ts
         uniform mat4 u_viewMatrix;        
         in vec3 in_position;
         in vec2 in_texCoords;   
-        out vec2 frag_position;     
+        out vec2 frag_position;
         out vec2 frag_texCoords;
         void main()
         {          
@@ -25,6 +25,18 @@ namespace ts
           frag_texCoords = in_texCoords;
           gl_Position = u_viewMatrix * vec4(frag_position, 0.0, 1.0);
         }
+      )";
+
+      static const char basic_track_fragment_shader[] = R"(
+        #version 130
+        uniform sampler2D u_textureSampler;
+        in vec2 frag_position;
+        in vec2 frag_texCoords;        
+        out vec4 frag_color;
+        void main()
+        {
+          frag_color = texture2D(u_textureSampler, frag_texCoords);
+        };
       )";
 
       static const char track_fragment_shader[] = R"(

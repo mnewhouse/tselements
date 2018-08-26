@@ -495,11 +495,6 @@ namespace ts
       auto pattern_path = resolve_asset_path(pattern_file, working_directory);
       auto image_path = resolve_asset_path(image_file, working_directory);
 
-      if (pattern_path.empty())
-      {
-        throw BrokenTrackException({ pattern_file.begin(), pattern_file.end() });
-      }
-
       if (image_path.empty())
       {
         throw BrokenTrackException({ image_file.begin(), image_file.end() });
@@ -859,7 +854,12 @@ namespace ts
           auto pattern_file = extract_word(remainder);
           auto image_file = extract_word(make_string_ref(pattern_file.end(), remainder.end()));
 
-          if (!pattern_file.empty() && !image_file.empty())
+          if (image_file.empty())
+          {
+            std::swap(pattern_file, image_file);
+          }
+
+          if (!image_file.empty())
           {
             load_tile_definitions(track_.tile_library(), context, pattern_file, image_file, working_directory_);
           }
